@@ -28,7 +28,7 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'pohrana_nacrta')
 DB_FILE = os.path.join(BASE_DIR, 'proizvodnja.db')
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
 ALLOWED_EXTENSIONS = {'pdf', 'lxds', 'dxf'}
 
 if not os.path.exists(UPLOAD_FOLDER):
@@ -124,6 +124,18 @@ def to_int(val):
     try: return int(val) if val else 0
     except: return 0
 
+def parsiraj_listu_datoteka(raw_data):
+    """Pomagalo koje pretvara tekstualni zapis iz baze u čistu listu datoteka s ekstenzijama."""
+    if not raw_data:
+        return []
+    try:
+        datoteke = json.loads(raw_data)
+        if isinstance(datoteke, list):
+            return [{"filename": d, "ext": d.split('.')[-1].upper()} for d in datoteke]
+    except:
+        pass
+    return [{"filename": raw_data, "ext": raw_data.split('.')[-1].upper()}]
+
 ADMIN_USER = "admin"
 ADMIN_PASS = "firstcutlaser1"
 
@@ -162,7 +174,6 @@ def inject_globalne_varijable():
     z_stanica = request.cookies.get('zakljucana_stanica', 'uprava')
     je_klijent = request.cookies.get('is_client') == 'true'
     
-    # Detekcija pravog mobilnog uredaja (Android, iOS) kako bi se prikazao Burger Menu
     ua = request.headers.get('User-Agent', '').lower()
     is_mobile = any(w in ua for w in ['mobi', 'android', 'iphone', 'ipad', 'ipod', 'windows phone'])
     
@@ -223,6 +234,8 @@ STIL_I_NAVIGACIJA = """
         .tamni-kontejner { background-color: #12141c; border: 1px solid #222736; border-radius: 8px; }
         .dodaj-kontejner { background-color: #171b26; border: 1px solid #2d3446; border-radius: 8px; }
         .napomena-box { background: rgba(13, 202, 240, 0.1); border-left: 3px solid #0dcaf0; padding: 12px; border-radius: 0 6px 6px 0; margin-top: 8px;}
+        
+        .dropdown-item:hover { background-color: #23293b; color: #fff !important; }
         
         .is-desktop-device .nav-mob-col { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
         .is-desktop-device .nav-mob-col::-webkit-scrollbar { height: 5px; }
@@ -355,6 +368,21 @@ STIL_I_NAVIGACIJA = """
             }
         }
 
+        function azurirajBrojacDatoteka(input, labelId, iconClass, labelText) {
+            var label = document.getElementById(labelId);
+            if(!label) return;
+            if(input.files && input.files.length > 0) {
+                var html = '<div class="mt-2"><i class="fa-solid ' + iconClass + ' text-info me-1"></i> <span class="text-muted small">' + labelText + ':</span></div><div class="d-flex flex-wrap gap-1 mt-1">';
+                for(var i=0; i<input.files.length; i++) {
+                    html += '<span class="badge bg-dark border border-secondary text-info">' + input.files[i].name + '</span>';
+                }
+                html += '</div>';
+                label.innerHTML = html;
+            } else {
+                label.innerHTML = '';
+            }
+        }
+
         var isSubmitting = false;
 
         function pokreniZiveElemente() {
@@ -393,8 +421,10 @@ STIL_I_NAVIGACIJA = """
                 for(var k=0; k<fileInputs.length; k++) {
                     if(fileInputs[k].files.length > 0) hasFiles = true;
                 }
+                
+                var isDropdownOpen = document.querySelector('.dropdown-menu.show') !== null;
 
-                if(!isTyping && !isSubmitting && !hasFiles && window.location.pathname !== '/login' && window.location.pathname !== '/prijava_stanice') {
+                if(!isTyping && !isSubmitting && !hasFiles && !isDropdownOpen && window.location.pathname !== '/login' && window.location.pathname !== '/prijava_stanice') {
                     var xhr = new XMLHttpRequest();
                     xhr.open('GET', window.location.href, true);
                     xhr.onreadystatechange = function() {
@@ -653,7 +683,6 @@ def favicon_fallback(): return redirect(url_for('serve_favicon'))
 def prijava_stanice():
     conn = get_db_connection()
     
-    # Profesionalna detekcija pravog klijenta iza Nginx proxyja
     prava_ip = 'nepoznato'
     if request.headers.get('X-Forwarded-For'):
         prava_ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
@@ -663,8 +692,6 @@ def prijava_stanice():
         prava_ip = request.remote_addr or 'nepoznato'
         
     preglednik = request.headers.get('User-Agent', 'nepoznat_preglednik')
-    
-    # Kreiramo jedinstveni otisak (hash) za ovaj specifični uređaj
     otisak_uređaja = hashlib.md5(f"{prava_ip}_{preglednik}".encode('utf-8')).hexdigest()
     
     blokada = conn.execute("SELECT * FROM blokade WHERE ip_adresa=?", (otisak_uređaja,)).fetchone()
@@ -895,19 +922,29 @@ def index_master():
         debljina_ploce = request.form.get('debljina_ploce', '')
         opis = request.form.get('opis', '')
         rutiranje = request.form.get('rutiranje', 'Pogon')
-        f_pdf, f_lxdf = request.files.get('pdf_file'), request.files.get('lxdf_file')
-        p_name, l_name = None, None
         
-        if f_pdf and allowed_file(f_pdf.filename):
-            p_name = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_pdf.filename}")
-            f_pdf.save(os.path.join(app.config['UPLOAD_FOLDER'], p_name))
-        if f_lxdf and allowed_file(f_lxdf.filename):
-            l_name = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_lxdf.filename}")
-            f_lxdf.save(os.path.join(app.config['UPLOAD_FOLDER'], l_name))
+        f_pdf_list = request.files.getlist('pdf_file')
+        f_lxd_list = request.files.getlist('lxdf_file')
+        
+        p_names = []
+        for f in f_pdf_list:
+            if f and allowed_file(f.filename):
+                fname = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f.filename}")
+                f.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                p_names.append(fname)
+        p_name_db = json.dumps(p_names) if p_names else None
+            
+        l_names = []
+        for f in f_lxd_list:
+            if f and allowed_file(f.filename):
+                fname = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f.filename}")
+                f.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
+                l_names.append(fname)
+        l_name_db = json.dumps(l_names) if l_names else None
         
         pocetni_status = 'Piganje' if rutiranje == 'Samo Bravarija' else 'Laser'
         cursor = conn.execute('INSERT INTO radni_nalozi (naziv_naloga, naziv_projekta, debljina_ploce, pdf_datoteka, lxdf_datoteka, opis, rutiranje, status, kreirao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-                     (naziv, projekt, debljina_ploce, p_name, l_name, opis, rutiranje, pocetni_status, kreirao))
+                     (naziv, projekt, debljina_ploce, p_name_db, l_name_db, opis, rutiranje, pocetni_status, kreirao))
         nalog_id = cursor.lastrowid
         
         kosarica_data = request.form.get('kosarica_data', '[]')
@@ -929,7 +966,8 @@ def index_master():
     for r in nalozi_rows:
         n = dict(r)
         n['pozicije'] = [dict(p) for p in conn.execute('SELECT * FROM nalog_pozicije WHERE nalog_id=?', (n['id'],)).fetchall()]
-        n['ext'] = n['lxdf_datoteka'].split('.')[-1].upper() if n['lxdf_datoteka'] else ''
+        n['lxdf_datoteke'] = parsiraj_listu_datoteka(n['lxdf_datoteka'])
+        n['pdf_datoteke'] = parsiraj_listu_datoteka(n['pdf_datoteka'])
         nalozi.append(n)
     conn.close()
     
@@ -993,13 +1031,15 @@ def index_master():
                                 <input type="hidden" name="kosarica_data" id="kosarica_data" value="[]">
                             </div>
                             
-                            <div class="col-lg-3 col-md-6 mt-4">
-                                <label class="form-label">PDF Nacrt</label>
-                                <input type="file" class="form-control kreiranje-nav" name="pdf_file" accept=".pdf">
+                            <div class="col-lg-4 col-md-6 mt-4">
+                                <label class="form-label">PDF Nacrti - <small class="text-danger">Možete odabrati više datoteka</small></label>
+                                <input type="file" class="form-control kreiranje-nav" name="pdf_file" accept=".pdf" multiple onchange="azurirajBrojacDatoteka(this, 'pdf_brojac_label', 'fa-file-pdf', 'Priloženi PDF nacrti')">
+                                <div id="pdf_brojac_label" class="mt-1 small"></div>
                             </div>
-                            <div class="col-lg-3 col-md-6 mt-4">
-                                <label class="form-label">Strojna datoteka (DXF/LXDS)</label>
-                                <input type="file" class="form-control kreiranje-nav" name="lxdf_file" accept=".lxds,.dxf">
+                            <div class="col-lg-4 col-md-6 mt-4">
+                                <label class="form-label">Strojne datoteke (DXF/LXDS) - <small class="text-info">Možete odabrati više datoteka</small></label>
+                                <input type="file" class="form-control kreiranje-nav" name="lxdf_file" accept=".lxds,.dxf" multiple onchange="azurirajBrojacDatoteka(this, 'dxf_brojac_label', 'fa-file-code', 'Priložene strojne datoteke')">
+                                <div id="dxf_brojac_label" class="mt-1 small"></div>
                             </div>
                             
                             <div class="col-12 mt-4 d-flex gap-2 btn-rutiranje-grupa">
@@ -1076,8 +1116,35 @@ def index_master():
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if n.pdf_datoteka %}<a href="/preuzmi/{{ n.pdf_datoteka }}" class="btn btn-sm btn-outline-danger mob-full-btn" target="_blank"><i class="fa-solid fa-file-pdf"></i> PDF</a>{% endif %}
-                                    {% if n.lxdf_datoteka %}<a href="/preuzmi/{{ n.lxdf_datoteka }}" class="btn btn-sm btn-outline-info mob-full-btn" target="_blank"><i class="fa-solid fa-file-code"></i> {{ n.ext }}</a>{% endif %}
+                                    {% if n.pdf_datoteke|length == 1 %}
+                                        <a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
+                                    {% elif n.pdf_datoteke|length > 1 %}
+                                        <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                                            <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                                <i class="fa-solid fa-file-pdf"></i> Otvori PDF datoteke ({{ n.pdf_datoteke|length }})
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
+                                                {% for pdf in n.pdf_datoteke %}
+                                                    <li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if n.lxdf_datoteke|length == 1 %}
+                                        <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-code"></i> Otvori {{ n.lxdf_datoteke[0].ext }}</a>
+                                    {% elif n.lxdf_datoteke|length > 1 %}
+                                        <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                                            <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                                <i class="fa-solid fa-layer-group"></i> Otvori Strojne datoteke ({{ n.lxdf_datoteke|length }})
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
+                                                {% for lx in n.lxdf_datoteke %}
+                                                    <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if n.status == 'Na pregledu' %}
@@ -1107,9 +1174,9 @@ def index_master():
                                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                                                     <td class="ps-4 py-3 align-middle fw-bold text-light fs-6">{{ p.naziv_pozicije }}</td>
                                                     <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25">
-                                                        <span class="badge bg-info bg-opacity-25 text-info border border-info me-1 px-2 py-1">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
-                                                        <span class="badge bg-success bg-opacity-25 text-success border border-success mt-2 me-1 px-2 py-1">Odrađeno: {{ p.laser_komada }} kom</span>
-                                                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger mt-2 me-1 px-2 py-1">{{ p.laser_skart }} škart</span><br>
+                                                        <span class="badge bg-info text-white shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
+                                                        <span class="badge bg-success text-white shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada }} kom</span>
+                                                        <span class="badge bg-danger text-white shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.laser_skart }} škart</span><br>
                                                         <small class="text-muted d-block mt-2">
                                                             {% if p.laser_priprema_sati or p.laser_priprema_minute or p.laser_rezanje_sati or p.laser_rezanje_minute %}
                                                                 <i class="fa-regular fa-clock text-info me-1"></i> Prip: {{ p.laser_priprema_sati }}h {{ p.laser_priprema_minute }}m &nbsp;|&nbsp; Rez: {{ p.laser_rezanje_sati }}h {{ p.laser_rezanje_minute }}m 
@@ -1120,9 +1187,9 @@ def index_master():
                                                         </small>
                                                     </td>
                                                     <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25">
-                                                        <span class="badge bg-info bg-opacity-25 text-info border border-info me-1 px-2 py-1">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
-                                                        <span class="badge bg-success bg-opacity-25 text-success border border-success mt-2 me-1 px-2 py-1">Odrađeno: {{ p.bravarija_komada }} kom</span>
-                                                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger mt-2 me-1 px-2 py-1">{{ p.bravarija_skart }} škart</span><br>
+                                                        <span class="badge bg-info text-white shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
+                                                        <span class="badge bg-success text-white shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada }} kom</span>
+                                                        <span class="badge bg-danger text-white shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.bravarija_skart }} škart</span><br>
                                                         <small class="text-muted d-block mt-2">
                                                             {% if p.bravarija_priprema_sati or p.bravarija_priprema_minute or p.bravarija_piganje_sati or p.bravarija_piganje_minute %}
                                                                 <i class="fa-regular fa-clock text-warning me-1"></i> Prip: {{ p.bravarija_priprema_sati }}h {{ p.bravarija_priprema_minute }}m &nbsp;|&nbsp; Pig: {{ p.bravarija_piganje_sati }}h {{ p.bravarija_piganje_minute }}m 
@@ -1172,10 +1239,17 @@ def arhiviraj_nalog(id):
     
     try:
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-            if n['pdf_datoteka'] and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], n['pdf_datoteka'])):
-                zf.write(os.path.join(app.config['UPLOAD_FOLDER'], n['pdf_datoteka']), n['pdf_datoteka'])
-            if n['lxdf_datoteka'] and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], n['lxdf_datoteka'])):
-                zf.write(os.path.join(app.config['UPLOAD_FOLDER'], n['lxdf_datoteka']), n['lxdf_datoteka'])
+            pdf_datoteke = parsiraj_listu_datoteka(n['pdf_datoteka'])
+            for pdf in pdf_datoteke:
+                fpath = os.path.join(app.config['UPLOAD_FOLDER'], pdf['filename'])
+                if os.path.exists(fpath):
+                    zf.write(fpath, pdf['filename'])
+                
+            lxdf_datoteke = parsiraj_listu_datoteka(n['lxdf_datoteka'])
+            for lx in lxdf_datoteke:
+                fpath = os.path.join(app.config['UPLOAD_FOLDER'], lx['filename'])
+                if os.path.exists(fpath):
+                    zf.write(fpath, lx['filename'])
                 
             logo_base64 = ""
             logo_ext = ""
@@ -1301,8 +1375,16 @@ def arhiviraj_nalog(id):
         if preostalo == 0:
             ostaci = conn.execute("SELECT pdf_datoteka, lxdf_datoteka FROM radni_nalozi").fetchall()
             for o in ostaci:
-                if o['pdf_datoteka'] and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], o['pdf_datoteka'])): os.remove(os.path.join(app.config['UPLOAD_FOLDER'], o['pdf_datoteka']))
-                if o['lxdf_datoteka'] and os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], o['lxdf_datoteka'])): os.remove(os.path.join(app.config['UPLOAD_FOLDER'], o['lxdf_datoteka']))
+                pdf_ostaci = parsiraj_listu_datoteka(o['pdf_datoteka'])
+                for pdf in pdf_ostaci:
+                    fpath = os.path.join(app.config['UPLOAD_FOLDER'], pdf['filename'])
+                    if os.path.exists(fpath):
+                        os.remove(fpath)
+                lx_ostaci = parsiraj_listu_datoteka(o['lxdf_datoteka'])
+                for lx in lx_ostaci:
+                    fpath = os.path.join(app.config['UPLOAD_FOLDER'], lx['filename'])
+                    if os.path.exists(fpath):
+                        os.remove(fpath)
             
             conn.execute("DELETE FROM radni_nalozi")
             conn.execute("DELETE FROM nalog_pozicije")
@@ -1351,8 +1433,16 @@ def obrisi_nalog(id):
     conn = get_db_connection()
     n = conn.execute('SELECT pdf_datoteka, lxdf_datoteka FROM radni_nalozi WHERE id=?', (id,)).fetchone()
     if n:
-        if n['pdf_datoteka'] and os.path.exists(os.path.join(UPLOAD_FOLDER, n['pdf_datoteka'])): os.remove(os.path.join(UPLOAD_FOLDER, n['pdf_datoteka']))
-        if n['lxdf_datoteka'] and os.path.exists(os.path.join(UPLOAD_FOLDER, n['lxdf_datoteka'])): os.remove(os.path.join(UPLOAD_FOLDER, n['lxdf_datoteka']))
+        pdf_ostaci = parsiraj_listu_datoteka(n['pdf_datoteka'])
+        for pdf in pdf_ostaci:
+            fpath = os.path.join(UPLOAD_FOLDER, pdf['filename'])
+            if os.path.exists(fpath):
+                os.remove(fpath)
+        lx_ostaci = parsiraj_listu_datoteka(n['lxdf_datoteka'])
+        for lx in lx_ostaci:
+            fpath = os.path.join(UPLOAD_FOLDER, lx['filename'])
+            if os.path.exists(fpath):
+                os.remove(fpath)
     
     conn.execute('DELETE FROM radni_nalozi WHERE id=?', (id,))
     conn.execute('DELETE FROM nalog_pozicije WHERE nalog_id=?', (id,))
@@ -1361,8 +1451,16 @@ def obrisi_nalog(id):
     if preostalo == 0:
         ostaci = conn.execute("SELECT pdf_datoteka, lxdf_datoteka FROM radni_nalozi").fetchall()
         for o in ostaci:
-            if o['pdf_datoteka'] and os.path.exists(os.path.join(UPLOAD_FOLDER, o['pdf_datoteka'])): os.remove(os.path.join(UPLOAD_FOLDER, o['pdf_datoteka']))
-            if o['lxdf_datoteka'] and os.path.exists(os.path.join(UPLOAD_FOLDER, o['lxdf_datoteka'])): os.remove(os.path.join(UPLOAD_FOLDER, o['lxdf_datoteka']))
+            pdf_ostaci = parsiraj_listu_datoteka(o['pdf_datoteka'])
+            for pdf in pdf_ostaci:
+                fpath = os.path.join(UPLOAD_FOLDER, pdf['filename'])
+                if os.path.exists(fpath):
+                    os.remove(fpath)
+            lx_ostaci = parsiraj_listu_datoteka(o['lxdf_datoteka'])
+            for lx in lx_ostaci:
+                fpath = os.path.join(UPLOAD_FOLDER, lx['filename'])
+                if os.path.exists(fpath):
+                    os.remove(fpath)
         
         conn.execute("DELETE FROM radni_nalozi")
         conn.execute("DELETE FROM nalog_pozicije")
@@ -1439,7 +1537,8 @@ def sekcija_laser():
                 
         if prikazi:
             n['pozicije'] = [dict(p) for p in conn.execute('SELECT * FROM nalog_pozicije WHERE nalog_id=?', (n['id'],)).fetchall()]
-            n['ext'] = n['lxdf_datoteka'].split('.')[-1].upper() if n['lxdf_datoteka'] else ''
+            n['lxdf_datoteke'] = parsiraj_listu_datoteka(n['lxdf_datoteka'])
+            n['pdf_datoteke'] = parsiraj_listu_datoteka(n['pdf_datoteka'])
             nalozi.append(n)
             
     conn.close()
@@ -1487,8 +1586,35 @@ def sekcija_laser():
             {% endif %}
             
             <div class="mt-2 mb-4">
-                {% if n.pdf_datoteka %}<a href="/preuzmi/{{ n.pdf_datoteka }}" class="btn btn-sm btn-outline-light me-2 mob-full-btn" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>{% endif %}
-                {% if n.lxdf_datoteka %}<a href="/preuzmi/{{ n.lxdf_datoteka }}" class="btn btn-sm btn-outline-info mob-full-btn" target="_blank"><i class="fa-solid fa-file-code"></i> Otvori {{ n.ext }}</a>{% endif %}
+                {% if n.pdf_datoteke|length == 1 %}
+                    <a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
+                {% elif n.pdf_datoteke|length > 1 %}
+                    <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                        <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fa-solid fa-file-pdf"></i> Otvori PDF datoteke ({{ n.pdf_datoteke|length }})
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
+                            {% for pdf in n.pdf_datoteke %}
+                                <li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                {% if n.lxdf_datoteke|length == 1 %}
+                    <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-code"></i> Otvori {{ n.lxdf_datoteke[0].ext }}</a>
+                {% elif n.lxdf_datoteke|length > 1 %}
+                    <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                        <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fa-solid fa-layer-group"></i> Otvori Strojne datoteke ({{ n.lxdf_datoteke|length }})
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
+                            {% for lx in n.lxdf_datoteke %}
+                                <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
             </div>
 
             {% if n.laser_zapoceto_u %}
@@ -1597,7 +1723,8 @@ def sekcija_bravarija():
     for r in nalozi_rows:
         n = dict(r)
         n['pozicije'] = [dict(p) for p in conn.execute('SELECT * FROM nalog_pozicije WHERE nalog_id=?', (n['id'],)).fetchall()]
-        n['ext'] = n['lxdf_datoteka'].split('.')[-1].upper() if n['lxdf_datoteka'] else ''
+        n['lxdf_datoteke'] = parsiraj_listu_datoteka(n['lxdf_datoteka'])
+        n['pdf_datoteke'] = parsiraj_listu_datoteka(n['pdf_datoteka'])
         nalozi.append(n)
     conn.close()
     
@@ -1645,8 +1772,35 @@ def sekcija_bravarija():
             {% endif %}
             
             <div class="mt-2 mb-4">
-                {% if n.pdf_datoteka %}<a href="/preuzmi/{{ n.pdf_datoteka }}" class="btn btn-sm btn-outline-light me-2 mob-full-btn" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>{% endif %}
-                {% if n.lxdf_datoteka %}<a href="/preuzmi/{{ n.lxdf_datoteka }}" class="btn btn-sm btn-outline-info mob-full-btn" target="_blank"><i class="fa-solid fa-file-code"></i> Otvori {{ n.ext }}</a>{% endif %}
+                {% if n.pdf_datoteke|length == 1 %}
+                    <a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
+                {% elif n.pdf_datoteke|length > 1 %}
+                    <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                        <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fa-solid fa-file-pdf"></i> Otvori PDF datoteke ({{ n.pdf_datoteke|length }})
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
+                            {% for pdf in n.pdf_datoteke %}
+                                <li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                
+                {% if n.lxdf_datoteke|length == 1 %}
+                    <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-code"></i> Otvori {{ n.lxdf_datoteke[0].ext }}</a>
+                {% elif n.lxdf_datoteke|length > 1 %}
+                    <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                        <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fa-solid fa-layer-group"></i> Otvori Strojne datoteke ({{ n.lxdf_datoteke|length }})
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
+                            {% for lx in n.lxdf_datoteke %}
+                                <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
             </div>
 
             {% if n.bravarija_zapoceto_u %}
