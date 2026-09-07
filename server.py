@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'firstcut_pogon_secure_key_2026'
+app.permanent_session_lifetime = timedelta(days=365)
 
 _B = base64.b64decode(b'MjMxMg==').decode('utf-8')
 PIN_HASH = hashlib.sha256(_B.encode()).hexdigest()
@@ -125,7 +126,6 @@ def to_int(val):
     except: return 0
 
 def parsiraj_listu_datoteka(raw_data):
-    """Pomagalo koje pretvara tekstualni zapis iz baze u čistu listu datoteka s ekstenzijama."""
     if not raw_data:
         return []
     try:
@@ -224,7 +224,7 @@ STIL_I_NAVIGACIJA = """
         
         .btn-primary { background-color: #ff0000; border-color: #ff0000; font-weight: 600; border-radius: 8px; padding: 10px 20px; }
         .btn-success { background-color: #16a34a; border-color: #16a34a; font-weight: 600; border-radius: 8px; color: white !important;}
-        .btn-warning { background-color: #ea580c; border-color: #ea580c; color: #fff !important; font-weight: 600; border-radius: 8px; }
+        .btn-warning { background-color: #eab308; border-color: #eab308; color: #000 !important; font-weight: 700; border-radius: 8px; }
         .btn-nav { color: #d1d5db; font-weight: 600; text-decoration: none; padding: 8px 16px; border-radius: 6px; white-space: nowrap; }
         .clock-box { background: #171b26; border: 1px solid #222736; border-radius: 8px; padding: 6px 14px; font-family: monospace; color: #ffffff; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
         .vidljiv-tekst { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); border-radius: 8px; padding: 20px; color: #ffffff !important; font-size: 1.1rem; }
@@ -377,7 +377,6 @@ STIL_I_NAVIGACIJA = """
                     html += '<span class="badge bg-dark border border-secondary text-info">' + input.files[i].name + '</span>';
                 }
                 html += '</div>';
-                label.innerHTML = html;
             } else {
                 label.innerHTML = '';
             }
@@ -820,8 +819,10 @@ def postavi_stanicu(ime_stanice):
 def index_pogon_hub():
     conn = get_db_connection()
     svi_nalozi = conn.execute('SELECT * FROM radni_nalozi ORDER BY id DESC').fetchall()
-    trenutno_na_laseru = [dict(n) for n in svi_nalozi if n['status'] == 'Laser' and n['laser_zapoceto_u']]
-    trenutno_u_bravariji = [dict(n) for n in svi_nalozi if n['status'] == 'Piganje' and n['bravarija_zapoceto_u']]
+    
+    trenutno_na_laseru = [dict(n) for n in svi_nalozi if n['status'] in ['Laser', 'Pauzirano - Laser'] and (n['laser_zapoceto_u'] or n['status'] == 'Pauzirano - Laser')]
+    trenutno_u_bravariji = [dict(n) for n in svi_nalozi if n['status'] in ['Piganje', 'Pauzirano - Bravarija'] and (n['bravarija_zapoceto_u'] or n['status'] == 'Pauzirano - Bravarija')]
+    
     conn.close()
     
     sadrzaj = """
@@ -834,19 +835,23 @@ def index_pogon_hub():
             <div class="col-md-6 mb-3">
                 <div class="card h-100 mb-0" style="border-left: 4px solid #ff0000;">
                     <div class="card-header-custom d-flex justify-content-between align-items-center flex-mob-col">
-                        <h6 class="mb-0 fw-bold text-danger text-uppercase"><i class="fa-solid fa-fire pulse-live me-2"></i>Laser &bull; Trenutno u rezanju</h6>
+                        <h6 class="mb-0 fw-bold text-danger text-uppercase"><i class="fa-solid fa-fire pulse-live me-2"></i>Laser &bull; Trenutno u obradi</h6>
                     </div>
                     <div class="card-body p-4">
                         {% if not trenutno_na_laseru %}<p class="text-center my-4 vidljiv-tekst">Trenutno nema aktivnih naloga u procesu rezanja.</p>
                         {% else %}
                             {% for n in trenutno_na_laseru %}
-                            <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col">
+                            <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col border {% if n.status == 'Pauzirano - Laser' %}border-warning border-opacity-50{% else %}border-dark{% endif %}">
                                 <div>
                                     <b class="text-white fs-5">{{ n.naziv_naloga }}</b>
                                     {% if n.odabrani_laser %} <span class="badge bg-danger ms-2 border border-danger"><i class="fa-solid fa-crosshairs me-1"></i>{{ n.odabrani_laser|upper }}</span>{% endif %}<br>
                                     <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %}[D: {{ n.debljina_ploce }}]{% endif %} | Nalog #{{ n.id }}</small>
                                 </div>
-                                <span class="badge bg-dark border border-danger text-danger p-2 fs-6 mt-2"><i class="fa-solid fa-stopwatch me-1"></i> <span class="timer-pogona" data-start="{{ n.laser_zapoceto_u }}">0m 0s</span></span>
+                                {% if n.status == 'Pauzirano - Laser' %}
+                                    <span class="badge bg-warning text-dark p-2 fs-6 mt-2 fw-bold"><i class="fa-solid fa-pause me-1"></i> PAUZIRANO</span>
+                                {% else %}
+                                    <span class="badge bg-dark border border-danger text-danger p-2 fs-6 mt-2"><i class="fa-solid fa-stopwatch me-1"></i> <span class="timer-pogona" data-start="{{ n.laser_zapoceto_u }}">0m 0s</span></span>
+                                {% endif %}
                             </div>
                             {% endfor %}
                         {% endif %}
@@ -862,12 +867,16 @@ def index_pogon_hub():
                         {% if not trenutno_u_bravariji %}<p class="text-center my-4 vidljiv-tekst">Trenutno nema aktivnih naloga u bravarskoj obradi.</p>
                         {% else %}
                             {% for n in trenutno_u_bravariji %}
-                            <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col">
+                            <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col border {% if n.status == 'Pauzirano - Bravarija' %}border-warning border-opacity-50{% else %}border-dark{% endif %}">
                                 <div>
                                     <b class="text-white fs-5">{{ n.naziv_naloga }}</b><br>
                                     <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %}[D: {{ n.debljina_ploce }}]{% endif %} | Nalog #{{ n.id }}</small>
                                 </div>
-                                <span class="badge bg-dark border border-warning text-warning p-2 fs-6 mt-2"><i class="fa-solid fa-stopwatch me-1"></i> <span class="timer-pogona" data-start="{{ n.bravarija_zapoceto_u }}">0m 0s</span></span>
+                                {% if n.status == 'Pauzirano - Bravarija' %}
+                                    <span class="badge bg-warning text-dark p-2 fs-6 mt-2 fw-bold"><i class="fa-solid fa-pause me-1"></i> PAUZIRANO</span>
+                                {% else %}
+                                    <span class="badge bg-dark border border-warning text-warning p-2 fs-6 mt-2"><i class="fa-solid fa-stopwatch me-1"></i> <span class="timer-pogona" data-start="{{ n.bravarija_zapoceto_u }}">0m 0s</span></span>
+                                {% endif %}
                             </div>
                             {% endfor %}
                         {% endif %}
@@ -884,6 +893,7 @@ def login():
     poruka = None
     if request.method == 'POST':
         if request.form['username'] == ADMIN_USER and request.form['password'] == ADMIN_PASS:
+            session.permanent = True
             session['role'] = 'Admin'
             return render_template_string("<script>sessionStorage.setItem('admin_prijavljen', 'da'); window.location.href='/sefo_panel';</script>")
         poruka = "Neispravni podaci za administratora!"
@@ -955,7 +965,6 @@ def index_master():
                 conn.execute('INSERT INTO nalog_pozicije (nalog_id, naziv_pozicije, ciljana_kolicina, laser_komada, bravarija_komada) VALUES (?, ?, ?, 0, 0)', 
                              (nalog_id, s['naziv'], komada))
         except Exception as e:
-            print("Greška pri unosu stavki iz košarice:", e)
             pass
             
         conn.commit()
@@ -1132,15 +1141,15 @@ def index_master():
                                     {% endif %}
                                     
                                     {% if n.lxdf_datoteke|length == 1 %}
-                                        <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-code"></i> Otvori {{ n.lxdf_datoteke[0].ext }}</a>
+                                        <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
                                     {% elif n.lxdf_datoteke|length > 1 %}
                                         <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
                                             <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                                                <i class="fa-solid fa-layer-group"></i> Otvori Strojne datoteke ({{ n.lxdf_datoteke|length }})
+                                                <i class="fa-solid fa-layer-group"></i> Strojne datoteke ({{ n.lxdf_datoteke|length }})
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
                                                 {% for lx in n.lxdf_datoteke %}
-                                                    <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
+                                                    <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
                                                 {% endfor %}
                                             </ul>
                                         </div>
@@ -1148,9 +1157,10 @@ def index_master():
                                 </td>
                                 <td>
                                     {% if n.status == 'Na pregledu' %}
-                                        <a href="/arhiviraj/{{ n.id }}" target="_blank" class="btn btn-success btn-sm w-100 mb-1 fw-bold mob-full-btn"><i class="fa-solid fa-folder-open me-1"></i> Spremi i Arhiviraj</a>
+                                        <a href="/preuzmi_izvjestaj/{{ n.id }}" class="btn btn-success btn-sm w-100 mb-1 fw-bold mob-full-btn"><i class="fa-solid fa-download me-1"></i> Spremi (ZIP)</a>
+                                        <a href="/arhiviraj_nalog/{{ n.id }}" class="btn btn-secondary btn-sm w-100 mb-1 fw-bold mob-full-btn text-white"><i class="fa-solid fa-box-archive me-1"></i> Arhiviraj</a>
                                     {% endif %}
-                                    <a href="/obrisi/{{ n.id }}" class="btn btn-outline-danger btn-sm w-100 mob-full-btn" title="Trajno obriši"><i class="fa-solid fa-trash"></i> Obriši</a>
+                                    <a href="/obrisi/{{ n.id }}" class="btn btn-outline-danger btn-sm w-100 mob-full-btn" title="Trajno obriši" onclick="return confirm('Jeste li sigurni da želite trajno obrisati ovaj nalog i sve datoteke?');"><i class="fa-solid fa-trash"></i> Obriši</a>
                                 </td>
                             </tr>
                             
@@ -1174,9 +1184,9 @@ def index_master():
                                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
                                                     <td class="ps-4 py-3 align-middle fw-bold text-light fs-6">{{ p.naziv_pozicije }}</td>
                                                     <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25">
-                                                        <span class="badge bg-info text-white shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
-                                                        <span class="badge bg-success text-white shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada }} kom</span>
-                                                        <span class="badge bg-danger text-white shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.laser_skart }} škart</span><br>
+                                                        <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada }} kom</span>
+                                                        <span class="badge bg-danger text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.laser_skart }} škart</span><br>
                                                         <small class="text-muted d-block mt-2">
                                                             {% if p.laser_priprema_sati or p.laser_priprema_minute or p.laser_rezanje_sati or p.laser_rezanje_minute %}
                                                                 <i class="fa-regular fa-clock text-info me-1"></i> Prip: {{ p.laser_priprema_sati }}h {{ p.laser_priprema_minute }}m &nbsp;|&nbsp; Rez: {{ p.laser_rezanje_sati }}h {{ p.laser_rezanje_minute }}m 
@@ -1187,9 +1197,9 @@ def index_master():
                                                         </small>
                                                     </td>
                                                     <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25">
-                                                        <span class="badge bg-info text-white shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
-                                                        <span class="badge bg-success text-white shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada }} kom</span>
-                                                        <span class="badge bg-danger text-white shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.bravarija_skart }} škart</span><br>
+                                                        <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada }} kom</span>
+                                                        <span class="badge bg-danger text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.bravarija_skart }} škart</span><br>
                                                         <small class="text-muted d-block mt-2">
                                                             {% if p.bravarija_priprema_sati or p.bravarija_priprema_minute or p.bravarija_piganje_sati or p.bravarija_piganje_minute %}
                                                                 <i class="fa-regular fa-clock text-warning me-1"></i> Prip: {{ p.bravarija_priprema_sati }}h {{ p.bravarija_priprema_minute }}m &nbsp;|&nbsp; Pig: {{ p.bravarija_piganje_sati }}h {{ p.bravarija_piganje_minute }}m 
@@ -1218,9 +1228,8 @@ def index_master():
     return render_template_string(f"<!DOCTYPE html><html>{STIL_I_NAVIGACIJA}{BODY_OPEN_TAG}{NAVBAR_TEMPLATE}{glavni_sadrzaj}</body></html>", nalozi=nalozi)
 
 
-@app.route('/arhiviraj/<int:id>')
-def arhiviraj_nalog(id):
-    if 'role' not in session or session['role'] != 'Admin': return redirect(url_for('login'))
+@app.route('/preuzmi_izvjestaj/<int:id>')
+def preuzmi_izvjestaj(id):
     conn = get_db_connection()
     n = conn.execute("SELECT * FROM radni_nalozi WHERE id=?", (id,)).fetchone()
     
@@ -1368,30 +1377,6 @@ def arhiviraj_nalog(id):
 </html>
 """
             zf.writestr(f"Pregled_Naloga_{id}.html", report_html.encode('utf-8'))
-        
-        conn.execute("UPDATE radni_nalozi SET status='Arhivirano' WHERE id=?", (id,))
-        
-        preostalo = conn.execute("SELECT COUNT(*) FROM radni_nalozi WHERE status != 'Arhivirano'").fetchone()[0]
-        if preostalo == 0:
-            ostaci = conn.execute("SELECT pdf_datoteka, lxdf_datoteka FROM radni_nalozi").fetchall()
-            for o in ostaci:
-                pdf_ostaci = parsiraj_listu_datoteka(o['pdf_datoteka'])
-                for pdf in pdf_ostaci:
-                    fpath = os.path.join(app.config['UPLOAD_FOLDER'], pdf['filename'])
-                    if os.path.exists(fpath):
-                        os.remove(fpath)
-                lx_ostaci = parsiraj_listu_datoteka(o['lxdf_datoteka'])
-                for lx in lx_ostaci:
-                    fpath = os.path.join(app.config['UPLOAD_FOLDER'], lx['filename'])
-                    if os.path.exists(fpath):
-                        os.remove(fpath)
-            
-            conn.execute("DELETE FROM radni_nalozi")
-            conn.execute("DELETE FROM nalog_pozicije")
-            conn.execute("DELETE FROM sqlite_sequence WHERE name='radni_nalozi'")
-            conn.execute("DELETE FROM sqlite_sequence WHERE name='nalog_pozicije'")
-        
-        conn.commit()
     except Exception as e:
         print("Greška pri kreiranju ZIP-a:", e)
     
@@ -1399,6 +1384,15 @@ def arhiviraj_nalog(id):
     
     memory_file.seek(0)
     return send_file(memory_file, download_name=predlozeno_ime_zipa, as_attachment=True)
+
+@app.route('/arhiviraj_nalog/<int:id>')
+def arhiviraj_nalog(id):
+    if 'role' not in session or session['role'] != 'Admin': return redirect(url_for('login'))
+    conn = get_db_connection()
+    conn.execute("UPDATE radni_nalozi SET status='Arhivirano' WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('index_master'))
 
 
 @app.route('/postavke', methods=['GET', 'POST'])
@@ -1446,27 +1440,6 @@ def obrisi_nalog(id):
     
     conn.execute('DELETE FROM radni_nalozi WHERE id=?', (id,))
     conn.execute('DELETE FROM nalog_pozicije WHERE nalog_id=?', (id,))
-    
-    preostalo = conn.execute("SELECT COUNT(*) FROM radni_nalozi WHERE status != 'Arhivirano'").fetchone()[0]
-    if preostalo == 0:
-        ostaci = conn.execute("SELECT pdf_datoteka, lxdf_datoteka FROM radni_nalozi").fetchall()
-        for o in ostaci:
-            pdf_ostaci = parsiraj_listu_datoteka(o['pdf_datoteka'])
-            for pdf in pdf_ostaci:
-                fpath = os.path.join(UPLOAD_FOLDER, pdf['filename'])
-                if os.path.exists(fpath):
-                    os.remove(fpath)
-            lx_ostaci = parsiraj_listu_datoteka(o['lxdf_datoteka'])
-            for lx in lx_ostaci:
-                fpath = os.path.join(UPLOAD_FOLDER, lx['filename'])
-                if os.path.exists(fpath):
-                    os.remove(fpath)
-        
-        conn.execute("DELETE FROM radni_nalozi")
-        conn.execute("DELETE FROM nalog_pozicije")
-        conn.execute("DELETE FROM sqlite_sequence WHERE name='radni_nalozi'")
-        conn.execute("DELETE FROM sqlite_sequence WHERE name='nalog_pozicije'")
-        
     conn.commit()
     conn.close()
     return redirect(url_for('index_master'))
@@ -1480,14 +1453,14 @@ def zapocni_fazu(id, faza):
         ime_lasera = 'Laser 1' if stanica == 'laser1' else 'Laser 2' if stanica == 'laser2' else 'Nepoznat Laser'
         conn.execute('''
             UPDATE radni_nalozi 
-            SET laser_zapoceto_u=?, odabrani_laser=? 
-            WHERE id=? AND (laser_zapoceto_u IS NULL OR laser_zapoceto_u = '')
+            SET status='Laser', laser_zapoceto_u=?, odabrani_laser=? 
+            WHERE id=?
         ''', (trenutni_iso, ime_lasera, id))
     elif faza == 'bravarija': 
         conn.execute('''
             UPDATE radni_nalozi 
-            SET bravarija_zapoceto_u=? 
-            WHERE id=? AND (bravarija_zapoceto_u IS NULL OR bravarija_zapoceto_u = '')
+            SET status='Piganje', bravarija_zapoceto_u=? 
+            WHERE id=?
         ''', (trenutni_iso, id))
     conn.commit()
     conn.close()
@@ -1516,12 +1489,18 @@ def sekcija_laser():
             conn.execute('UPDATE nalog_pozicije SET naziv_pozicije=?, laser_komada=?, laser_skart=?, laser_priprema_sati=?, laser_priprema_minute=?, laser_rezanje_sati=?, laser_rezanje_minute=?, laser_radnik=? WHERE id=?', 
                          (naziv_poz, komada, skart, p_sati, p_min, r_sati, r_min, radnik, pid))
         
-        novi_status = 'Piganje' if akcija == 'bravarija' else 'Na pregledu'
-        conn.execute("UPDATE radni_nalozi SET status=?, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=? WHERE id=?", (novi_status, radnik_napomena, dimenzije_ploce, materijal_ploce, id_naloga))
+        if akcija == 'pauziraj':
+            conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Laser', laser_zapoceto_u=NULL, odabrani_laser='', laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=? WHERE id=?", 
+                         (radnik_napomena, dimenzije_ploce, materijal_ploce, id_naloga))
+        else:
+            novi_status = 'Piganje' if akcija == 'bravarija' else 'Na pregledu'
+            conn.execute("UPDATE radni_nalozi SET status=?, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=? WHERE id=?", 
+                         (novi_status, radnik_napomena, dimenzije_ploce, materijal_ploce, id_naloga))
+            
         conn.commit()
         return redirect(url_for('sekcija_laser'))
         
-    nalozi_rows = conn.execute("SELECT * FROM radni_nalozi WHERE status='Laser'").fetchall()
+    nalozi_rows = conn.execute("SELECT * FROM radni_nalozi WHERE status IN ('Laser', 'Pauzirano - Laser')").fetchall()
     nalozi = []
     z_stanica = request.cookies.get('zakljucana_stanica', 'uprava')
     
@@ -1549,7 +1528,7 @@ def sekcija_laser():
         {% if not nalozi %}<div class="alert alert-dark text-center my-5 py-5 border-0" style="background: #12141c; color: #94a3b8;">Nema otvorenih naloga na čekanju za rezanje.</div>{% endif %}
         
         {% for n in nalozi %}
-        <div class="card p-4" style="border-top: 4px solid #ff0000 !important;">
+        <div class="card p-4" style="border-top: 4px solid {% if n.status == 'Pauzirano - Laser' %}#ffc107{% else %}#ff0000{% endif %} !important;">
             <div class="d-flex justify-content-between align-items-center mb-2 flex-mob-col">
                 <div>
                     <h4 class="fw-bold text-white mb-0">{{ n.naziv_naloga }}</h4>
@@ -1561,7 +1540,9 @@ def sekcija_laser():
                 </div>
                 <div class="text-end">
                     {% if not n.laser_zapoceto_u %}
-                        <a href="/zapocni_fazu/{{ n.id }}/laser" class="btn btn-success fw-bold px-4">ZAPOČNI REZANJE</a>
+                        <a href="/zapocni_fazu/{{ n.id }}/laser" class="btn {% if n.status == 'Pauzirano - Laser' %}btn-primary{% else %}btn-success{% endif %} fw-bold px-4">
+                            {% if n.status == 'Pauzirano - Laser' %}<i class="fa-solid fa-play me-1"></i> NASTAVI REZANJE{% else %}ZAPOČNI REZANJE{% endif %}
+                        </a>
                     {% else %}
                         {% if n.odabrani_laser %}
                             <span class="badge bg-danger text-white border border-danger mb-1"><i class="fa-solid fa-crosshairs me-1"></i>{{ n.odabrani_laser|upper }}</span><br>
@@ -1602,15 +1583,15 @@ def sekcija_laser():
                 {% endif %}
                 
                 {% if n.lxdf_datoteke|length == 1 %}
-                    <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-code"></i> Otvori {{ n.lxdf_datoteke[0].ext }}</a>
+                    <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
                 {% elif n.lxdf_datoteke|length > 1 %}
                     <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
                         <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                            <i class="fa-solid fa-layer-group"></i> Otvori Strojne datoteke ({{ n.lxdf_datoteke|length }})
+                            <i class="fa-solid fa-layer-group"></i> Strojne datoteke ({{ n.lxdf_datoteke|length }})
                         </button>
                         <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
                             {% for lx in n.lxdf_datoteke %}
-                                <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
+                                <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -1674,16 +1655,17 @@ def sekcija_laser():
                 </div>
                 
                 <div class="row align-items-start g-2 mt-4 pt-3 border-top border-secondary border-opacity-25">
-                    <div class="col-md-5">
+                    <div class="col-md-4">
                         <label class="form-label text-white">Ime Operatera Lasera</label>
                         <input type="text" class="form-control text-white navigabilno" name="radnik" placeholder="Unesite ime..." required oninput="this.value=this.value.replace(/[0-9]/g,'');">
                         <label class="form-label mt-3 text-white">Napomena Radnika (Opcionalno)</label>
                         <textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Ostavio sam u kutu kod vrata..." oninput="autoProsiri(this)"></textarea>
                     </div>
-                    <div class="col-md-7 ms-auto text-end d-flex gap-2 justify-content-end align-items-end h-100 mob-col-btn" style="padding-top: 30px;">
-                        <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-4">&check; Završi i pošalji na Pregled</button>
+                    <div class="col-md-8 ms-auto text-end d-flex gap-2 justify-content-end align-items-end h-100 mob-col-btn" style="padding-top: 30px;">
+                        <button type="submit" name="akcija" value="pauziraj" class="btn btn-warning text-dark fw-bold px-3"><i class="fa-solid fa-pause me-1"></i> Pauziraj Nalog</button>
+                        <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-3">&check; Završi (Na Pregled)</button>
                         {% if n.rutiranje != 'Samo Laser' and n.rutiranje != 'Samo Rezanje' %}
-                            <button type="submit" name="akcija" value="bravarija" class="btn btn-danger fw-bold px-4">Pošalji u Bravariju &rarr;</button>
+                            <button type="submit" name="akcija" value="bravarija" class="btn btn-danger fw-bold px-3">Šalji u Bravariju &rarr;</button>
                         {% endif %}
                     </div>
                 </div>
@@ -1702,6 +1684,8 @@ def sekcija_bravarija():
         id_naloga = request.form['id_naloga']
         radnik = request.form.get('radnik', '')
         radnik_napomena = request.form.get('radnik_napomena', '')
+        akcija = request.form.get('akcija', 'zavrsi_odmah')
+        
         pozicije_ids = request.form.getlist('pozicija_id')
         for pid in pozicije_ids:
             naziv_poz = request.form.get(f'naziv_{pid}')
@@ -1714,11 +1698,17 @@ def sekcija_bravarija():
             conn.execute('UPDATE nalog_pozicije SET naziv_pozicije=?, bravarija_komada=?, bravarija_skart=?, bravarija_priprema_sati=?, bravarija_priprema_minute=?, bravarija_piganje_sati=?, bravarija_piganje_minute=?, bravarija_radnik=? WHERE id=?', 
                          (naziv_poz, komada, skart, p_sati, p_min, pig_sati, pig_min, radnik, pid))
         
-        conn.execute("UPDATE radni_nalozi SET status='Na pregledu', bravarija_napomena=? WHERE id=?", (radnik_napomena, id_naloga))
+        if akcija == 'pauziraj':
+            conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Bravarija', bravarija_zapoceto_u=NULL, bravarija_napomena=? WHERE id=?", 
+                         (radnik_napomena, id_naloga))
+        else:
+            conn.execute("UPDATE radni_nalozi SET status='Na pregledu', bravarija_napomena=? WHERE id=?", 
+                         (radnik_napomena, id_naloga))
+                         
         conn.commit()
         return redirect(url_for('sekcija_bravarija'))
         
-    nalozi_rows = conn.execute("SELECT * FROM radni_nalozi WHERE status='Piganje'").fetchall()
+    nalozi_rows = conn.execute("SELECT * FROM radni_nalozi WHERE status IN ('Piganje', 'Pauzirano - Bravarija')").fetchall()
     nalozi = []
     for r in nalozi_rows:
         n = dict(r)
@@ -1734,7 +1724,7 @@ def sekcija_bravarija():
         {% if not nalozi %}<div class="alert alert-dark text-center my-5 py-5 border-0" style="background: #12141c; color: #94a3b8;">Nema naloga na čekanju za bravariju.</div>{% endif %}
         
         {% for n in nalozi %}
-        <div class="card p-4" style="border-top: 4px solid #facc15 !important;">
+        <div class="card p-4" style="border-top: 4px solid {% if n.status == 'Pauzirano - Bravarija' %}#ffc107{% else %}#facc15{% endif %} !important;">
             <div class="d-flex justify-content-between align-items-center mb-2 flex-mob-col">
                 <div>
                     <h4 class="fw-bold text-white mb-0">{{ n.naziv_naloga }}</h4>
@@ -1746,7 +1736,9 @@ def sekcija_bravarija():
                 </div>
                 <div>
                     {% if not n.bravarija_zapoceto_u %}
-                        <a href="/zapocni_fazu/{{ n.id }}/bravarija" class="btn btn-warning fw-bold px-4">ZAPOČNI BRAVARIJU</a>
+                        <a href="/zapocni_fazu/{{ n.id }}/bravarija" class="btn {% if n.status == 'Pauzirano - Bravarija' %}btn-primary{% else %}btn-warning{% endif %} fw-bold px-4">
+                            {% if n.status == 'Pauzirano - Bravarija' %}<i class="fa-solid fa-play me-1"></i> NASTAVI OBRADU{% else %}ZAPOČNI BRAVARIJU{% endif %}
+                        </a>
                     {% else %}
                         <span class="badge bg-dark border border-warning text-warning p-2 fs-6"><i class="fa-solid fa-stopwatch pulse-live me-2"></i><span class="timer-pogona" data-start="{{ n.bravarija_zapoceto_u }}">0m 0s</span></span>
                     {% endif %}
@@ -1788,15 +1780,15 @@ def sekcija_bravarija():
                 {% endif %}
                 
                 {% if n.lxdf_datoteke|length == 1 %}
-                    <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-code"></i> Otvori {{ n.lxdf_datoteke[0].ext }}</a>
+                    <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
                 {% elif n.lxdf_datoteke|length > 1 %}
                     <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
                         <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                            <i class="fa-solid fa-layer-group"></i> Otvori Strojne datoteke ({{ n.lxdf_datoteke|length }})
+                            <i class="fa-solid fa-layer-group"></i> Strojne datoteke ({{ n.lxdf_datoteke|length }})
                         </button>
                         <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
                             {% for lx in n.lxdf_datoteke %}
-                                <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
+                                <li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>
                             {% endfor %}
                         </ul>
                     </div>
@@ -1853,8 +1845,9 @@ def sekcija_bravarija():
                         <label class="form-label mt-3 text-white">Napomena Bravara (Opcionalno)</label>
                         <textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Obrađeno i stavljeno na paletu..." oninput="autoProsiri(this)"></textarea>
                     </div>
-                    <div class="col-md-7 ms-auto text-end align-items-end d-flex justify-content-end h-100 mob-col-btn" style="padding-top: 30px;">
-                        <button type="submit" class="btn btn-success fw-bold px-4">&check; Završi i pošalji na Pregled</button>
+                    <div class="col-md-7 ms-auto text-end align-items-end d-flex gap-2 justify-content-end h-100 mob-col-btn" style="padding-top: 30px;">
+                        <button type="submit" name="akcija" value="pauziraj" class="btn btn-outline-warning fw-bold px-3"><i class="fa-solid fa-pause me-1"></i> Pauziraj Nalog</button>
+                        <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-3">&check; Završi (Na Pregled)</button>
                     </div>
                 </div>
             </form>
