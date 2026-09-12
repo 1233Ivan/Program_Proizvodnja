@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="p-4 rounded-3 mb-4 text-center" style="background: linear-gradient(135deg, #12141c 0%, #171c28 100%); border: 1px solid #222736;">
+    <img src="/logo.png" style="max-height: 55px;" class="mb-2"><br>
+    <h2 class="fw-bold text-white mb-1">CENTRALNI MONITOR POGONA</h2>
+</div>
+<div class="row mb-4 align-items-stretch">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 mb-0" style="border-left: 4px solid #ff0000;">
+            <div class="card-header-custom d-flex justify-content-between align-items-center flex-mob-col">
+                <h6 class="mb-0 fw-bold text-danger text-uppercase"><i class="fa-solid fa-fire pulse-live me-2"></i>Laser &bull; Trenutno u obradi</h6>
+            </div>
+            <div class="card-body p-4">
+                {% if not trenutno_na_laseru %}<p class="text-center my-4 vidljiv-tekst">Trenutno nema aktivnih naloga u procesu rezanja.</p>
+                {% else %}
+                    {% for n in trenutno_na_laseru %}
+                    <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col border {% if n.status == 'Pauzirano - Laser' %}border-warning border-opacity-50{% else %}border-info border-opacity-25{% endif %}">
+                        <div>
+                            <b class="text-white fs-5">{{ n.naziv_naloga }}</b>
+                            {% if n.odabrani_laser %} <span class="badge bg-dark border border-danger text-danger ms-2 shadow-sm" style="border-radius: 6px; font-size: 0.7rem;"><i class="fa-solid fa-crosshairs me-1"></i>{{ n.odabrani_laser|upper }}</span>{% endif %}<br>
+                            <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %}[D: {{ n.debljina_ploce }}]{% endif %} | Nalog #{{ n.id }}</small>
+                        </div>
+                        {% if n.status == 'Pauzirano - Laser' %}<span class="badge bg-warning text-dark p-2 fs-6 mt-2 fw-bold"><i class="fa-solid fa-pause me-1"></i> PAUZIRANO</span>
+                        {% else %}<span class="badge bg-dark border border-info text-info p-2 fs-6 mt-2"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>{% endif %}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 mb-0" style="border-left: 4px solid #facc15;">
+            <div class="card-header-custom d-flex justify-content-between align-items-center flex-mob-col">
+                <h6 class="mb-0 fw-bold text-warning text-uppercase"><i class="fa-solid fa-hammer pulse-live me-2"></i>Bravarija &bull; Trenutno u obradi</h6>
+            </div>
+            <div class="card-body p-4">
+                {% if not trenutno_u_bravariji %}<p class="text-center my-4 vidljiv-tekst">Trenutno nema aktivnih naloga u bravarskoj obradi.</p>
+                {% else %}
+                    {% for n in trenutno_u_bravariji %}
+                    <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col border {% if n.status == 'Pauzirano - Bravarija' %}border-warning border-opacity-50{% else %}border-info border-opacity-25{% endif %}">
+                        <div>
+                            <b class="text-white fs-5">{{ n.naziv_naloga }}</b><br>
+                            <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %}[D: {{ n.debljina_ploce }}]{% endif %} | Nalog #{{ n.id }}</small>
+                        </div>
+                        {% if n.status == 'Pauzirano - Bravarija' %}<span class="badge bg-warning text-dark p-2 fs-6 mt-2 fw-bold"><i class="fa-solid fa-pause me-1"></i> PAUZIRANO</span>
+                        {% else %}<span class="badge bg-dark border border-warning text-warning p-2 fs-6 mt-2"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>{% endif %}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

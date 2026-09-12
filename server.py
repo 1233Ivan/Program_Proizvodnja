@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import sqlite3
@@ -8,7 +9,7 @@ import io
 import hashlib
 import json
 from datetime import datetime, timedelta
-from flask import Flask, request, redirect, url_for, render_template_string, send_from_directory, session, make_response, send_file
+from flask import Flask, request, redirect, url_for, render_template, send_from_directory, session, make_response, send_file
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -18,6 +19,9 @@ app.permanent_session_lifetime = timedelta(days=365)
 _B = base64.b64decode(b'MjMxMg==').decode('utf-8')
 PIN_HASH = hashlib.sha256(_B.encode()).hexdigest()
 del _B
+
+ADMIN_HASH = hashlib.sha256("firstcutlaser1".encode('utf-8')).hexdigest()
+DEV_HASH = hashlib.sha256("87388738".encode('utf-8')).hexdigest()
 
 def get_base_path():
     if getattr(sys, 'frozen', False): return os.path.dirname(sys.executable)
@@ -34,43 +38,34 @@ ALLOWED_EXTENSIONS = {'pdf', 'lxds', 'dxf'}
 if not os.path.exists(UPLOAD_FOLDER): os.makedirs(UPLOAD_FOLDER)
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(DB_FILE, timeout=20.0)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
     conn = get_db_connection()
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS radni_nalozi (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, naziv_naloga TEXT NOT NULL, naziv_projekta TEXT DEFAULT '',
-            debljina_ploce TEXT DEFAULT '', pdf_datoteka TEXT, lxdf_datoteka TEXT, status TEXT DEFAULT 'Laser',
-            laser_zapoceto_u TEXT, bravarija_zapoceto_u TEXT, kreirano_u TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            opis TEXT DEFAULT '', laser_napomena TEXT DEFAULT '', bravarija_napomena TEXT DEFAULT '',
-            rutiranje TEXT DEFAULT 'Pogon', odabrani_laser TEXT DEFAULT '', kreirao TEXT DEFAULT '',
-            dimenzije_ploce_laser TEXT DEFAULT '', materijal_ploce_laser TEXT DEFAULT ''
-        )
-    ''')
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS nalog_pozicije (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, nalog_id INTEGER, naziv_pozicije TEXT NOT NULL,
-            laser_komada INTEGER DEFAULT 0, laser_skart INTEGER DEFAULT 0, laser_sati INTEGER DEFAULT 0, laser_minute INTEGER DEFAULT 0, laser_radnik TEXT DEFAULT '',
-            bravarija_komada INTEGER DEFAULT 0, bravarija_skart INTEGER DEFAULT 0, bravarija_sati INTEGER DEFAULT 0, bravarija_minute INTEGER DEFAULT 0, bravarija_radnik TEXT DEFAULT '',
-            ciljana_kolicina INTEGER DEFAULT 0, laser_priprema_sati INTEGER DEFAULT 0, laser_priprema_minute INTEGER DEFAULT 0,
-            laser_rezanje_sati INTEGER DEFAULT 0, laser_rezanje_minute INTEGER DEFAULT 0, bravarija_priprema_sati INTEGER DEFAULT 0,
-            bravarija_priprema_minute INTEGER DEFAULT 0, bravarija_piganje_sati INTEGER DEFAULT 0, bravarija_piganje_minute INTEGER DEFAULT 0,
-            FOREIGN KEY(nalog_id) REFERENCES radni_nalozi(id) ON DELETE CASCADE
-        )
-    ''')
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS blokade (
-            ip_adresa TEXT PRIMARY KEY, pokusaji INTEGER DEFAULT 0, blokiran_do TIMESTAMP
-        )
-    ''')
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS obavijesti (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, tekst TEXT NOT NULL, vrijedi_do TIMESTAMP NOT NULL
-        )
-    ''')
+    conn.execute('''CREATE TABLE IF NOT EXISTS radni_nalozi (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, naziv_naloga TEXT NOT NULL, naziv_projekta TEXT DEFAULT '',
+        debljina_ploce TEXT DEFAULT '', pdf_datoteka TEXT, lxdf_datoteka TEXT, status TEXT DEFAULT 'Laser',
+        laser_zapoceto_u TEXT, bravarija_zapoceto_u TEXT, kreirano_u TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        opis TEXT DEFAULT '', laser_napomena TEXT DEFAULT '', bravarija_napomena TEXT DEFAULT '',
+        rutiranje TEXT DEFAULT 'Pogon', odabrani_laser TEXT DEFAULT '', kreirao TEXT DEFAULT '',
+        dimenzije_ploce_laser TEXT DEFAULT '', materijal_ploce_laser TEXT DEFAULT ''
+    )''')
+    conn.execute('''CREATE TABLE IF NOT EXISTS nalog_pozicije (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, nalog_id INTEGER, naziv_pozicije TEXT NOT NULL,
+        laser_komada INTEGER DEFAULT 0, laser_skart INTEGER DEFAULT 0, laser_sati INTEGER DEFAULT 0, laser_minute INTEGER DEFAULT 0, laser_radnik TEXT DEFAULT '',
+        bravarija_komada INTEGER DEFAULT 0, bravarija_skart INTEGER DEFAULT 0, bravarija_sati INTEGER DEFAULT 0, bravarija_minute INTEGER DEFAULT 0, bravarija_radnik TEXT DEFAULT '',
+        ciljana_kolicina INTEGER DEFAULT 0, laser_priprema_sati INTEGER DEFAULT 0, laser_priprema_minute INTEGER DEFAULT 0,
+        laser_rezanje_sati INTEGER DEFAULT 0, laser_rezanje_minute INTEGER DEFAULT 0, bravarija_priprema_sati INTEGER DEFAULT 0,
+        bravarija_priprema_minute INTEGER DEFAULT 0, bravarija_piganje_sati INTEGER DEFAULT 0, bravarija_piganje_minute INTEGER DEFAULT 0,
+        FOREIGN KEY(nalog_id) REFERENCES radni_nalozi(id) ON DELETE CASCADE
+    )''')
+    conn.execute('CREATE TABLE IF NOT EXISTS blokade (ip_adresa TEXT PRIMARY KEY, pokusaji INTEGER DEFAULT 0, blokiran_do TIMESTAMP)')
+    conn.execute('CREATE TABLE IF NOT EXISTS obavijesti (id INTEGER PRIMARY KEY AUTOINCREMENT, tekst TEXT NOT NULL, vrijedi_do TIMESTAMP NOT NULL)')
+    
+    conn.execute('CREATE TABLE IF NOT EXISTS postavke (kljuc TEXT PRIMARY KEY, vrijednost TEXT)')
+    conn.execute('INSERT OR IGNORE INTO postavke (kljuc, vrijednost) VALUES ("maintenance", "0")')
     
     kolone_radni = [
         ("laser_zapoceto_u", "TEXT"), ("bravarija_zapoceto_u", "TEXT"), 
@@ -87,15 +82,20 @@ def init_db():
     kolone_poz = [
         ("laser_sati", "INTEGER DEFAULT 0"), ("laser_minute", "INTEGER DEFAULT 0"), 
         ("bravarija_sati", "INTEGER DEFAULT 0"), ("bravarija_minute", "INTEGER DEFAULT 0"),
-        ("ciljana_kolicina", "INTEGER DEFAULT 0"),
-        ("laser_priprema_sati", "INTEGER DEFAULT 0"), ("laser_priprema_minute", "INTEGER DEFAULT 0"),
-        ("laser_rezanje_sati", "INTEGER DEFAULT 0"), ("laser_rezanje_minute", "INTEGER DEFAULT 0"),
-        ("bravarija_priprema_sati", "INTEGER DEFAULT 0"), ("bravarija_priprema_minute", "INTEGER DEFAULT 0"),
-        ("bravarija_piganje_sati", "INTEGER DEFAULT 0"), ("bravarija_piganje_minute", "INTEGER DEFAULT 0")
+        ("ciljana_kolicina", "INTEGER DEFAULT 0"), ("laser_priprema_sati", "INTEGER DEFAULT 0"), 
+        ("laser_priprema_minute", "INTEGER DEFAULT 0"), ("laser_rezanje_sati", "INTEGER DEFAULT 0"), 
+        ("laser_rezanje_minute", "INTEGER DEFAULT 0"), ("bravarija_priprema_sati", "INTEGER DEFAULT 0"), 
+        ("bravarija_priprema_minute", "INTEGER DEFAULT 0"), ("bravarija_piganje_sati", "INTEGER DEFAULT 0"), 
+        ("bravarija_piganje_minute", "INTEGER DEFAULT 0")
     ]
     for kol, tip in kolone_poz:
         try: conn.execute(f"ALTER TABLE nalog_pozicije ADD COLUMN {kol} {tip}")
         except: pass
+        
+    try:
+        kolone_za_null = ["laser_komada", "laser_skart", "laser_priprema_sati", "laser_priprema_minute", "laser_rezanje_sati", "laser_rezanje_minute", "bravarija_komada", "bravarija_skart", "bravarija_priprema_sati", "bravarija_priprema_minute", "bravarija_piganje_sati", "bravarija_piganje_minute"]
+        for kol in kolone_za_null: conn.execute(f"UPDATE nalog_pozicije SET {kol} = NULL WHERE {kol} = 0")
+    except: pass
     
     conn.commit()
     conn.close()
@@ -103,9 +103,11 @@ def init_db():
 init_db()
 
 def allowed_file(filename): return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 def to_int(val):
-    try: return int(val) if val else 0
-    except: return 0
+    if val is None or str(val).strip() == '': return None
+    try: return int(val)
+    except: return None
 
 def parsiraj_listu_datoteka(raw_data):
     if not raw_data: return []
@@ -115,27 +117,25 @@ def parsiraj_listu_datoteka(raw_data):
     except: pass
     return [{"filename": raw_data, "ext": raw_data.split('.')[-1].upper()}]
 
-ADMIN_USER = "admin"
-ADMIN_PASS = "firstcutlaser1"
-DEV_USER = "developer"
-DEV_PASS = "87388738"
-
 @app.before_request
 def provjera_pristupa():
-    dozvoljeno_svima = ['/prijava_stanice', '/logo.png', '/favicon.png', '/favicon.ico', '/postavi_stanicu', '/odjava_stanice']
+    dozvoljeno_svima = ['/prijava_stanice', '/logo.png', '/favicon.png', '/favicon.ico', '/postavi_stanicu', '/odjava_stanice', '/login', '/logout', '/maintenance', '/skriveni_dev_login']
     if any(request.path.startswith(d) for d in dozvoljeno_svima): return
+    
+    conn = get_db_connection()
+    maint = conn.execute("SELECT vrijednost FROM postavke WHERE kljuc='maintenance'").fetchone()
+    conn.close()
+    
+    if maint and maint['vrijednost'] == '1':
+        if request.cookies.get('pogon_role') != 'Developer':
+            return redirect(url_for('maintenance'))
+
     z_stanica = request.cookies.get('zakljucana_stanica')
     if not z_stanica: return redirect(url_for('prijava_stanice'))
     if request.path == '/': return
-        
-    if z_stanica in ['laser1', 'laser2']:
-        dozvoljene_rute = ['/laser', '/zapocni_fazu', '/dodaj_poziciju', '/obrisi_poziciju', '/preuzmi']
-        if not any(request.path.startswith(r) for r in dozvoljene_rute): return redirect('/laser')
-    elif z_stanica == 'bravarija':
-        dozvoljene_rute = ['/bravarija', '/zapocni_fazu', '/dodaj_poziciju', '/obrisi_poziciju', '/preuzmi']
-        if not any(request.path.startswith(r) for r in dozvoljene_rute): return redirect('/bravarija')
-    elif z_stanica == 'monitor':
-        if not request.path.startswith('/preuzmi'): return redirect('/')
+    if z_stanica in ['laser1', 'laser2'] and not any(request.path.startswith(r) for r in ['/laser', '/zapocni_fazu', '/dodaj_poziciju', '/obrisi_poziciju', '/preuzmi']): return redirect('/laser')
+    elif z_stanica == 'bravarija' and not any(request.path.startswith(r) for r in ['/bravarija', '/zapocni_fazu', '/dodaj_poziciju', '/obrisi_poziciju', '/preuzmi']): return redirect('/bravarija')
+    elif z_stanica == 'monitor' and not request.path.startswith('/preuzmi'): return redirect('/')
 
 @app.context_processor
 def inject_globalne_varijable():
@@ -145,552 +145,41 @@ def inject_globalne_varijable():
     ua = request.headers.get('User-Agent', '').lower()
     is_mobile = any(w in ua for w in ['mobi', 'android', 'iphone', 'ipad', 'ipod', 'windows phone'])
     
-    aktivna_obavijest = None
-    aktivna_obavijest_do = None
+    aktivna_obavijest, aktivna_obavijest_do = None, None
     try:
         conn = get_db_connection()
         ob = conn.execute("SELECT tekst, vrijedi_do FROM obavijesti WHERE vrijedi_do > ? ORDER BY id DESC LIMIT 1", (datetime.now().isoformat(),)).fetchone()
-        if ob: 
-            aktivna_obavijest = ob['tekst']
-            aktivna_obavijest_do = ob['vrijedi_do']
+        if ob: aktivna_obavijest, aktivna_obavijest_do = ob['tekst'], ob['vrijedi_do']
         conn.close()
     except: pass
     
-    return dict(stanica=lokalna_stanica, prikazi_klijent_gumbe=je_klijent, is_server_window=False, z_stanica=z_stanica, is_mobile=is_mobile, aktivna_obavijest=aktivna_obavijest, aktivna_obavijest_do=aktivna_obavijest_do)
-
-BODY_OPEN_TAG = """<body class="{% if prikazi_klijent_gumbe %}is-client{% else %}is-browser{% endif %} {% if is_mobile %}is-mobile-device{% else %}is-desktop-device{% endif %}">"""
-
-STIL_I_NAVIGACIJA = """
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FirstCutLaser Pogon</title>
-    <link rel="icon" type="image/png" href="/favicon.png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-        :root {
-            --fcl-paused: #fbbf24; --fcl-paused-bg: rgba(251, 191, 36, 0.04);
-            --fcl-active: #38bdf8; --fcl-active-bg: rgba(56, 189, 248, 0.04);
-            --fcl-completed: #10b981; --fcl-completed-bg: rgba(16, 185, 129, 0.04);
-            --fcl-pending: #94a3b8; --fcl-pending-bg: rgba(255, 255, 255, 0.02);
-        }
-    
-        body { background-color: #0b0c10; font-family: 'Plus Jakarta Sans', sans-serif; color: #e2e8f0; overflow-y: scroll; overflow-x: hidden; }
-        .glavni-prostor { padding: 24px 30px; }
-        .navbar { background-color: #12141c; border-bottom: 3px solid #ff0000; box-shadow: 0 4px 25px rgba(0,0,0,0.5); padding: 14px 24px; border-radius: 8px; margin-bottom: 15px; }
-        .navbar-brand img { height: 42px; width: auto; object-fit: contain; }
-        .card { background: #12141c; border-radius: 14px; border: 1px solid #222736; box-shadow: 0 6px 20px rgba(0,0,0,0.4); margin-bottom: 24px; transition: all 0.3s ease; }
-        .card-header-custom { padding: 18px 24px; border-bottom: 1px solid #222736; background: #171b26; color: #ffffff; border-top-left-radius: 14px; border-top-right-radius: 14px; }
-        
-        .table { color: #ffffff; border-color: #222736; margin-bottom: 0; }
-        .table th { background-color: #171b26; color: #f1f5f9 !important; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; padding: 14px; border-bottom: 2px solid #222736; letter-spacing: 0.03em; }
-        .table td { padding: 14px; vertical-align: middle; background-color: transparent; border-bottom: 1px solid #222736; }
-        
-        .table-modern { border-collapse: separate; border-spacing: 0 10px; margin-top: -10px; }
-        .table-modern > thead > tr > th { border: none !important; background: transparent !important; color: #64748b !important; font-weight: 700; padding-bottom: 8px; font-size: 0.75rem; letter-spacing: 0.05em; }
-        .table-modern > tbody > tr { box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .table-modern > tbody > tr:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
-        .table-modern > tbody > tr > td { border-top: 1px solid transparent; border-bottom: 1px solid transparent; background-color: #151822; padding: 18px 16px; }
-        .table-modern > tbody > tr > td:first-child { border-left: 3px solid transparent; border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-        .table-modern > tbody > tr > td:last-child { border-right: 1px solid transparent; border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-
-        .row-state-paused > td { background-color: var(--fcl-paused-bg); border-top-color: rgba(251, 191, 36, 0.08); border-bottom-color: rgba(251, 191, 36, 0.08); }
-        .row-state-paused > td:first-child { border-left-color: var(--fcl-paused); }
-        .row-state-paused > td:last-child { border-right-color: rgba(251, 191, 36, 0.08); }
-        
-        .row-state-active > td { background-color: var(--fcl-active-bg); border-top-color: rgba(56, 189, 248, 0.08); border-bottom-color: rgba(56, 189, 248, 0.08); }
-        .row-state-active > td:first-child { border-left-color: var(--fcl-active); }
-        .row-state-active > td:last-child { border-right-color: rgba(56, 189, 248, 0.08); }
-
-        .row-state-completed > td { background-color: var(--fcl-completed-bg); border-top-color: rgba(16, 185, 129, 0.08); border-bottom-color: rgba(16, 185, 129, 0.08); }
-        .row-state-completed > td:first-child { border-left-color: var(--fcl-completed); }
-        .row-state-completed > td:last-child { border-right-color: rgba(16, 185, 129, 0.08); }
-
-        .row-state-pending > td { background-color: var(--fcl-pending-bg); border-top-color: rgba(100, 116, 139, 0.1); border-bottom-color: rgba(100, 116, 139, 0.1); }
-        .row-state-pending > td:first-child { border-left-color: var(--fcl-pending); }
-        .row-state-pending > td:last-child { border-right-color: rgba(100, 116, 139, 0.1); }
-        
-        .txt-paused { color: var(--fcl-paused) !important; }
-        .txt-active { color: var(--fcl-active) !important; }
-        .txt-completed { color: var(--fcl-completed) !important; }
-        
-        .badge-modern { border-radius: 8px; font-weight: 700; letter-spacing: 0.3px; }
-        .badge-paused { background-color: rgba(251, 191, 36, 0.15) !important; color: var(--fcl-paused) !important; border: 1px solid rgba(251, 191, 36, 0.4) !important; }
-        .badge-active { background-color: rgba(56, 189, 248, 0.15) !important; color: var(--fcl-active) !important; border: 1px solid rgba(56, 189, 248, 0.4) !important; }
-        .badge-completed { background-color: rgba(16, 185, 129, 0.15) !important; color: var(--fcl-completed) !important; border: 1px solid rgba(16, 185, 129, 0.4) !important; }
-        .badge-pending { background-color: rgba(100, 116, 139, 0.15) !important; color: #cbd5e1 !important; border: 1px solid rgba(100, 116, 139, 0.4) !important; }
-
-        .text-muted { color: #cbd5e1 !important; }
-        .text-info { color: #0dcaf0 !important; } 
-        .text-white { color: #ffffff !important; }
-        
-        .form-label { color: #f1f5f9 !important; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.02em; }
-        .form-control::placeholder { color: #94a3b8 !important; opacity: 1; }
-        .form-control { background-color: #1a1e2b; border: 1px solid #2d3446; color: #ffffff; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; transition: all 0.2s; }
-        .form-control:focus { background-color: #23293b; border-color: #0dcaf0; color: #fff; box-shadow: 0 0 0 3px rgba(13,202,240,0.15); outline: none; }
-        
-        textarea.auto-expand { resize: none; overflow-y: hidden; min-height: 45px; max-height: 150px; }
-        textarea.auto-expand:focus { overflow-y: auto; }
-
-        input[type="file"].form-control { padding: 10px 14px; color: #ffffff !important; line-height: 1.5; background-color: #1a1e2b !important; border: 1px solid #2d3446 !important; font-size: 0.9rem; height: auto; }
-        input[type="file"].form-control::file-selector-button { margin-left: -5px; margin-right: 14px; background-color: #2d3446 !important; color: #ffffff !important; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 0.85rem; }
-        
-        .table .form-control { background-color: transparent; border: 1px solid transparent; padding: 8px 10px; border-radius: 6px; color: #ffffff !important; }
-        .table .form-control:focus { background-color: rgba(255,255,255,0.03); border: 1px solid #31384f; }
-        
-        .btn-primary { background-color: #ff0000; border-color: #ff0000; font-weight: 600; border-radius: 8px; padding: 10px 20px; }
-        .btn-success { background-color: #16a34a; border-color: #16a34a; font-weight: 600; border-radius: 8px; color: white !important;}
-        .btn-warning { background-color: #eab308; border-color: #eab308; color: #000 !important; font-weight: 700; border-radius: 8px; }
-        .btn-nav { color: #d1d5db; font-weight: 600; text-decoration: none; padding: 8px 16px; border-radius: 6px; white-space: nowrap; }
-        .clock-box { background: #171b26; border: 1px solid #222736; border-radius: 8px; padding: 6px 14px; font-family: monospace; color: #ffffff; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-        .vidljiv-tekst { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); border-radius: 8px; padding: 20px; color: #ffffff !important; font-size: 1.1rem; }
-        .login-wrapper { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
-        .login-box { width: 100%; max-width: 420px; background: #12141c; border-radius: 16px; border-top: 5px solid #0dcaf0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding: 40px; }
-        
-        .tamni-kontejner { background-color: #12141c; border: 1px solid #222736; border-radius: 8px; }
-        .dodaj-kontejner { background-color: #171b26; border: 1px solid #2d3446; border-radius: 8px; }
-        .napomena-box { background: rgba(13, 202, 240, 0.1); border-left: 3px solid #0dcaf0; padding: 12px; border-radius: 0 6px 6px 0; margin-top: 8px;}
-        
-        .dropdown-item:hover { background-color: #23293b; color: #fff !important; }
-        
-        @keyframes pulseLive { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        .pulse-live { animation: pulseLive 2s infinite; }
-        
-        /* BEŠAVNI TICKER (SEAMLESS MARQUEE) */
-        .ticker-wrap { width: 100%; overflow: hidden; background-color: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.3); border-radius: 8px; padding: 12px 15px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(220,53,69,0.1); cursor: default; }
-        .ticker-track { display: flex; width: max-content; animation: marquee 75s linear infinite; }
-        .ticker-wrap:hover .ticker-track { animation-play-state: paused; } /* Hover zaustavlja animaciju */
-        .ticker-segment { display: flex; white-space: nowrap; }
-        .ticker-text { color: #fca5a5; font-weight: 700; font-size: 1.15rem; letter-spacing: 0.5px; padding-right: 50px; }
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-
-        .is-desktop-device .nav-mob-col { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
-        .is-desktop-device .nav-mob-col::-webkit-scrollbar { height: 5px; }
-        .is-desktop-device .nav-mob-col::-webkit-scrollbar-thumb { background-color: #2d3446; border-radius: 4px; }
-        .is-mobile-device .nav-mob-col { flex-wrap: wrap; }
-
-        @media (max-width: 991px) {
-            .is-mobile-device .navbar-collapse { background: #1a1e2b; padding: 18px; border-radius: 8px; margin-top: 15px; border: 1px solid #2d3446; box-shadow: 0 8px 20px rgba(0,0,0,0.5); z-index: 1000; }
-            .is-mobile-device .nav-mob-col { flex-direction: column !important; align-items: stretch !important; margin: 0 !important; width: 100% !important; gap: 8px !important; }
-            .is-mobile-device .nav-mob-col .btn { text-align: center !important; margin: 0 !important; width: 100% !important; padding: 12px; font-size: 1.05rem; justify-content: center; display: flex; align-items: center; }
-            .is-mobile-device .nav-mob-col .clock-box { justify-content: center; margin: 0 !important; width: 100%; font-size: 1.2rem; padding: 12px; }
-            .is-mobile-device .navbar-toggler { border: none; outline: none; box-shadow: none; padding: 0; }
-            .glavni-prostor { padding: 15px 10px; }
-            .card-header-custom { padding: 15px !important; }
-            .card-body { padding: 15px !important; }
-            .flex-mob-col { flex-direction: column !important; align-items: flex-start !important; gap: 12px; }
-            .flex-mob-col > div { width: 100%; text-align: left !important; }
-            .flex-mob-col .btn, .flex-mob-col .badge { width: 100%; display: block; text-align: center; }
-            .mob-full-btn { display: block; width: 100%; margin-bottom: 8px; text-align: left; margin-right: 0 !important;}
-            .mob-col-btn { flex-direction: column !important; align-items: stretch !important; padding-top: 15px !important; }
-            .mob-col-btn .btn { width: 100%; margin: 5px 0 !important; }
-            .btn-rutiranje-grupa { flex-direction: column !important; display: flex; }
-            .btn-rutiranje-grupa button { width: 100%; margin-bottom: 8px; margin-right: 0 !important; }
-            .tamni-kontejner { padding: 0 !important; border: none; }
-        }
-    </style>
-    <script>
-        if (!Element.prototype.matches) { Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector; }
-        if (!Element.prototype.closest) {
-            Element.prototype.closest = function(s) {
-                var el = this;
-                while (el && el.nodeType === 1) { if (el.matches(s)) return el; el = el.parentElement || el.parentNode; }
-                return null;
-            };
-        }
-
-        var kosaricaStavke = [];
-
-        function inicijalizirajKosaricu() {
-            var spremljeno = localStorage.getItem('fcl_kosarica');
-            if (spremljeno) { try { kosaricaStavke = JSON.parse(spremljeno); } catch(e) { kosaricaStavke = []; } }
-            osvjeziKosaricu();
-            var cartNaziv = document.getElementById('cart_naziv');
-            var cartKomada = document.getElementById('cart_komada');
-            if(cartNaziv) cartNaziv.addEventListener('keydown', function(e) { if(e.key === 'Enter') { e.preventDefault(); dodajUKosaricu(); } });
-            if(cartKomada) cartKomada.addEventListener('keydown', function(e) { if(e.key === 'Enter') { e.preventDefault(); dodajUKosaricu(); } });
-        }
-
-        function dodajUKosaricu() {
-            var naziv = document.getElementById('cart_naziv').value.trim();
-            var komada = document.getElementById('cart_komada').value;
-            if(!naziv) return; 
-            kosaricaStavke.push({naziv: naziv, komada: parseInt(komada) || 0});
-            document.getElementById('cart_naziv').value = '';
-            document.getElementById('cart_komada').value = '';
-            document.getElementById('cart_naziv').focus();
-            osvjeziKosaricu();
-        }
-
-        function ukloniIzKosarice(index) {
-            kosaricaStavke.splice(index, 1);
-            osvjeziKosaricu();
-        }
-
-        function osvjeziKosaricu() {
-            var tbl = document.getElementById('cart_table');
-            var body = document.getElementById('cart_body');
-            var hidden = document.getElementById('kosarica_data');
-            if (!tbl || !body || !hidden) return; 
-            
-            body.innerHTML = '';
-            if(kosaricaStavke.length === 0) { tbl.style.display = 'none'; } else {
-                tbl.style.display = 'table';
-                for(var i=0; i<kosaricaStavke.length; i++) {
-                    var s = kosaricaStavke[i];
-                    var kolicinaText = s.komada > 0 ? s.komada + ' kom' : '-';
-                    body.innerHTML += '<tr><td class="text-info fw-bold">' + s.naziv + '</td><td class="text-white fw-bold" style="font-size: 0.95rem;">' + kolicinaText + '</td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="ukloniIzKosarice('+i+')"><i class="fa-solid fa-trash"></i></button></td></tr>';
-                }
-            }
-            hidden.value = JSON.stringify(kosaricaStavke);
-            localStorage.setItem('fcl_kosarica', JSON.stringify(kosaricaStavke));
-        }
-
-        function filtrirajArhivu() {
-            var input = document.getElementById("traziArhivu");
-            if(!input) return;
-            var filter = input.value.toLowerCase();
-            var redovi = document.querySelectorAll(".arhiva-red");
-            for (var i = 0; i < redovi.length; i++) {
-                var tekst = redovi[i].getAttribute("data-search").toLowerCase();
-                var id = redovi[i].getAttribute("data-id");
-                var detalji = document.getElementById("detalji-" + id);
-                if (tekst.includes(filter)) { redovi[i].style.display = ""; } 
-                else {
-                    redovi[i].style.display = "none";
-                    if(detalji) detalji.classList.remove("show");
-                }
-            }
-        }
-
-        function azurirajBrojacDatoteka(input, labelId, iconClass, labelText) {
-            var label = document.getElementById(labelId);
-            if(!label) return;
-            if(input.files && input.files.length > 0) {
-                var html = '<div class="mt-2"><i class="fa-solid ' + iconClass + ' text-info me-1"></i> <span class="text-muted small">' + labelText + ':</span></div><div class="d-flex flex-wrap gap-1 mt-1">';
-                for(var i=0; i<input.files.length; i++) { html += '<span class="badge bg-dark border border-secondary text-info">' + input.files[i].name + '</span>'; }
-                html += '</div>';
-            } else { label.innerHTML = ''; }
-        }
-        
-        function updateDevTimer() {
-            var el = document.getElementById('dev-ticker-timer');
-            if(el) {
-                var target = el.getAttribute('data-do');
-                if(!target) return;
-                if(target.indexOf('Z') === -1 && target.indexOf('+') === -1) target += 'Z';
-                var targetDate = new Date(target);
-                var now = new Date();
-                var diff = Math.floor((targetDate - now)/1000);
-                if(diff > 0) {
-                    var h = Math.floor(diff/3600);
-                    var m = Math.floor((diff%3600)/60);
-                    var s = diff%60;
-                    el.innerText = h + "h " + m + "m " + s + "s";
-                } else {
-                    el.innerText = "Isteklo";
-                }
-            }
-        }
-
-        var isSubmitting = false;
-
-        function pokreniZiveElemente() {
-            function osvjeziSat() {
-                var sad = new Date();
-                var el = document.getElementById('mreza-sat');
-                if(el) {
-                    var h = sad.getHours(), m = sad.getMinutes(), s = sad.getSeconds();
-                    el.innerText = (h<10?'0'+h:h) + ":" + (m<10?'0'+m:m) + ":" + (s<10?'0'+s:s);
-                }
-            }
-            osvjeziSat(); setInterval(osvjeziSat, 1000);
-            updateDevTimer(); setInterval(updateDevTimer, 1000);
-            
-            postaviEnterNavigacijuTabela(); postaviEnterNavigacijuKreiranje(); initAutoSave(); inicijalizirajKosaricu();
-            var forms = document.querySelectorAll('form');
-            for(var f=0; f<forms.length; f++) { forms[f].addEventListener('submit', function() { isSubmitting = true; }); }
-
-            setInterval(function() {
-                var activeElement = document.activeElement;
-                var isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA');
-                var hasFiles = false;
-                var fileInputs = document.querySelectorAll('input[type="file"]');
-                for(var k=0; k<fileInputs.length; k++) { if(fileInputs[k].files.length > 0) hasFiles = true; }
-                var isDropdownOpen = document.querySelector('.dropdown-menu.show') !== null;
-                var isModalOpen = document.querySelector('.modal.show') !== null;
-
-                if(!isTyping && !isSubmitting && !hasFiles && !isDropdownOpen && !isModalOpen && window.location.pathname !== '/login' && window.location.pathname !== '/prijava_stanice') {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('GET', window.location.href, true);
-                    xhr.onreadystatechange = function() {
-                        if (xhr.readyState === 4 && xhr.status === 200) {
-                            try {
-                                var parser = new DOMParser();
-                                var newDoc = parser.parseFromString(xhr.responseText, 'text/html');
-                                
-                                var currentTicker = document.getElementById('ticker-prikaz');
-                                var newTicker = newDoc.getElementById('ticker-prikaz');
-                                if (currentTicker && newTicker && currentTicker.innerHTML.trim() !== newTicker.innerHTML.trim()) {
-                                    currentTicker.innerHTML = newTicker.innerHTML;
-                                }
-
-                                var currentMain = document.getElementById('glavni-dinamicni-dio');
-                                var newMain = newDoc.getElementById('glavni-dinamicni-dio');
-                                if (currentMain && newMain) {
-                                    var scrollPos = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
-                                    var scrollables = document.querySelectorAll('.table-responsive, .tamni-kontejner');
-                                    var scrollLefts = [];
-                                    for (var s = 0; s < scrollables.length; s++) { scrollLefts.push(scrollables[s].scrollLeft); }
-                                    var otvorenihCollapse = [];
-                                    var collapses = document.querySelectorAll('.collapse.show');
-                                    for (var i = 0; i < collapses.length; i++) { otvorenihCollapse.push(collapses[i].id); }
-
-                                    currentMain.innerHTML = newMain.innerHTML;
-                                    
-                                    window.scrollTo(0, scrollPos);
-                                    for (var j = 0; j < otvorenihCollapse.length; j++) {
-                                        var el = document.getElementById(otvorenihCollapse[j]);
-                                        if(el) el.classList.add('show');
-                                    }
-
-                                    var newScrollables = document.querySelectorAll('.table-responsive, .tamni-kontejner');
-                                    for (var s = 0; s < newScrollables.length; s++) {
-                                        if(scrollLefts[s] !== undefined) newScrollables[s].scrollLeft = scrollLefts[s];
-                                    }
-
-                                    var newForms = document.querySelectorAll('form');
-                                    for(var x=0; x<newForms.length; x++) { newForms[x].addEventListener('submit', function() { isSubmitting = true; }); }
-
-                                    if (typeof initAutoSave === 'function') initAutoSave();
-                                    if (typeof postaviEnterNavigacijuTabela === 'function') postaviEnterNavigacijuTabela();
-                                    if (typeof postaviEnterNavigacijuKreiranje === 'function') postaviEnterNavigacijuKreiranje();
-                                    if (typeof inicijalizirajKosaricu === 'function') inicijalizirajKosaricu();
-                                }
-                            } catch(err) { console.log("Pozadinsko ažuriranje preskočeno."); }
-                        }
-                    };
-                    xhr.send();
-                }
-            }, 2000);
-        }
-        
-        function autoProsiri(el) {
-            el.style.height = 'inherit';
-            var computed = el.scrollHeight;
-            var novaVisina = computed + 24; 
-            if (novaVisina > 150) novaVisina = 150; 
-            el.style.height = novaVisina + 'px';
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Tab') {
-                var activeEl = document.activeElement;
-                if (activeEl && activeEl.tagName === 'INPUT' && activeEl.placeholder === '0' && activeEl.value === '') {
-                    activeEl.value = '0';
-                    if ("createEvent" in document) { var evt = document.createEvent("HTMLEvents"); evt.initEvent("input", false, true); activeEl.dispatchEvent(evt); } 
-                    else { activeEl.fireEvent("oninput"); }
-                }
-            }
-        });
-
-        function initAutoSave() {
-            var inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
-            for (var i = 0; i < inputs.length; i++) {
-                (function(input) {
-                    if (!input.name || input.type === 'file' || input.type === 'hidden') return;
-                    if (input.id === 'cart_naziv' || input.id === 'cart_komada' || input.id === 'traziArhivu') return; 
-                    
-                    var form = input.closest('form');
-                    var nalogIdInput = form ? form.querySelector('input[name="id_naloga"]') : null;
-                    var key = "fcl_" + window.location.pathname + "_";
-                    if (nalogIdInput) key += "nalog_" + nalogIdInput.value + "_";
-                    key += input.name;
-                    
-                    var saved = localStorage.getItem(key);
-                    if (saved !== null) { input.value = saved; if(input.tagName.toLowerCase() === 'textarea') autoProsiri(input); }
-                    input.addEventListener('input', function() { localStorage.setItem(key, input.value); });
-                })(inputs[i]);
-            }
-
-            var forms = document.querySelectorAll('form');
-            for (var j = 0; j < forms.length; j++) {
-                forms[j].addEventListener('submit', function(e) {
-                    var currentForm = e.target || e.srcElement;
-                    var formInputs = currentForm.querySelectorAll('input, textarea');
-                    for (var k = 0; k < formInputs.length; k++) {
-                        var input = formInputs[k];
-                        if (!input.name) continue;
-                        var nalogIdInput = currentForm.querySelector('input[name="id_naloga"]');
-                        var key = "fcl_" + window.location.pathname + "_";
-                        if (nalogIdInput) key += "nalog_" + nalogIdInput.value + "_";
-                        key += input.name;
-                        localStorage.removeItem(key);
-                    }
-                    localStorage.removeItem('fcl_kosarica'); kosaricaStavke = [];
-                });
-            }
-        }
-
-        function postaviEnterNavigacijuTabela() {
-            var forms = document.querySelectorAll('.nav-forma');
-            for (var i = 0; i < forms.length; i++) {
-                (function(form) {
-                    var inputs = form.querySelectorAll('.navigabilno');
-                    for (var j = 0; j < inputs.length; j++) {
-                        (function(input, index) {
-                            input.addEventListener('keydown', function(e) {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    if (index < inputs.length - 1) { inputs[index + 1].focus(); } else { input.blur(); }
-                                }
-                            });
-                        })(inputs[j], j);
-                    }
-                })(forms[i]);
-            }
-        }
-        
-        function postaviEnterNavigacijuKreiranje() {
-            var formKreiranje = document.getElementById('form-kreiranje');
-            if(formKreiranje) {
-                var inputNodes = formKreiranje.querySelectorAll('.kreiranje-nav');
-                var inputs = [];
-                for(var i=0; i<inputNodes.length; i++) inputs.push(inputNodes[i]);
-                for (var j = 0; j < inputs.length; j++) {
-                    (function(input, index) {
-                        input.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter') {
-                                e.preventDefault(); e.stopPropagation(); 
-                                if (index < inputs.length - 1) { inputs[index + 1].focus(); } else { input.blur(); }
-                            }
-                        });
-                    })(inputs[j], j);
-                }
-            }
-        }
-
-        if (window.location.pathname === '/sefo_panel' || window.location.pathname === '/arhiva' || window.location.pathname === '/dev_panel') {
-            if (sessionStorage.getItem('admin_prijavljen') !== 'da' && sessionStorage.getItem('dev_prijavljen') !== 'da') { window.location.href = '/login'; }
-        }
-
-        window.onload = pokreniZiveElemente;
-    </script>
-</head>
-"""
-
-MODAL_HTML = """
-<div class="modal fade" id="premiumDeleteModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" style="background-color: #151822; border: 1px solid rgba(220, 53, 69, 0.4); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
-      <div class="modal-body text-center p-5">
-        <div class="mb-4">
-            <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(220,53,69,0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                <i class="fa-solid fa-trash-can text-danger" style="font-size: 2.5rem;"></i>
-            </div>
-        </div>
-        <h4 class="text-white fw-bold mb-3">Trajno brisanje naloga</h4>
-        <p class="text-muted mb-4" style="font-size: 1rem;">Jeste li potpuno sigurni da želite obrisati ovaj nalog i sve njegove datoteke? <br><b class="text-danger mt-2 d-block">Ova akcija je nepovratna.</b></p>
-        <div class="d-flex justify-content-center gap-3">
-            <button type="button" class="btn btn-outline-secondary fw-bold px-4 py-2" data-bs-dismiss="modal" style="border-radius: 10px;">Odustani</button>
-            <a id="confirmDeleteBtn" href="#" class="btn btn-danger fw-bold px-4 py-2 shadow" style="border-radius: 10px;">Da, trajno obriši</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<script>
-    function potvrdiBrisanje(url) {
-        document.getElementById('confirmDeleteBtn').href = url;
-        var myModal = new bootstrap.Modal(document.getElementById('premiumDeleteModal'));
-        myModal.show();
-    }
-</script>
-"""
-
-NAVBAR_TEMPLATE = """
-<nav class="navbar {% if is_mobile %}navbar-expand-lg{% else %}navbar-expand{% endif %} navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand d-flex align-items-center" href="/"><img src="/logo.png" alt="FirstCutLaser"></a>
-        {% if is_mobile %}
-        <button class="navbar-toggler border-0 shadow-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#fclNav"><i class="fa-solid fa-bars text-info fs-3"></i></button>
-        {% endif %}
-        <div class="{% if is_mobile %}collapse navbar-collapse{% else %}d-flex flex-grow-1 align-items-center{% endif %}" id="fclNav">
-            <div class="d-flex gap-3 ms-auto align-items-center nav-mob-col">
-                <a href="/" class="btn btn-nav text-white-50"><i class="fa-solid fa-desktop me-2"></i> Monitor Pogona</a>
-                {% if z_stanica in ['uprava', 'laser1', 'laser2'] %}
-                    <a href="/laser" class="btn btn-nav text-danger"><i class="fa-solid fa-fire me-2"></i> Rezanje</a>
-                {% endif %}
-                {% if z_stanica in ['uprava', 'bravarija'] %}
-                    <a href="/bravarija" class="btn btn-nav text-warning"><i class="fa-solid fa-hammer me-2"></i> Bravarija</a>
-                {% endif %}
-                {% if z_stanica == 'uprava' %}
-                    <a href="/sefo_panel" class="btn btn-nav text-info border border-info border-opacity-25"><i class="fa-solid fa-user-gear me-2"></i> Upravljačka Ploča</a>
-                {% endif %}
-                <div class="clock-box" id="mreza-sat">00:00:00</div>
-                
-                {% if session.get('role') in ['Admin', 'Developer'] and request.path in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
-                    <a href="/arhiva" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Arhiva Naloga"><i class="fa-solid fa-box-archive me-1"></i> Arhiva</a>
-                {% endif %}
-                
-                {% if session.get('role') == 'Developer' %}
-                    <a href="/dev_panel" class="btn btn-sm btn-outline-danger text-white px-3 py-2 border-danger border-opacity-50"><i class="fa-solid fa-terminal me-1"></i> DEV PANEL</a>
-                {% endif %}
-                
-                {% if session.get('role') in ['Admin', 'Developer'] %}
-                    <a href="/logout" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Odjava"><i class="fa-solid fa-power-off me-1"></i> Odjava</a>
-                {% endif %}
-                
-                {% if is_server_window %}
-                    <button onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.izadji) { if(confirm('Želite li potpuno ugasiti server aplikaciju?')) pywebview.api.izadji(); } else { window.location.href='/ugasi_program'; }" class="btn btn-sm btn-danger fw-bold px-4 py-2"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</button>
-                {% elif prikazi_klijent_gumbe %}
-                    <button id="klijent-postavke-btn" class="btn btn-sm btn-outline-secondary text-white-50 d-none" title="Postavke Klijenta (F12)" onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.reset_postavki) { if(confirm('Želite li resetirati IP i stanicu? Program će se ugasiti.')) pywebview.api.reset_postavki(); }"><i class="fa-solid fa-gear"></i></button>
-                    <button onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.izadji) { if(confirm('Želite li potpuno ugasiti klijent aplikaciju?')) pywebview.api.izadji(); }" class="btn btn-sm btn-danger fw-bold px-4 py-2"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</button>
-                {% elif session.get('role') in ['Admin', 'Developer'] and request.path not in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
-                    <a href="/ugasi_program" class="btn btn-sm btn-danger fw-bold px-4 py-2" title="Potpuno ugasi aplikaciju na Serveru"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</a>
-                {% endif %}
-                {% if not prikazi_klijent_gumbe %}
-                    <a href="/odjava_stanice" class="btn btn-sm btn-outline-danger px-3 py-2 ms-1" title="Zaključaj uređaj i izađi"><i class="fa-solid fa-lock"></i></a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</nav>
-"""
-
-TICKER_HTML = """
-{% if aktivna_obavijest %}
-<div class="ticker-wrap mb-4">
-    <i class="fa-solid fa-bolt text-danger ms-2 me-3 fs-4 pulse-live" style="flex-shrink: 0; z-index: 10;"></i>
-    <div style="flex-grow: 1; overflow: hidden; position: relative;">
-        <div class="ticker-track">
-            <div class="ticker-segment">
-                {% for _ in range(8) %}
-                    <span class="ticker-text">{{ aktivna_obavijest }} &nbsp;&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                {% endfor %}
-            </div>
-            <div class="ticker-segment">
-                {% for _ in range(8) %}
-                    <span class="ticker-text">{{ aktivna_obavijest }} &nbsp;&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-"""
+    pogon_role = request.cookies.get('pogon_role')
+    return dict(stanica=lokalna_stanica, prikazi_klijent_gumbe=je_klijent, is_server_window=False, z_stanica=z_stanica, is_mobile=is_mobile, aktivna_obavijest=aktivna_obavijest, aktivna_obavijest_do=aktivna_obavijest_do, pogon_role=pogon_role)
 
 @app.route('/logo.png')
 def serve_logo(): return send_from_directory(BASE_DIR, 'logo.png')
-
 @app.route('/favicon.png')
 def serve_favicon(): return send_from_directory(BASE_DIR, 'favicon.png')
-
 @app.route('/favicon.ico')
 def favicon_fallback(): return redirect(url_for('serve_favicon'))
+
+@app.route('/maintenance')
+def maintenance():
+    conn = get_db_connection()
+    maint = conn.execute("SELECT vrijednost FROM postavke WHERE kljuc='maintenance'").fetchone()
+    conn.close()
+    if not maint or maint['vrijednost'] == '0': return redirect('/')
+    if request.cookies.get('pogon_role') == 'Developer': return redirect('/dev_panel')
+    return render_template('maintenance.html')
+
+@app.route('/skriveni_dev_login', methods=['POST'])
+def skriveni_dev_login():
+    password = request.form.get('password', '')
+    if hashlib.sha256(password.encode('utf-8')).hexdigest() == DEV_HASH:
+        resp = make_response(redirect(url_for('dev_panel')))
+        resp.set_cookie('pogon_role', 'Developer')
+        return resp
+    return redirect(url_for('maintenance'))
 
 @app.route('/prijava_stanice', methods=['GET', 'POST'])
 def prijava_stanice():
@@ -710,18 +199,14 @@ def prijava_stanice():
             conn.execute("UPDATE blokade SET pokusaji=0, blokiran_do=NULL WHERE ip_adresa=?", (otisak_uređaja,))
             conn.commit()
             blokada = None
-            
     poruka = None if not blokada_aktivna else poruka
 
     if request.method == 'POST' and not blokada_aktivna:
-        uneseni_pin = request.form.get('pin', '')
-        odabir = request.form.get('vrsta_stanice')
-        
+        uneseni_pin, odabir = request.form.get('pin', ''), request.form.get('vrsta_stanice')
         if hashlib.sha256(uneseni_pin.encode()).hexdigest() == PIN_HASH:
             conn.execute("INSERT OR REPLACE INTO blokade (ip_adresa, pokusaji, blokiran_do) VALUES (?, 0, NULL)", (otisak_uređaja,))
             conn.commit()
             conn.close()
-            
             cilj = '/laser' if odabir in ['laser1', 'laser2'] else '/bravarija' if odabir == 'bravarija' else '/'
             resp = make_response(redirect(cilj))
             resp.set_cookie('zakljucana_stanica', odabir, max_age=60*60*24*365)
@@ -737,49 +222,20 @@ def prijava_stanice():
                 conn.execute("INSERT OR REPLACE INTO blokade (ip_adresa, pokusaji, blokiran_do) VALUES (?, ?, NULL)", (otisak_uređaja, pokusaji))
                 poruka = f"Neispravan sigurnosni PIN. Preostalo pokušaja: {5 - pokusaji}"
             conn.commit()
-            
     conn.close()
-            
-    html = "<!DOCTYPE html><html>" + STIL_I_NAVIGACIJA + BODY_OPEN_TAG + """
-        <div class="login-wrapper">
-            <div class="login-box text-center">
-                <img src="/logo.png" class="mb-4 mt-2" style="max-height: 65px;">
-                <h5 class="fw-bold mb-1 text-danger text-uppercase"><i class="fa-solid fa-shield-halved me-2"></i>Pristup Pogonu</h5>
-                <p class="text-muted small mb-4">Uređaj nije prepoznat. Prijavite stanicu.</p>
-                {% if blokada_aktivna %}
-                    <div class="alert alert-danger p-3 fw-bold fs-5 shadow-sm border border-danger"><i class="fa-solid fa-lock me-2 text-danger"></i> ZABRANJEN PRISTUP<br><small class="fs-6 fw-normal d-block mt-2 text-white">{{ poruka }}</small></div>
-                {% else %}
-                    {% if poruka %}<div class="alert alert-warning py-2 small fw-bold text-dark border border-warning">{{ poruka }}</div>{% endif %}
-                    <form method="POST">
-                        <div class="mb-3 text-start"><label class="form-label">Vrsta uređaja / Lokacija</label>
-                            <select name="vrsta_stanice" class="form-control" style="cursor: pointer;">
-                                <option value="uprava">Slobodan Pristup (Uprava)</option>
-                                <option value="monitor">Monitor Pogona (Samo pregled)</option>
-                                <option value="laser1">Laser 1 (Glavni)</option>
-                                <option value="laser2">Laser 2</option>
-                                <option value="bravarija">Bravarija</option>
-                            </select>
-                        </div>
-                        <div class="mb-4 text-start"><label class="form-label">Glavni PIN Pogona</label><input type="password" class="form-control text-center fs-5 tracking-widest" name="pin" placeholder="••••" required autocomplete="off"></div>
-                        <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mb-2 text-uppercase"><i class="fa-solid fa-unlock-keyhole me-2"></i>Otključaj Sustav</button>
-                    </form>
-                {% endif %}
-            </div>
-        </div>
-    </body></html>"""
-    return render_template_string(html, poruka=poruka, blokada_aktivna=blokada_aktivna)
+    return render_template('prijava.html', poruka=poruka, blokada_aktivna=blokada_aktivna)
 
 @app.route('/odjava_stanice')
 def odjava_stanice():
     resp = make_response(redirect(url_for('prijava_stanice')))
     resp.set_cookie('zakljucana_stanica', '', expires=0)
     resp.set_cookie('stanica_lokalno', '', expires=0)
+    resp.set_cookie('pogon_role', '', expires=0)
     session.clear()
     return resp
 
 @app.route('/ugasi_program')
-def ugasi_program():
-    return redirect(url_for('index_pogon_hub'))
+def ugasi_program(): return redirect(url_for('index_pogon_hub'))
 
 @app.route('/postavi_stanicu/<ime_stanice>')
 def postavi_stanicu(ime_stanice):
@@ -799,121 +255,47 @@ def index_pogon_hub():
     trenutno_na_laseru = [dict(n) for n in svi_nalozi if n['status'] in ['Laser', 'Pauzirano - Laser'] and (n['laser_zapoceto_u'] or n['status'] == 'Pauzirano - Laser')]
     trenutno_u_bravariji = [dict(n) for n in svi_nalozi if n['status'] in ['Piganje', 'Pauzirano - Bravarija'] and (n['bravarija_zapoceto_u'] or n['status'] == 'Pauzirano - Bravarija')]
     conn.close()
-    
-    glavni_sadrzaj = """
-    <div class="container-fluid glavni-prostor">
-        <div id="ticker-prikaz">
-            """ + TICKER_HTML + """
-        </div>
-        <div id="glavni-dinamicni-dio">
-            <div class="p-4 rounded-3 mb-4 text-center" style="background: linear-gradient(135deg, #12141c 0%, #171c28 100%); border: 1px solid #222736;">
-                <img src="/logo.png" style="max-height: 55px;" class="mb-2"><br>
-                <h2 class="fw-bold text-white mb-1">CENTRALNI MONITOR POGONA</h2>
-            </div>
-            <div class="row mb-4 align-items-stretch">
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100 mb-0" style="border-left: 4px solid #ff0000;">
-                        <div class="card-header-custom d-flex justify-content-between align-items-center flex-mob-col">
-                            <h6 class="mb-0 fw-bold text-danger text-uppercase"><i class="fa-solid fa-fire pulse-live me-2"></i>Laser &bull; Trenutno u obradi</h6>
-                        </div>
-                        <div class="card-body p-4">
-                            {% if not trenutno_na_laseru %}<p class="text-center my-4 vidljiv-tekst">Trenutno nema aktivnih naloga u procesu rezanja.</p>
-                            {% else %}
-                                {% for n in trenutno_na_laseru %}
-                                <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col border {% if n.status == 'Pauzirano - Laser' %}border-warning border-opacity-50{% else %}border-info border-opacity-25{% endif %}">
-                                    <div>
-                                        <b class="text-white fs-5">{{ n.naziv_naloga }}</b>
-                                        {% if n.odabrani_laser %} <span class="badge bg-dark border border-danger text-danger ms-2 shadow-sm" style="border-radius: 6px; font-size: 0.7rem;"><i class="fa-solid fa-crosshairs me-1"></i>{{ n.odabrani_laser|upper }}</span>{% endif %}<br>
-                                        <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %}[D: {{ n.debljina_ploce }}]{% endif %} | Nalog #{{ n.id }}</small>
-                                    </div>
-                                    {% if n.status == 'Pauzirano - Laser' %}
-                                        <span class="badge bg-warning text-dark p-2 fs-6 mt-2 fw-bold"><i class="fa-solid fa-pause me-1"></i> PAUZIRANO</span>
-                                    {% else %}
-                                        <span class="badge bg-dark border border-info text-info p-2 fs-6 mt-2"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100 mb-0" style="border-left: 4px solid #facc15;">
-                        <div class="card-header-custom d-flex justify-content-between align-items-center flex-mob-col">
-                            <h6 class="mb-0 fw-bold text-warning text-uppercase"><i class="fa-solid fa-hammer pulse-live me-2"></i>Bravarija &bull; Trenutno u obradi</h6>
-                        </div>
-                        <div class="card-body p-4">
-                            {% if not trenutno_u_bravariji %}<p class="text-center my-4 vidljiv-tekst">Trenutno nema aktivnih naloga u bravarskoj obradi.</p>
-                            {% else %}
-                                {% for n in trenutno_u_bravariji %}
-                                <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col border {% if n.status == 'Pauzirano - Bravarija' %}border-warning border-opacity-50{% else %}border-info border-opacity-25{% endif %}">
-                                    <div>
-                                        <b class="text-white fs-5">{{ n.naziv_naloga }}</b><br>
-                                        <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %}[D: {{ n.debljina_ploce }}]{% endif %} | Nalog #{{ n.id }}</small>
-                                    </div>
-                                    {% if n.status == 'Pauzirano - Bravarija' %}
-                                        <span class="badge bg-warning text-dark p-2 fs-6 mt-2 fw-bold"><i class="fa-solid fa-pause me-1"></i> PAUZIRANO</span>
-                                    {% else %}
-                                        <span class="badge bg-dark border border-warning text-warning p-2 fs-6 mt-2"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>
-                                    {% endif %}
-                                </div>
-                                {% endfor %}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """
-    return render_template_string(f"<!DOCTYPE html><html>{STIL_I_NAVIGACIJA}{BODY_OPEN_TAG}{NAVBAR_TEMPLATE}{glavni_sadrzaj}</body></html>", trenutno_na_laseru=trenutno_na_laseru, trenutno_u_bravariji=trenutno_u_bravariji)
+    return render_template('monitor.html', trenutno_na_laseru=trenutno_na_laseru, trenutno_u_bravariji=trenutno_u_bravariji)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     poruka = None
     if request.method == 'POST':
-        if request.form['username'] == ADMIN_USER and request.form['password'] == ADMIN_PASS:
-            session.permanent = True
-            session['role'] = 'Admin'
-            return render_template_string("<script>sessionStorage.setItem('admin_prijavljen', 'da'); window.location.href='/sefo_panel';</script>")
-        elif request.form['username'] == DEV_USER and request.form['password'] == DEV_PASS:
-            session.permanent = True
-            session['role'] = 'Developer'
-            return render_template_string("<script>sessionStorage.setItem('dev_prijavljen', 'da'); window.location.href='/dev_panel';</script>")
+        username = request.form.get('username')
+        password = request.form.get('password')
+        uneseni_hash = hashlib.sha256(password.encode('utf-8')).hexdigest()
+        
+        if username == "admin" and uneseni_hash == ADMIN_HASH:
+            resp = make_response(redirect(url_for('index_master')))
+            resp.set_cookie('pogon_role', 'Admin') 
+            return resp
+            
+        elif username == "developer" and uneseni_hash == DEV_HASH:
+            resp = make_response(redirect(url_for('dev_panel')))
+            resp.set_cookie('pogon_role', 'Developer')
+            return resp
             
         poruka = "Neispravni podaci za prijavu!"
-    return render_template_string("<!DOCTYPE html><html>" + STIL_I_NAVIGACIJA + BODY_OPEN_TAG + """
-        <div class="login-wrapper">
-            <div class="login-box text-center position-relative">
-                <a href="/" class="btn btn-sm btn-outline-secondary position-absolute top-0 start-0 m-3 border-0 text-muted" title="Nazad na početak"><i class="fa-solid fa-arrow-left fs-5"></i></a>
-                <img src="/logo.png" class="mb-4 mt-2" style="max-height: 70px;">
-                <h4 class="fw-bold mb-4 text-info">Upravljačka Ploča</h4>
-                {% if poruka %}<div class="alert alert-danger py-2 small">{{ poruka }}</div>{% endif %}
-                <form method="POST">
-                    <div class="mb-3 text-start"><label class="form-label">Korisničko ime</label><input type="text" class="form-control" name="username" placeholder="admin" required></div>
-                    <div class="mb-4 text-start"><label class="form-label">Lozinka</label><input type="password" class="form-control" name="password" placeholder="•••••••••" required></div>
-                    <button type="submit" class="btn btn-info text-white w-100 py-2 fw-bold mb-2">Prijavi se u Upravljanje</button>
-                </form>
-            </div>
-        </div>
-    </body></html>""", poruka=poruka)
+    return render_template('login.html', poruka=poruka)
 
 @app.route('/logout')
 def logout():
+    resp = make_response(redirect(url_for('login')))
+    resp.set_cookie('pogon_role', '', expires=0)
     session.clear()
-    return render_template_string("<script>sessionStorage.removeItem('admin_prijavljen'); sessionStorage.removeItem('dev_prijavljen'); window.location.href='/';</script>")
+    return resp
 
 @app.route('/dev_panel', methods=['GET', 'POST'])
 def dev_panel():
-    if session.get('role') != 'Developer': return redirect(url_for('login'))
+    if request.cookies.get('pogon_role') != 'Developer': return redirect(url_for('login'))
     conn = get_db_connection()
     
     if request.method == 'POST':
         akcija = request.form.get('akcija')
         if akcija == 'lansiraj_ticker':
             tekst = request.form.get('ticker_tekst')
-            trajanje = float(request.form.get('trajanje_sati', 1))
-            vrijedi_do = (datetime.now() + timedelta(hours=trajanje)).isoformat()
+            trajanje_minuta = float(request.form.get('trajanje_minuta', 60))
+            vrijedi_do = (datetime.now() + timedelta(minutes=trajanje_minuta)).isoformat()
             conn.execute("DELETE FROM obavijesti")
             conn.execute("INSERT INTO obavijesti (tekst, vrijedi_do) VALUES (?, ?)", (tekst, vrijedi_do))
             conn.commit()
@@ -923,6 +305,10 @@ def dev_panel():
         elif akcija == 'odblokiraj':
             ip_od = request.form.get('ip_adresa')
             conn.execute("DELETE FROM blokade WHERE ip_adresa=?", (ip_od,))
+            conn.commit()
+        elif akcija == 'toggle_maint':
+            status = request.form.get('maint_status', '0')
+            conn.execute("UPDATE postavke SET vrijednost=? WHERE kljuc='maintenance'", (status,))
             conn.commit()
             
         return redirect(url_for('dev_panel'))
@@ -938,89 +324,18 @@ def dev_panel():
     uk_naloga = conn.execute("SELECT COUNT(id) FROM radni_nalozi").fetchone()[0]
     uk_pozicija = conn.execute("SELECT COUNT(id) FROM nalog_pozicije").fetchone()[0]
     
+    maint_row = conn.execute("SELECT vrijednost FROM postavke WHERE kljuc='maintenance'").fetchone()
+    maint_status = maint_row['vrijednost'] if maint_row else '0'
+    
     try: db_velicina_mb = round(os.path.getsize(DB_FILE) / (1024 * 1024), 2)
     except: db_velicina_mb = 0.0
 
     conn.close()
-
-    glavni_sadrzaj = """
-    <div class="container-fluid glavni-prostor">
-        <div id="glavni-dinamicni-dio">
-            <h3 class="mb-4 fw-bold text-danger"><i class="fa-solid fa-terminal me-2"></i> DEVELOPER TERMINAL</h3>
-            
-            <div class="row mb-4">
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100" style="border-top: 4px solid #ef4444;">
-                        <div class="card-header-custom"><h6 class="mb-0 fw-bold text-danger"><i class="fa-solid fa-bullhorn me-2"></i> Globalni Pogon Broadcast (Ticker)</h6></div>
-                        <div class="card-body p-4">
-                            {% if aktivna_obavijest %}
-                                <div class="alert p-3 mb-4 rounded-3 border border-danger" style="background-color: rgba(220, 53, 69, 0.1);">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <b class="text-danger"><i class="fa-solid fa-broadcast-tower me-2"></i>Trenutno Aktivna Obavijest:</b>
-                                        <span class="badge bg-danger fs-6" id="dev-ticker-timer" data-do="{{ aktivna_obavijest_do }}">--:--:--</span>
-                                    </div>
-                                    <span class="text-white fs-5 fw-bold mt-2 d-block">{{ aktivna_obavijest }}</span>
-                                    <form method="POST" class="mt-3"><button type="submit" name="akcija" value="ugasi_ticker" class="btn btn-sm btn-danger fw-bold px-3"><i class="fa-solid fa-xmark me-1"></i> Ugasi Trenutno</button></form>
-                                </div>
-                            {% endif %}
-                            <form method="POST">
-                                <label class="form-label text-white">Tekst obavijesti (Prikazuje se na svim ekranima)</label>
-                                <input type="text" class="form-control mb-3 border-danger" name="ticker_tekst" placeholder="Npr. Hitno gašenje servera za 10 minuta..." required>
-                                
-                                <label class="form-label text-white">Trajanje obavijesti (Sati)</label>
-                                <input type="number" step="0.1" min="0.1" class="form-control mb-4 border-danger" name="trajanje_sati" placeholder="Unesite sate (npr. 2 ili 1.5)" required>
-                                
-                                <button type="submit" name="akcija" value="lansiraj_ticker" class="btn btn-danger w-100 fw-bold"><i class="fa-solid fa-rocket me-2"></i> Lansiraj Obavijest</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-md-6 mb-3">
-                    <div class="card mb-3" style="border-top: 4px solid #facc15;">
-                        <div class="card-header-custom"><h6 class="mb-0 fw-bold text-warning"><i class="fa-solid fa-shield-halved me-2"></i> Blokirani Uređaji (Security)</h6></div>
-                        <div class="card-body p-3">
-                            {% if not blokade %}
-                                <p class="text-muted mb-0">Trenutno nema uređaja koji su pogriješili PIN 5 puta.</p>
-                            {% else %}
-                                <div class="table-responsive"><table class="table table-sm text-white table-hover mb-0">
-                                    <thead><tr style="border-bottom: 2px solid #2d3446;"><th class="text-muted py-2">IP Otklj. Hash</th><th class="text-muted py-2">Istječe u</th><th class="text-muted py-2">Akcija</th></tr></thead>
-                                    <tbody>
-                                        {% for b in blokade %}
-                                        <tr>
-                                            <td class="small font-monospace text-white align-middle">{{ b.kratki_ip }}...</td>
-                                            <td class="small text-info align-middle">{{ b.prikaz_vremena }}</td>
-                                            <td class="align-middle"><form method="POST" class="m-0"><input type="hidden" name="ip_adresa" value="{{ b.ip_adresa }}"><button type="submit" name="akcija" value="odblokiraj" class="btn btn-sm btn-outline-warning py-1">Odblokiraj</button></form></td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table></div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="card" style="border-top: 4px solid #38bdf8;">
-                        <div class="card-header-custom"><h6 class="mb-0 fw-bold text-info"><i class="fa-solid fa-database me-2"></i> Zdravlje Baze Podataka</h6></div>
-                        <div class="card-body p-3">
-                            <ul class="list-group list-group-flush" style="background: transparent;">
-                                <li class="list-group-item d-flex justify-content-between text-white" style="background: transparent; border-color: #222736;">Veličina Datoteke: <b class="text-info">{{ db_velicina_mb }} MB</b></li>
-                                <li class="list-group-item d-flex justify-content-between text-white" style="background: transparent; border-color: #222736;">Ukupno Naloga u bazi: <b class="text-info">{{ uk_naloga }}</b></li>
-                                <li class="list-group-item d-flex justify-content-between text-white" style="background: transparent; border-color: #222736;">Ukupno Pozicija u bazi: <b class="text-info">{{ uk_pozicija }}</b></li>
-                            </ul>
-                            <small class="text-muted d-block mt-3">* Preporuka je arhivirati stare naloge ako baza prijeđe 50 MB kako bi pogon radio maksimalnom brzinom.</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """
-    return render_template_string(f"<!DOCTYPE html><html>{STIL_I_NAVIGACIJA}{BODY_OPEN_TAG}{NAVBAR_TEMPLATE}{glavni_sadrzaj}</body></html>", blokade=blokade, uk_naloga=uk_naloga, uk_pozicija=uk_pozicija, db_velicina_mb=db_velicina_mb)
-
+    return render_template('dev_panel.html', blokade=blokade, uk_naloga=uk_naloga, uk_pozicija=uk_pozicija, db_velicina_mb=db_velicina_mb, maint_status=maint_status)
 
 @app.route('/sefo_panel', methods=['GET', 'POST'])
 def index_master():
-    if 'role' not in session or session['role'] not in ['Admin', 'Developer']: return redirect(url_for('login'))
+    if request.cookies.get('pogon_role') not in ['Admin', 'Developer']: return redirect(url_for('login'))
     conn = get_db_connection()
     if request.method == 'POST':
         naziv = request.form['naziv_naloga']
@@ -1054,7 +369,7 @@ def index_master():
         try:
             stavke = json.loads(request.form.get('kosarica_data', '[]'))
             for s in stavke:
-                conn.execute('INSERT INTO nalog_pozicije (nalog_id, naziv_pozicije, ciljana_kolicina, laser_komada, bravarija_komada) VALUES (?, ?, ?, 0, 0)', (nalog_id, s['naziv'], int(s.get('komada', 0))))
+                conn.execute('INSERT INTO nalog_pozicije (nalog_id, naziv_pozicije, ciljana_kolicina, laser_komada, laser_skart, bravarija_komada, bravarija_skart, laser_priprema_sati, laser_priprema_minute, laser_rezanje_sati, laser_rezanje_minute, bravarija_priprema_sati, bravarija_priprema_minute, bravarija_piganje_sati, bravarija_piganje_minute) VALUES (?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)', (nalog_id, s['naziv'], int(s.get('komada', 0))))
         except Exception: pass
         conn.commit()
         return redirect(url_for('index_master'))
@@ -1073,325 +388,11 @@ def index_master():
         else: aktivni_nalozi.append(n)
             
     conn.close()
-    
-    glavni_sadrzaj = """
-    <div class="container-fluid glavni-prostor">
-        <div id="glavni-dinamicni-dio">
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card border-info">
-                        <div class="card-header-custom bg-info bg-opacity-10 text-info border-info border-opacity-25">
-                            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-circle-plus me-2"></i>Lansiranje Novog Radnog Naloga</h5>
-                        </div>
-                        <div class="card-body p-4">
-                            <form method="POST" enctype="multipart/form-data" class="row g-3" id="form-kreiranje">
-                                <div class="col-lg-3 col-md-6"><label class="form-label">Naziv Firme / Kupca</label><input type="text" class="form-control kreiranje-nav" name="naziv_naloga" placeholder="npr. IBO Metal..." required></div>
-                                <div class="col-lg-3 col-md-6"><label class="form-label">Naziv Projekta</label><input type="text" class="form-control kreiranje-nav" name="naziv_projekta" placeholder="npr. Ograda 2. faza..."></div>
-                                <div class="col-lg-3 col-md-6"><label class="form-label text-warning">Kreator Naloga</label><input type="text" class="form-control kreiranje-nav border-warning text-warning fw-bold" name="kreirao" placeholder="Vaše ime..." required oninput="this.value=this.value.replace(/[0-9]/g,'');"></div>
-                                <div class="col-lg-3 col-md-6"><label class="form-label">Debljina ploče</label><input type="text" class="form-control kreiranje-nav" name="debljina_ploce" placeholder="npr. 5 mm, 12 mm..."></div>
-                                <div class="col-12 mt-3"><label class="form-label">Dodatni opis i upute za pogon</label><textarea class="form-control auto-expand kreiranje-nav" name="opis" placeholder="npr. Paziti na ogrebotine, hitno..." oninput="autoProsiri(this)"></textarea></div>
-                                <div class="col-12 mt-4 pt-3 border-top border-secondary border-opacity-25">
-                                    <h6 class="text-info fw-bold mb-3"><i class="fa-solid fa-cart-flatbed me-2"></i>Dodavanje stavki (Pozicija) u nalog (Opcionalno)</h6>
-                                    <div class="row g-2 align-items-end mb-3">
-                                        <div class="col-md-5"><label class="form-label small text-muted mb-1">Naziv pozicije s nacrta</label><input type="text" id="cart_naziv" class="form-control form-control-sm border-info" placeholder="npr. Nosač A"></div>
-                                        <div class="col-md-3"><label class="form-label small text-muted mb-1">Potrebno (kom)</label><input type="number" id="cart_komada" class="form-control form-control-sm border-info" placeholder="0" min="0"></div>
-                                        <div class="col-md-4"><button type="button" class="btn btn-sm btn-info text-white w-100 fw-bold py-2" onclick="dodajUKosaricu()"><i class="fa-solid fa-plus me-1"></i> Dodaj stavku</button></div>
-                                    </div>
-                                    <div class="table-responsive tamni-kontejner p-0">
-                                        <table class="table table-sm text-white mb-0" id="cart_table" style="display: none;"><thead class="bg-dark text-secondary" style="font-size: 0.8rem;"><tr><th class="ps-3 py-2">Pozicija</th><th class="py-2">Potrebno Komada</th><th class="text-end pe-3 py-2">Ukloni</th></tr></thead><tbody id="cart_body"></tbody></table>
-                                    </div>
-                                    <input type="hidden" name="kosarica_data" id="kosarica_data" value="[]">
-                                </div>
-                                <div class="col-lg-4 col-md-6 mt-4">
-                                    <label class="form-label">PDF Nacrti - <small class="text-danger">Možete odabrati više datoteka</small></label>
-                                    <input type="file" class="form-control kreiranje-nav" name="pdf_file" accept=".pdf" multiple onchange="azurirajBrojacDatoteka(this, 'pdf_brojac_label', 'fa-file-pdf', 'Priloženi PDF nacrti')">
-                                    <div id="pdf_brojac_label" class="mt-1 small"></div>
-                                </div>
-                                <div class="col-lg-4 col-md-6 mt-4">
-                                    <label class="form-label">Strojne datoteke (DXF/LXDS) - <small class="text-info">Možete odabrati više datoteka</small></label>
-                                    <input type="file" class="form-control kreiranje-nav" name="lxdf_file" accept=".lxds,.dxf" multiple onchange="azurirajBrojacDatoteka(this, 'dxf_brojac_label', 'fa-file-code', 'Priložene strojne datoteke')">
-                                    <div id="dxf_brojac_label" class="mt-1 small"></div>
-                                </div>
-                                <div class="col-12 mt-4 d-flex gap-2 btn-rutiranje-grupa">
-                                    <button type="submit" name="rutiranje" value="Samo Rezanje" class="btn btn-danger flex-fill fw-bold py-2"><i class="fa-solid fa-fire me-2"></i>Šalji na REZANJE</button>
-                                    <button type="submit" name="rutiranje" value="Samo Bravarija" class="btn btn-warning text-dark flex-fill fw-bold py-2"><i class="fa-solid fa-hammer me-2"></i>Šalji u BRAVARIJU</button>
-                                    <button type="submit" name="rutiranje" value="Pogon" class="btn btn-info text-white flex-fill fw-bold py-2"><i class="fa-solid fa-industry me-2"></i>Šalji u POGON</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- AKTIVNI NALOZI KARTICA -->
-            <div class="card mb-4" style="border-top: 4px solid #38bdf8;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-industry text-info me-2"></i>Aktivni Nalozi (U Radu / Na Čekanju)</h5>
-                </div>
-                <div class="card-body p-0 pt-2">
-                    <div class="table-responsive px-3">
-                        <table class="table align-middle table-modern m-0">
-                            <thead><tr><th class="ps-4">ID</th><th>Kupac / Projekt</th><th>Status / Ruta</th><th style="min-width: 320px;">Upute i Napomene</th><th>Nacrti</th><th class="pe-4">Opcije</th></tr></thead>
-                            <tbody>
-                                {% if not aktivni_nalozi %}
-                                    <tr><td colspan="6" class="text-center py-4 text-muted">Nema aktivnih naloga u pogonu.</td></tr>
-                                {% endif %}
-                                
-                                {% for n in aktivni_nalozi %}
-                                {% set row_state = 'pending' %}
-                                {% if 'Pauzirano' in n.status %}{% set row_state = 'paused' %}
-                                {% elif (n.status == 'Laser' and n.laser_zapoceto_u) or (n.status == 'Piganje' and n.bravarija_zapoceto_u) %}{% set row_state = 'active' %}{% endif %}
-                                
-                                <tr class="row-state-{{ row_state }}">
-                                    <td class="fs-5 text-muted ps-4 fw-bold">#{{ n.id }}</td>
-                                    <td>
-                                        <div class="fs-5 fw-bold {% if row_state == 'paused' %}txt-paused{% elif row_state == 'active' %}txt-active{% else %}text-white{% endif %}">{{ n.naziv_naloga }}</div>
-                                        <div class="text-info small opacity-75">
-                                            {{ n.naziv_projekta }}
-                                            {% if n.debljina_ploce %} &bull; <span class="badge bg-dark text-info border border-info border-opacity-25">D: {{ n.debljina_ploce }}</span>{% endif %}
-                                            {% if n.kreirao %} &bull; <i class="fa-solid fa-user-pen text-warning me-1"></i><span class="text-warning fw-bold">{{ n.kreirao }}</span>{% endif %}
-                                            {% if n.dimenzije_ploce_laser %} &bull; <i class="fa-solid fa-ruler-combined text-info me-1"></i><span class="text-info">Ploča: {{ n.dimenzije_ploce_laser }}</span>{% endif %}
-                                            {% if n.materijal_ploce_laser %} &bull; <i class="fa-solid fa-layer-group text-info me-1"></i><span class="text-info">Materijal: {{ n.materijal_ploce_laser }}</span>{% endif %}
-                                        </div>
-                                        {% if n.pozicije %}
-                                            <button class="btn btn-sm btn-outline-info mt-2 py-0 px-2" style="font-size:0.75rem; border-radius:6px;" type="button" data-bs-toggle="collapse" data-bs-target="#detalji-{{ n.id }}"><i class="fa-solid fa-chevron-down me-1"></i> Detalji i Vrijeme</button>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% set prikaz_rute = 'Samo Rezanje' if n.rutiranje == 'Samo Laser' else n.rutiranje %}
-                                        {% if row_state == 'paused' %}
-                                            <span class="badge badge-modern badge-paused py-2 px-3 shadow-sm"><i class="fa-solid fa-pause me-1"></i> {{ prikaz_rute }} (Pauzirano)</span>
-                                        {% elif row_state == 'active' %}
-                                            <span class="badge badge-modern badge-active py-2 px-3 shadow-sm"><i class="fa-solid fa-gear fa-spin me-1"></i> {{ prikaz_rute }} (U radu)</span>
-                                        {% else %}
-                                            <span class="badge badge-modern badge-pending py-2 px-3 shadow-sm"><i class="fa-solid fa-hourglass-half me-1"></i> {{ prikaz_rute }} (Na čekanju)</span>
-                                        {% endif %}
-                                        
-                                        {% set lokacija_rada = None %}
-                                        {% if row_state == 'active' %}
-                                            {% if n.status == 'Laser' and n.odabrani_laser %}{% set lokacija_rada = n.odabrani_laser|upper %}
-                                            {% elif n.status == 'Piganje' %}{% set lokacija_rada = 'BRAVARIJA' %}{% endif %}
-                                        {% endif %}
-                                        
-                                        {% if lokacija_rada %}
-                                        <div class="mt-2 text-start">
-                                            <span class="badge bg-dark border {% if 'LASER' in lokacija_rada %}border-danger text-danger{% else %}border-warning text-warning{% endif %} px-3 py-1 shadow-sm" style="border-radius: 6px; font-size: 0.72rem; letter-spacing: 0.5px; opacity: 0.9;">
-                                                <i class="fa-solid {% if 'LASER' in lokacija_rada %}fa-crosshairs{% else %}fa-hammer{% endif %} me-1 opacity-75"></i> OBRADA NA: {{ lokacija_rada }}
-                                            </span>
-                                        </div>
-                                        {% endif %}
-                                    </td>
-                                    <td style="max-width: 350px;">
-                                        {% if n.opis or n.laser_napomena or n.bravarija_napomena %}
-                                            {% set sve_ukupno = (n.opis|length if n.opis else 0) + (n.laser_napomena|length if n.laser_napomena else 0) + (n.bravarija_napomena|length if n.bravarija_napomena else 0) %}
-                                            {% if sve_ukupno > 100 %}
-                                                <button class="btn btn-sm btn-outline-info w-100 text-start rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#opis-{{ n.id }}"><i class="fa-solid fa-book-open me-2"></i> Čitaj opise i napomene</button>
-                                                <div class="collapse mt-2" id="opis-{{ n.id }}">
-                                                    {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute Poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                                                    {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Napomena iz Lasera:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                                                    {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Napomena iz Bravarije:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
-                                                </div>
-                                            {% else %}
-                                                <div>
-                                                    {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute Poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                                                    {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Napomena iz Lasera:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                                                    {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Napomena iz Bravarije:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
-                                                </div>
-                                            {% endif %}
-                                        {% else %}<span class="text-muted small">Nema napomena</span>{% endif %}
-                                    </td>
-                                    <td>
-                                        {% if n.pdf_datoteke|length == 1 %}
-                                            <a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1 rounded-3" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
-                                        {% elif n.pdf_datoteke|length > 1 %}
-                                            <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                                <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF ({{ n.pdf_datoteke|length }})</button>
-                                                <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
-                                                    {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                        {% if n.lxdf_datoteke|length == 1 %}
-                                            <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1 rounded-3"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
-                                        {% elif n.lxdf_datoteke|length > 1 %}
-                                            <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                                <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne dat. ({{ n.lxdf_datoteke|length }})</button>
-                                                <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
-                                                    {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                    </td>
-                                    <td class="pe-4">
-                                        <a href="#" class="btn btn-outline-danger btn-sm w-100 mob-full-btn border-0" style="border-radius: 8px; background: rgba(220,53,69,0.1);" title="Trajno obriši" onclick="event.preventDefault(); potvrdiBrisanje('/obrisi/{{ n.id }}');"><i class="fa-solid fa-trash text-danger"></i> <span class="text-danger">Obriši</span></a>
-                                    </td>
-                                </tr>
-                                
-                                {% if n.pozicije %}
-                                <tr class="collapse row-state-{{ row_state }}" id="detalji-{{ n.id }}">
-                                    <td colspan="6" class="p-4" style="background-color: transparent;">
-                                        <div class="tamni-kontejner p-0 shadow-lg mt-1 overflow-hidden" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                                            <h6 class="fw-bold text-info bg-dark bg-opacity-50 p-3 mb-0 border-bottom border-secondary border-opacity-25"><i class="fa-solid fa-chart-simple me-2"></i>Specifikacija odrađenih pozicija</h6>
-                                            <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822;">
-                                                <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;">
-                                                    <tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr>
-                                                </thead>
-                                                <tbody>
-                                                    {% for p in n.pozicije %}
-                                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                                        <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
-                                                        <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
-                                                            <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
-                                                            <span class="badge bg-success text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada }} kom</span>
-                                                            <span class="badge bg-danger text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.laser_skart }} škart</span><br>
-                                                        </td>
-                                                        <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
-                                                            <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
-                                                            <span class="badge bg-success text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada }} kom</span>
-                                                            <span class="badge bg-danger text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.bravarija_skart }} škart</span><br>
-                                                        </td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ZAVRŠENI NALOZI KARTICA -->
-            <div class="card mb-4" style="border-top: 4px solid #10b981;">
-                <div class="card-header-custom d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-check-double text-success me-2"></i>Završeni Nalozi (Spremno za Pregled)</h5>
-                </div>
-                <div class="card-body p-0 pt-2">
-                    <div class="table-responsive px-3">
-                        <table class="table align-middle table-modern m-0">
-                            <thead><tr><th class="ps-4">ID</th><th>Kupac / Projekt</th><th>Status / Ruta</th><th style="min-width: 320px;">Upute i Napomene</th><th>Nacrti</th><th class="pe-4">Opcije</th></tr></thead>
-                            <tbody>
-                                {% if not zavrseni_nalozi %}
-                                    <tr><td colspan="6" class="text-center py-4 text-muted">Nema završenih naloga koji čekaju pregled.</td></tr>
-                                {% endif %}
-                                
-                                {% for n in zavrseni_nalozi %}
-                                <tr class="row-state-completed">
-                                    <td class="fs-5 text-muted ps-4 fw-bold">#{{ n.id }}</td>
-                                    <td>
-                                        <div class="fs-5 fw-bold txt-completed">{{ n.naziv_naloga }}</div>
-                                        <div class="text-info small opacity-75">
-                                            {{ n.naziv_projekta }}
-                                            {% if n.debljina_ploce %} &bull; <span class="badge bg-dark text-info border border-info border-opacity-25">D: {{ n.debljina_ploce }}</span>{% endif %}
-                                            {% if n.kreirao %} &bull; <i class="fa-solid fa-user-pen text-warning me-1"></i><span class="text-warning fw-bold">{{ n.kreirao }}</span>{% endif %}
-                                            {% if n.dimenzije_ploce_laser %} &bull; <i class="fa-solid fa-ruler-combined text-info me-1"></i><span class="text-info">Ploča: {{ n.dimenzije_ploce_laser }}</span>{% endif %}
-                                            {% if n.materijal_ploce_laser %} &bull; <i class="fa-solid fa-layer-group text-info me-1"></i><span class="text-info">Materijal: {{ n.materijal_ploce_laser }}</span>{% endif %}
-                                        </div>
-                                        {% if n.pozicije %}
-                                            <button class="btn btn-sm btn-outline-info mt-2 py-0 px-2" style="font-size:0.75rem; border-radius:6px;" type="button" data-bs-toggle="collapse" data-bs-target="#detalji-zav-{{ n.id }}"><i class="fa-solid fa-chevron-down me-1"></i> Detalji i Vrijeme</button>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-modern badge-completed py-2 px-3 shadow-sm"><i class="fa-solid fa-check-double me-1"></i> SPREMNO ZA PREGLED</span>
-                                    </td>
-                                    <td style="max-width: 350px;">
-                                        {% if n.opis or n.laser_napomena or n.bravarija_napomena %}
-                                            {% set sve_ukupno = (n.opis|length if n.opis else 0) + (n.laser_napomena|length if n.laser_napomena else 0) + (n.bravarija_napomena|length if n.bravarija_napomena else 0) %}
-                                            {% if sve_ukupno > 100 %}
-                                                <button class="btn btn-sm btn-outline-info w-100 text-start rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#opis-zav-{{ n.id }}"><i class="fa-solid fa-book-open me-2"></i> Čitaj opise i napomene</button>
-                                                <div class="collapse mt-2" id="opis-zav-{{ n.id }}">
-                                                    {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute Poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                                                    {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Napomena iz Lasera:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                                                    {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Napomena iz Bravarije:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
-                                                </div>
-                                            {% else %}
-                                                <div>
-                                                    {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute Poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                                                    {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Napomena iz Lasera:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                                                    {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Napomena iz Bravarije:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
-                                                </div>
-                                            {% endif %}
-                                        {% else %}<span class="text-muted small">Nema napomena</span>{% endif %}
-                                    </td>
-                                    <td>
-                                        {% if n.pdf_datoteke|length == 1 %}
-                                            <a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1 rounded-3" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
-                                        {% elif n.pdf_datoteke|length > 1 %}
-                                            <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                                <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF ({{ n.pdf_datoteke|length }})</button>
-                                                <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
-                                                    {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                        {% if n.lxdf_datoteke|length == 1 %}
-                                            <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1 rounded-3"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
-                                        {% elif n.lxdf_datoteke|length > 1 %}
-                                            <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                                <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne dat. ({{ n.lxdf_datoteke|length }})</button>
-                                                <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
-                                                    {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                    </td>
-                                    <td class="pe-4">
-                                        <a href="/preuzmi_izvjestaj/{{ n.id }}" class="btn btn-outline-success btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;"><i class="fa-solid fa-download me-1"></i> Spremi (ZIP)</a>
-                                        <a href="/arhiviraj_nalog/{{ n.id }}" class="btn btn-outline-secondary btn-sm w-100 mb-2 fw-bold mob-full-btn text-white" style="border-radius: 8px;"><i class="fa-solid fa-box-archive me-1"></i> Arhiviraj</a>
-                                        <a href="#" class="btn btn-outline-danger btn-sm w-100 mob-full-btn border-0" style="border-radius: 8px; background: rgba(220,53,69,0.1);" title="Trajno obriši" onclick="event.preventDefault(); potvrdiBrisanje('/obrisi/{{ n.id }}');"><i class="fa-solid fa-trash text-danger"></i> <span class="text-danger">Obriši</span></a>
-                                    </td>
-                                </tr>
-                                
-                                {% if n.pozicije %}
-                                <tr class="collapse row-state-completed" id="detalji-zav-{{ n.id }}">
-                                    <td colspan="6" class="p-4" style="background-color: transparent;">
-                                        <div class="tamni-kontejner p-0 shadow-lg mt-1 overflow-hidden" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                                            <h6 class="fw-bold text-info bg-dark bg-opacity-50 p-3 mb-0 border-bottom border-secondary border-opacity-25"><i class="fa-solid fa-chart-simple me-2"></i>Specifikacija odrađenih pozicija</h6>
-                                            <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822;">
-                                                <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;">
-                                                    <tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr>
-                                                </thead>
-                                                <tbody>
-                                                    {% for p in n.pozicije %}
-                                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                                        <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
-                                                        <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
-                                                            <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
-                                                            <span class="badge bg-success text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada }} kom</span>
-                                                            <span class="badge bg-danger text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.laser_skart }} škart</span><br>
-                                                        </td>
-                                                        <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
-                                                            <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span><br>
-                                                            <span class="badge bg-success text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada }} kom</span>
-                                                            <span class="badge bg-danger text-white fw-bold shadow-sm mt-2 me-1 px-2 py-1" style="font-size: 0.85rem;">{{ p.bravarija_skart }} škart</span><br>
-                                                        </td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """
-    return render_template_string(f"<!DOCTYPE html><html>{STIL_I_NAVIGACIJA}{BODY_OPEN_TAG}{NAVBAR_TEMPLATE}{glavni_sadrzaj}{MODAL_HTML}</body></html>", aktivni_nalozi=aktivni_nalozi, zavrseni_nalozi=zavrseni_nalozi)
-
+    return render_template('sefo_panel.html', aktivni_nalozi=aktivni_nalozi, zavrseni_nalozi=zavrseni_nalozi)
 
 @app.route('/arhiva')
 def arhiva():
-    if 'role' not in session or session['role'] not in ['Admin', 'Developer']: return redirect(url_for('login'))
+    if request.cookies.get('pogon_role') not in ['Admin', 'Developer']: return redirect(url_for('login'))
     conn = get_db_connection()
     nalozi_rows = conn.execute("SELECT * FROM radni_nalozi WHERE status = 'Arhivirano' ORDER BY id DESC").fetchall()
     nalozi = []
@@ -1402,128 +403,7 @@ def arhiva():
         n['pdf_datoteke'] = parsiraj_listu_datoteka(n['pdf_datoteka'])
         nalozi.append(n)
     conn.close()
-
-    glavni_sadrzaj = """
-    <div class="container-fluid glavni-prostor">
-        <div id="glavni-dinamicni-dio">
-            <h3 class="mb-4 fw-bold text-white"><i class="fa-solid fa-box-archive text-secondary me-2"></i> ARHIVA ZAVRŠENIH NALOGA</h3>
-            <div class="card">
-                <div class="card-header-custom d-flex justify-content-between align-items-center flex-mob-col">
-                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check text-muted me-2"></i>Svi arhivirani poslovi</h5>
-                    <div class="position-relative" style="max-width: 350px; width: 100%;">
-                        <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left: 14px; top: 12px;"></i>
-                        <input type="text" id="traziArhivu" class="form-control bg-dark border-secondary text-white ps-5" placeholder="Pretraži (Kupac, Projekt, ID)..." onkeyup="filtrirajArhivu()">
-                    </div>
-                </div>
-                <div class="card-body p-0 pt-2">
-                    <div class="table-responsive px-3">
-                        <table class="table align-middle table-modern m-0">
-                            <thead><tr><th class="ps-4">ID</th><th>Kupac / Projekt</th><th>Status / Ruta</th><th style="min-width: 320px;">Upute i Napomene</th><th>Nacrti</th><th class="pe-4">Opcije</th></tr></thead>
-                            <tbody>
-                                {% if not nalozi %}
-                                    <tr><td colspan="6" class="text-center py-5 text-muted">Nema arhiviranih naloga.</td></tr>
-                                {% endif %}
-                                {% for n in nalozi %}
-                                <tr class="row-state-completed arhiva-red" data-search="{{ n.id }} {{ n.naziv_naloga }} {{ n.naziv_projekta }}" data-id="{{ n.id }}" style="opacity: 0.85;">
-                                    <td class="fs-5 text-muted ps-4 fw-bold">#{{ n.id }}</td>
-                                    <td>
-                                        <div class="fs-5 fw-bold text-white">{{ n.naziv_naloga }}</div>
-                                        <div class="text-info small opacity-75">
-                                            {{ n.naziv_projekta }}
-                                            {% if n.debljina_ploce %} &bull; <span class="badge bg-dark text-info border border-info border-opacity-25">D: {{ n.debljina_ploce }}</span>{% endif %}
-                                            {% if n.kreirao %} &bull; <i class="fa-solid fa-user-pen text-warning me-1"></i><span class="text-warning fw-bold">{{ n.kreirao }}</span>{% endif %}
-                                        </div>
-                                        {% if n.pozicije %}
-                                            <button class="btn btn-sm btn-outline-secondary mt-2 py-0 px-2" style="font-size:0.75rem; border-radius:6px;" type="button" data-bs-toggle="collapse" data-bs-target="#detalji-{{ n.id }}"><i class="fa-solid fa-chevron-down me-1"></i> Detalji i Vrijeme</button>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-modern badge-pending py-2 px-3 shadow-sm"><i class="fa-solid fa-box-archive me-1"></i> ARHIVIRANO</span>
-                                    </td>
-                                    <td style="max-width: 350px;">
-                                        {% if n.opis or n.laser_napomena or n.bravarija_napomena %}
-                                            {% set sve_ukupno = (n.opis|length if n.opis else 0) + (n.laser_napomena|length if n.laser_napomena else 0) + (n.bravarija_napomena|length if n.bravarija_napomena else 0) %}
-                                            {% if sve_ukupno > 100 %}
-                                                <button class="btn btn-sm btn-outline-info w-100 text-start rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#opis-{{ n.id }}"><i class="fa-solid fa-book-open me-2"></i> Čitaj opise</button>
-                                                <div class="collapse mt-2" id="opis-{{ n.id }}">
-                                                    {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Poslovođa:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                                                    {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Laser:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                                                    {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Bravarija:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
-                                                </div>
-                                            {% else %}
-                                                <div>
-                                                    {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Poslovođa:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                                                    {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Laser:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                                                    {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Bravarija:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
-                                                </div>
-                                            {% endif %}
-                                        {% else %}<span class="text-muted small">Nema napomena</span>{% endif %}
-                                    </td>
-                                    <td>
-                                        {% if n.pdf_datoteke|length == 1 %}
-                                            <a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1 rounded-3" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
-                                        {% elif n.pdf_datoteke|length > 1 %}
-                                            <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                                <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF ({{ n.pdf_datoteke|length }})</button>
-                                                <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
-                                                    {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                        {% if n.lxdf_datoteke|length == 1 %}
-                                            <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1 rounded-3"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
-                                        {% elif n.lxdf_datoteke|length > 1 %}
-                                            <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                                <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne dat. ({{ n.lxdf_datoteke|length }})</button>
-                                                <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
-                                                    {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
-                                                </ul>
-                                            </div>
-                                        {% endif %}
-                                    </td>
-                                    <td class="pe-4">
-                                        <a href="/preuzmi_izvjestaj/{{ n.id }}" class="btn btn-outline-success btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;"><i class="fa-solid fa-download me-1"></i> Spremi (ZIP)</a>
-                                        <a href="#" class="btn btn-outline-danger btn-sm w-100 mob-full-btn border-0" style="border-radius: 8px; background: rgba(220,53,69,0.1);" title="Trajno obriši" onclick="event.preventDefault(); potvrdiBrisanje('/obrisi/{{ n.id }}');"><i class="fa-solid fa-trash text-danger"></i> <span class="text-danger">Obriši</span></a>
-                                    </td>
-                                </tr>
-                                
-                                {% if n.pozicije %}
-                                <tr class="collapse row-state-completed" id="detalji-{{ n.id }}">
-                                    <td colspan="6" class="p-4" style="background-color: transparent;">
-                                        <div class="tamni-kontejner p-0 shadow-lg mt-1 overflow-hidden" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                                            <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822;">
-                                                <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;">
-                                                    <tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr>
-                                                </thead>
-                                                <tbody>
-                                                    {% for p in n.pozicije %}
-                                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                                        <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
-                                                        <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
-                                                            <span class="badge bg-success text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada }} kom</span>
-                                                        </td>
-                                                        <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
-                                                            <span class="badge bg-success text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada }} kom</span>
-                                                        </td>
-                                                    </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """
-    return render_template_string(f"<!DOCTYPE html><html>{STIL_I_NAVIGACIJA}{BODY_OPEN_TAG}{NAVBAR_TEMPLATE}{glavni_sadrzaj}{MODAL_HTML}</body></html>", nalozi=nalozi)
-
+    return render_template('arhiva.html', nalozi=nalozi)
 
 @app.route('/preuzmi_izvjestaj/<int:id>')
 def preuzmi_izvjestaj(id):
@@ -1562,12 +442,8 @@ def preuzmi_izvjestaj(id):
                     
             report_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Proizvodni Izvještaj - Nalog #{id}</title><style>body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #1a202c; margin: 0; padding: 30px; }} .wrapper {{ max-width: 900px; background: #ffffff; margin: 0 auto; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-top: 8px solid #dc3545; }} .logo-container {{ background-color: #ffffff; padding: 10px; border-radius: 8px; display: inline-flex; align-items: center; }} .logo-img {{ filter: brightness(1.35) saturate(1.25) contrast(1.1); max-height: 55px; width: auto; }} .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 25px; }} .meta-title {{ font-size: 14px; text-transform: uppercase; color: #64748b; text-align: right; font-weight: bold; letter-spacing: 1px; line-height: 1.4; }} .info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }} .info-card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0dcaf0; padding: 14px 18px; border-radius: 8px; }} .info-card h3 {{ margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }} .info-card p {{ margin: 0; font-size: 15px; font-weight: 600; color: #0f172a; }} .napomena-kontejner {{ margin-bottom: 30px; }} .napomena-card {{ padding: 15px 18px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #dc3545; background: #fffafb; border: 1px solid #fecdd3; border-right: 1px solid #fecdd3; border-bottom: 1px solid #fecdd3; }} .napomena-card.bravarija {{ border-left-color: #ea580c; background: #fffdfa; border-color: #ffedd5; }} .napomena-card.poslovođa {{ border-left-color: #0dcaf0; background: #f0fdfa; border-color: #ccfbf1; }} .napomena-card h4 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; color: #475569; }} .napomena-card p {{ margin: 0; font-size: 14px; font-weight: 500; color: #1e293b; white-space: pre-wrap; }} .table-section {{ margin-top: 30px; }} .table-section h2 {{ font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 15px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; }} table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }} th {{ background: #f1f5f9; color: #475569; text-align: left; padding: 12px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #cbd5e1; }} td {{ padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-size: 14px; vertical-align: middle; color: #334155; }} tr:nth-child(even) td {{ background: #f8fafc; }} .badge {{ display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; text-transform: uppercase; margin-right: 4px; }} .badge-info {{ background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }} .badge-success {{ background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }} .badge-danger {{ background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }} .radnik-info {{ font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.4; }} .footer {{ text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }} @media print {{ @page {{ margin: 1cm; size: A4 portrait; }} body {{ background-color: #ffffff !important; padding: 0; color: #000; }} .wrapper {{ box-shadow: none; padding: 0; border-top: none; max-width: 100%; }} .btn, .navbar {{ display: none !important; }} * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }} }}</style></head><body><div class="wrapper"><div class="header"><div class="logo-container">{"<img src='data:image/" + logo_ext + ";base64," + logo_base64 + "' class='logo-img' alt='FirstCutLaser'>" if logo_base64 else "<h1 style='color:#dc3545; margin:0;'>FIRST CUT LASER</h1>"}</div><div class="meta-title">Arhivski Izvještaj Pogona<br><span style="color:#0f172a; font-size:16px;">Nalog #{id}</span></div></div><div class="info-grid"><div class="info-card"><h3>Kupac / Partner</h3><p>{n['naziv_naloga'] if n['naziv_naloga'] else '-'}</p></div><div class="info-card"><h3>Naziv Projekta</h3><p>{n['naziv_projekta'] if n['naziv_projekta'] else '-'}</p></div><div class="info-card"><h3>Kreator Naloga</h3><p>{n['kreirao'] if n['kreirao'] else '-'}</p></div><div class="info-card"><h3>Proizvodna Ruta</h3><p>{n['rutiranje'] if n['rutiranje'] else '-'}</p></div><div class="info-card"><h3>Debljina Materijala</h3><p>{n['debljina_ploce'] if n['debljina_ploce'] else '-'}</p></div><div class="info-card"><h3>Dimenzije uložene ploče</h3><p>{n['dimenzije_ploce_laser'] if n['dimenzije_ploce_laser'] else '-'}</p></div><div class="info-card"><h3>Materijal ploče</h3><p>{n['materijal_ploce_laser'] if n['materijal_ploce_laser'] else '-'}</p></div></div><div class="napomena-kontejner">{"<div class='napomena-card poslovođa'><h4><i class='fa-solid fa-user-tie'></i> Upute Poslovođe</h4><p>" + n['opis'] + "</p></div>" if n['opis'] else ""}{"<div class='napomena-card'><h4><i class='fa-solid fa-fire'></i> Napomena s Lasera</h4><p>" + n['laser_napomena'] + "</p></div>" if n['laser_napomena'] else ""}{"<div class='napomena-card bravarija'><h4><i class='fa-solid fa-hammer'></i> Napomena iz Bravarije</h4><p>" + n['bravarija_napomena'] + "</p></div>" if n['bravarija_napomena'] else ""}</div><div class="table-section"><h2>Specifikacija Izvršenih Pozicija</h2><table><thead><tr><th>Naziv Pozicije s Nacrta</th><th>Faza 1: Rezanje (Laser)</th><th>Faza 2: Bravarska Obrada</th></tr></thead><tbody>"""
             for p in pozicije:
-                if p['laser_priprema_sati'] or p['laser_priprema_minute'] or p['laser_rezanje_sati'] or p['laser_rezanje_minute']:
-                    vrijeme_laser = f"Priprema: {p['laser_priprema_sati']}h {p['laser_priprema_minute']}m<br>Rezanje: {p['laser_rezanje_sati']}h {p['laser_rezanje_minute']}m"
-                else: vrijeme_laser = f"Vrijeme: {p['laser_sati']}h {p['laser_minute']}m"
-                if p['bravarija_priprema_sati'] or p['bravarija_priprema_minute'] or p['bravarija_piganje_sati'] or p['bravarija_piganje_minute']:
-                    vrijeme_bravarija = f"Priprema: {p['bravarija_priprema_sati']}h {p['bravarija_priprema_minute']}m<br>Piganje: {p['bravarija_piganje_sati']}h {p['bravarija_piganje_minute']}m"
-                else: vrijeme_bravarija = f"Vrijeme: {p['bravarija_sati']}h {p['bravarija_minute']}m"
+                vrijeme_laser = f"Priprema: {p['laser_priprema_sati']}h {p['laser_priprema_minute']}m<br>Rezanje: {p['laser_rezanje_sati']}h {p['laser_rezanje_minute']}m" if p['laser_priprema_sati'] or p['laser_priprema_minute'] or p['laser_rezanje_sati'] or p['laser_rezanje_minute'] else f"Vrijeme: {p['laser_sati']}h {p['laser_minute']}m"
+                vrijeme_bravarija = f"Priprema: {p['bravarija_priprema_sati']}h {p['bravarija_priprema_minute']}m<br>Piganje: {p['bravarija_piganje_sati']}h {p['bravarija_piganje_minute']}m" if p['bravarija_priprema_sati'] or p['bravarija_priprema_minute'] or p['bravarija_piganje_sati'] or p['bravarija_piganje_minute'] else f"Vrijeme: {p['bravarija_sati']}h {p['bravarija_minute']}m"
                 report_html += f"""<tr><td style="font-weight: 700; color: #0f172a; font-size: 15px;">{p['naziv_pozicije']}</td><td><div><span class="badge badge-info">POTREBNO: {p['ciljana_kolicina']} KOM</span><br><span class="badge badge-success" style="margin-top:4px;">ODRAĐENO: {p['laser_komada']} KOM</span><span class="badge badge-danger">{p['laser_skart']} ŠKART</span></div><div class="radnik-info">{vrijeme_laser}<br>Radnik: {p['laser_radnik'] if p['laser_radnik'] else '-'}</div></td><td><div><span class="badge badge-info">POTREBNO: {p['ciljana_kolicina']} KOM</span><br><span class="badge badge-success" style="margin-top:4px;">ODRAĐENO: {p['bravarija_komada']} KOM</span><span class="badge badge-danger">{p['bravarija_skart']} ŠKART</span></div><div class="radnik-info">{vrijeme_bravarija}<br>Radnik: {p['bravarija_radnik'] if p['bravarija_radnik'] else '-'}</div></td></tr>"""
             report_html += f"""</tbody></table></div><div class="footer">Sustav First Cut Laser d.o.o. &bull; Izvještaj generiran: {datetime.now().strftime('%d.%m.%Y. u %H:%M')}</div></div></body></html>"""
             zf.writestr(f"Pregled_Naloga_{id}.html", report_html.encode('utf-8'))
@@ -1579,7 +455,7 @@ def preuzmi_izvjestaj(id):
 
 @app.route('/arhiviraj_nalog/<int:id>')
 def arhiviraj_nalog(id):
-    if 'role' not in session or session['role'] not in ['Admin', 'Developer']: return redirect(url_for('login'))
+    if request.cookies.get('pogon_role') not in ['Admin', 'Developer']: return redirect(url_for('login'))
     conn = get_db_connection()
     conn.execute("UPDATE radni_nalozi SET status='Arhivirano' WHERE id=?", (id,))
     conn.commit()
@@ -1592,7 +468,7 @@ def download_file(filename):
 
 @app.route('/obrisi/<int:id>')
 def obrisi_nalog(id):
-    if 'role' not in session or session['role'] not in ['Admin', 'Developer']: return redirect(url_for('login'))
+    if request.cookies.get('pogon_role') not in ['Admin', 'Developer']: return redirect(url_for('login'))
     conn = get_db_connection()
     n = conn.execute('SELECT pdf_datoteka, lxdf_datoteka FROM radni_nalozi WHERE id=?', (id,)).fetchone()
     if n:
@@ -1609,19 +485,35 @@ def obrisi_nalog(id):
     conn.close()
     return redirect(request.referrer or url_for('index_master'))
 
+# --- NOVA ZAŠTITA ZA ZAUZEĆE STANICE ---
 @app.route('/zapocni_fazu/<int:id>/<string:faza>')
 def zapocni_fazu(id, faza):
     trenutni_iso = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     conn = get_db_connection()
+    
     if faza == 'laser': 
         stanica = request.cookies.get('stanica_lokalno', 'Laser')
         ime_lasera = 'Laser 1' if stanica == 'laser1' else 'Laser 2' if stanica == 'laser2' else 'Nepoznat Laser'
+        
+        aktivni = conn.execute("SELECT id FROM radni_nalozi WHERE status='Laser' AND odabrani_laser=? AND laser_zapoceto_u IS NOT NULL", (ime_lasera,)).fetchone()
+        if aktivni:
+            conn.close()
+            return redirect(url_for('sekcija_laser', err='zauzeto'))
+            
         conn.execute("UPDATE radni_nalozi SET status='Laser', laser_zapoceto_u=?, odabrani_laser=? WHERE id=?", (trenutni_iso, ime_lasera, id))
+        
     elif faza == 'bravarija': 
+        aktivni = conn.execute("SELECT id FROM radni_nalozi WHERE status='Piganje' AND bravarija_zapoceto_u IS NOT NULL").fetchone()
+        if aktivni:
+            conn.close()
+            return redirect(url_for('sekcija_bravarija', err='zauzeto'))
+            
         conn.execute("UPDATE radni_nalozi SET status='Piganje', bravarija_zapoceto_u=? WHERE id=?", (trenutni_iso, id))
+        
     conn.commit()
     conn.close()
     return redirect(url_for(f'sekcija_{faza}'))
+# ---------------------------------------
 
 @app.route('/laser', methods=['GET', 'POST'])
 def sekcija_laser():
@@ -1662,139 +554,7 @@ def sekcija_laser():
             n['pdf_datoteke'] = parsiraj_listu_datoteka(n['pdf_datoteka'])
             nalozi.append(n)
     conn.close()
-    
-    glavni_sadrzaj = """
-    <div class="container-fluid glavni-prostor">
-        <div id="ticker-prikaz">
-            """ + TICKER_HTML + """
-        </div>
-        <div id="glavni-dinamicni-dio">
-            <h3 class="mb-4 fw-bold text-white"><i class="fa-solid fa-fire text-danger me-2"></i>STANICA 1: REZANJE (LASER)</h3>
-            {% if not nalozi %}<div class="alert alert-dark text-center my-5 py-5 border-0" style="background: #12141c; color: #94a3b8;">Nema otvorenih naloga na čekanju za rezanje.</div>{% endif %}
-            
-            {% for n in nalozi %}
-            <div class="card p-4" style="border-top: 4px solid {% if n.status == 'Pauzirano - Laser' %}#ffc107{% else %}#ff0000{% endif %} !important;">
-                <div class="d-flex justify-content-between align-items-center mb-2 flex-mob-col">
-                    <div>
-                        <h4 class="fw-bold text-white mb-0">{{ n.naziv_naloga }}</h4>
-                        <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %} | Debljina: <b class="text-info">D: {{ n.debljina_ploce }}</b>{% endif %} | Nalog #{{ n.id }} | Ruta: {{ 'Samo Rezanje' if n.rutiranje == 'Samo Laser' else n.rutiranje }}</small>
-                    </div>
-                    <div class="text-end">
-                        {% if not n.laser_zapoceto_u %}
-                            <a href="/zapocni_fazu/{{ n.id }}/laser" class="btn {% if n.status == 'Pauzirano - Laser' %}btn-warning text-dark{% else %}btn-success{% endif %} fw-bold px-4">
-                                {% if n.status == 'Pauzirano - Laser' %}NASTAVI NALOG{% else %}ZAPOČNI NALOG{% endif %}
-                            </a>
-                        {% else %}
-                            {% if n.odabrani_laser %}<span class="badge bg-dark border border-danger text-danger px-2 py-1 mb-1 shadow-sm" style="border-radius: 6px; font-size: 0.7rem; letter-spacing: 0.5px;"><i class="fa-solid fa-crosshairs me-1"></i>OBRADA NA: {{ n.odabrani_laser|upper }}</span><br>{% endif %}
-                            <span class="badge bg-dark border border-info text-info p-2 fs-6"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                {% if n.opis %}
-                    {% set show_collapse = n.opis|length > 100 %}
-                    {% if show_collapse %}
-                        <button class="btn btn-sm btn-outline-info text-start w-100 my-2" type="button" data-bs-toggle="collapse" data-bs-target="#upute-{{ n.id }}"><i class="fa-solid fa-circle-info me-2"></i> Prikaži upute poslovođe</button>
-                        <div class="collapse" id="upute-{{ n.id }}"><div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div></div>
-                    {% else %}
-                        <div class="napomena-box border-info my-2"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>
-                    {% endif %}
-                {% endif %}
-                
-                <div class="mt-2 mb-4">
-                    {% if n.pdf_datoteke|length == 1 %}
-                        <a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
-                    {% elif n.pdf_datoteke|length > 1 %}
-                        <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                            <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF datoteke ({{ n.pdf_datoteke|length }})</button>
-                            <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
-                                {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-                    {% if n.lxdf_datoteke|length == 1 %}
-                        <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
-                    {% elif n.lxdf_datoteke|length > 1 %}
-                        <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                            <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne datoteke ({{ n.lxdf_datoteke|length }})</button>
-                            <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
-                                {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-                </div>
-
-                {% if n.laser_zapoceto_u %}
-                <div class="p-3 mb-3 dodaj-kontejner">
-                    <form action="/dodaj_poziciju/{{ n.id }}/laser" method="POST" class="row g-2 align-items-center">
-                        <div class="col-md-6"><input type="text" class="form-control form-control-sm" name="novi_naziv_pozicije" placeholder="Upišite šifru pozicije s nacrta..." required onkeydown="if(event.key === 'Enter') event.preventDefault();"></div>
-                        <div class="col-md-3"><button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="fa-solid fa-plus"></i> Dodaj poziciju</button></div>
-                    </form>
-                </div>
-                
-                <form method="POST" class="nav-forma">
-                    <input type="hidden" name="id_naloga" value="{{ n.id }}">
-                    <div class="p-3 mb-4 rounded-3 border border-info border-opacity-25" style="background-color: rgba(13, 202, 240, 0.03);">
-                        <div class="row align-items-center g-3">
-                            <div class="col-md-6"><label class="form-label text-info fw-bold mb-1"><i class="fa-solid fa-ruler-combined me-1"></i> Dimenzije uložene ploče</label><input type="text" class="form-control text-white border-info bg-dark navigabilno" name="dimenzije_ploce" placeholder="npr. 2000x1000x5" value="{{ n.dimenzije_ploce_laser }}"></div>
-                            <div class="col-md-6"><label class="form-label text-info fw-bold mb-1"><i class="fa-solid fa-layer-group me-1"></i> Materijal ploče</label><input type="text" class="form-control text-white border-info bg-dark navigabilno" name="materijal_ploce" placeholder="npr. Inox, Alumunij, Čelik..." value="{{ n.materijal_ploce_laser }}"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-responsive mb-3 p-2 tamni-kontejner">
-                        <table class="table align-middle">
-                            <thead><tr><th>Naziv Pozicije</th><th style="width:100px;">Potrebno</th><th style="width:120px;">Odrađeno</th><th style="width:120px;">Škart</th><th style="width:140px;">Priprema (h:m)</th><th style="width:140px;">Rezanje (h:m)</th><th class="text-end">X</th></tr></thead>
-                            <tbody>
-                                {% for p in n.pozicije %}
-                                <tr>
-                                    <td><input type="hidden" name="pozicija_id" value="{{ p.id }}"><input type="text" class="form-control text-danger fw-bold navigabilno" name="naziv_{{ p.id }}" value="{{ p.naziv_pozicije }}" required></td>
-                                    <td><div class="fs-6 fw-bold text-info">{{ p.ciljana_kolicina }} kom</div></td>
-                                    <td><input type="text" class="form-control text-white navigabilno" name="komada_{{ p.id }}" value="{{ p.laser_komada if p.laser_komada else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
-                                    <td><input type="text" class="form-control text-danger navigabilno" name="skart_{{ p.id }}" value="{{ p.laser_skart if p.laser_skart else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <input type="text" class="form-control text-white px-1 text-center navigabilno" name="priprema_sati_{{ p.id }}" value="{{ p.laser_priprema_sati if p.laser_priprema_sati else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                            <span class="mx-1 text-muted">:</span>
-                                            <input type="text" class="form-control text-white px-1 text-center navigabilno" name="priprema_minute_{{ p.id }}" value="{{ p.laser_priprema_minute if p.laser_priprema_minute else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <input type="text" class="form-control text-white px-1 text-center navigabilno" name="rezanje_sati_{{ p.id }}" value="{{ p.laser_rezanje_sati if p.laser_rezanje_sati else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                            <span class="mx-1 text-muted">:</span>
-                                            <input type="text" class="form-control text-white px-1 text-center navigabilno" name="rezanje_minute_{{ p.id }}" value="{{ p.laser_rezanje_minute if p.laser_rezanje_minute else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                        </div>
-                                    </td>
-                                    <td class="text-end"><a href="/obrisi_poziciju/{{ p.id }}/laser" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-xmark"></i></a></td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="row align-items-start g-2 mt-4 pt-3 border-top border-secondary border-opacity-25">
-                        <div class="col-md-4">
-                            <label class="form-label text-white">Ime Operatera Lasera</label>
-                            <input type="text" class="form-control text-white navigabilno" name="radnik" placeholder="Unesite ime..." required oninput="this.value=this.value.replace(/[0-9]/g,'');">
-                            <label class="form-label mt-3 text-white">Napomena Radnika (Opcionalno)</label>
-                            <textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Ostavio sam u kutu kod vrata..." oninput="autoProsiri(this)"></textarea>
-                        </div>
-                        <div class="col-md-8 ms-auto text-end d-flex gap-2 justify-content-end align-items-end h-100 mob-col-btn" style="padding-top: 30px;">
-                            <button type="submit" name="akcija" value="pauziraj" class="btn btn-warning text-dark fw-bold px-3" formnovalidate><i class="fa-solid fa-pause me-1"></i> Pauziraj Nalog</button>
-                            <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-3">&check; Završi (Na Pregled)</button>
-                            {% if n.rutiranje != 'Samo Laser' and n.rutiranje != 'Samo Rezanje' %}
-                                <button type="submit" name="akcija" value="bravarija" class="btn btn-danger fw-bold px-3">Šalji u Bravariju &rarr;</button>
-                            {% endif %}
-                        </div>
-                    </div>
-                </form>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    """
-    return render_template_string(f"<!DOCTYPE html><html>{STIL_I_NAVIGACIJA}{BODY_OPEN_TAG}{NAVBAR_TEMPLATE}{glavni_sadrzaj}</body></html>", nalozi=nalozi)
+    return render_template('laser.html', nalozi=nalozi)
 
 @app.route('/bravarija', methods=['GET', 'POST'])
 def sekcija_bravarija():
@@ -1827,141 +587,14 @@ def sekcija_bravarija():
         n['pdf_datoteke'] = parsiraj_listu_datoteka(n['pdf_datoteka'])
         nalozi.append(n)
     conn.close()
-    
-    glavni_sadrzaj = """
-    <div class="container-fluid glavni-prostor">
-        <div id="ticker-prikaz">
-            """ + TICKER_HTML + """
-        </div>
-        <div id="glavni-dinamicni-dio">
-            <h3 class="mb-4 fw-bold text-white"><i class="fa-solid fa-hammer text-warning me-2"></i>STANICA 2: BRAVARIJA</h3>
-            {% if not nalozi %}<div class="alert alert-dark text-center my-5 py-5 border-0" style="background: #12141c; color: #94a3b8;">Nema naloga na čekanju za bravariju.</div>{% endif %}
-            
-            {% for n in nalozi %}
-            <div class="card p-4" style="border-top: 4px solid {% if n.status == 'Pauzirano - Bravarija' %}#ffc107{% else %}#facc15{% endif %} !important;">
-                <div class="d-flex justify-content-between align-items-center mb-2 flex-mob-col">
-                    <div>
-                        <h4 class="fw-bold text-white mb-0">{{ n.naziv_naloga }}</h4>
-                        <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %} | Debljina: <b class="text-info">D: {{ n.debljina_ploce }}</b>{% endif %} | Nalog #{{ n.id }}</small>
-                    </div>
-                    <div>
-                        {% if not n.bravarija_zapoceto_u %}
-                            <a href="/zapocni_fazu/{{ n.id }}/bravarija" class="btn {% if n.status == 'Pauzirano - Bravarija' %}btn-warning text-dark{% else %}btn-success{% endif %} fw-bold px-4">
-                                {% if n.status == 'Pauzirano - Bravarija' %}NASTAVI NALOG{% else %}ZAPOČNI NALOG{% endif %}
-                            </a>
-                        {% else %}
-                            <span class="badge bg-dark border border-info text-info p-2 fs-6"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                {% if n.opis or n.laser_napomena %}
-                    {% set ukupno_slova = (n.opis|length if n.opis else 0) + (n.laser_napomena|length if n.laser_napomena else 0) %}
-                    {% if ukupno_slova > 100 %}
-                        <button class="btn btn-sm btn-outline-warning text-start w-100 my-2" type="button" data-bs-toggle="collapse" data-bs-target="#upute-{{ n.id }}"><i class="fa-solid fa-book-open me-2"></i> Prikaži prijašnje upute i napomene</button>
-                        <div class="collapse mt-2" id="upute-{{ n.id }}">
-                            {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                            {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Napomena iz Lasera:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                        </div>
-                    {% else %}
-                        <div class="mt-2">
-                            {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                            {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Napomena iz Lasera:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                        </div>
-                    {% endif %}
-                {% endif %}
-                
-                <div class="mt-2 mb-4">
-                    {% if n.pdf_datoteke|length == 1 %}
-                        <a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
-                    {% elif n.pdf_datoteke|length > 1 %}
-                        <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                            <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF datoteke ({{ n.pdf_datoteke|length }})</button>
-                            <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
-                                {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-                    {% if n.lxdf_datoteke|length == 1 %}
-                        <a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
-                    {% elif n.lxdf_datoteke|length > 1 %}
-                        <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                            <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne datoteke ({{ n.lxdf_datoteke|length }})</button>
-                            <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
-                                {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-                </div>
-
-                {% if n.bravarija_zapoceto_u %}
-                <div class="p-3 mb-3 dodaj-kontejner">
-                    <form action="/dodaj_poziciju/{{ n.id }}/bravarija" method="POST" class="row g-2 align-items-center">
-                        <div class="col-md-6"><input type="text" class="form-control form-control-sm" name="novi_naziv_pozicije" placeholder="Upišite šifru pozicije s nacrta..." required onkeydown="if(event.key === 'Enter') event.preventDefault();"></div>
-                        <div class="col-md-3"><button type="submit" class="btn btn-sm btn-outline-warning text-white w-100"><i class="fa-solid fa-plus"></i> Dodaj poziciju</button></div>
-                    </form>
-                </div>
-                
-                <form method="POST" class="nav-forma">
-                    <input type="hidden" name="id_naloga" value="{{ n.id }}">
-                    <div class="table-responsive mb-3 p-2 tamni-kontejner">
-                        <table class="table align-middle">
-                            <thead><tr><th>Naziv Pozicije</th><th style="width:100px;">Potrebno</th><th style="width:120px;">Odrađeno</th><th style="width:120px;">Škart</th><th style="width:140px;">Priprema (h:m)</th><th style="width:140px;">Piganje (h:m)</th><th class="text-end">X</th></tr></thead>
-                            <tbody>
-                                {% for p in n.pozicije %}
-                                <tr>
-                                    <td><input type="hidden" name="pozicija_id" value="{{ p.id }}"><input type="text" class="form-control text-warning fw-bold navigabilno" name="naziv_{{ p.id }}" value="{{ p.naziv_pozicije }}" required></td>
-                                    <td><div class="fs-6 fw-bold text-info">{{ p.ciljana_kolicina }} kom</div></td>
-                                    <td><input type="text" class="form-control text-white navigabilno" name="komada_{{ p.id }}" value="{{ p.bravarija_komada if p.bravarija_komada else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
-                                    <td><input type="text" class="form-control text-danger navigabilno" name="skart_{{ p.id }}" value="{{ p.bravarija_skart if p.bravarija_skart else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <input type="text" class="form-control text-white px-1 text-center navigabilno" name="priprema_sati_{{ p.id }}" value="{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                            <span class="mx-1 text-muted">:</span>
-                                            <input type="text" class="form-control text-white px-1 text-center navigabilno" name="priprema_minute_{{ p.id }}" value="{{ p.bravarija_priprema_minute if p.bravarija_priprema_minute else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <input type="text" class="form-control text-white px-1 text-center navigabilno" name="piganje_sati_{{ p.id }}" value="{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                            <span class="mx-1 text-muted">:</span>
-                                            <input type="text" class="form-control text-white px-1 text-center navigabilno" name="piganje_minute_{{ p.id }}" value="{{ p.bravarija_piganje_minute if p.bravarija_piganje_minute else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                        </div>
-                                    </td>
-                                    <td class="text-end"><a href="/obrisi_poziciju/{{ p.id }}/bravarija" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-xmark"></i></a></td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="row align-items-start g-2 mt-4 pt-3 border-top border-secondary border-opacity-25">
-                        <div class="col-md-5">
-                            <label class="form-label text-white">Ime Bravara</label>
-                            <input type="text" class="form-control text-white navigabilno" name="radnik" placeholder="Unesite ime..." required oninput="this.value=this.value.replace(/[0-9]/g,'');">
-                            <label class="form-label mt-3 text-white">Napomena Bravara (Opcionalno)</label>
-                            <textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Obrađeno i stavljeno na paletu..." oninput="autoProsiri(this)"></textarea>
-                        </div>
-                        <div class="col-md-7 ms-auto text-end align-items-end d-flex gap-2 justify-content-end h-100 mob-col-btn" style="padding-top: 30px;">
-                            <button type="submit" name="akcija" value="pauziraj" class="btn btn-outline-warning fw-bold px-3" formnovalidate><i class="fa-solid fa-pause me-1"></i> Pauziraj Nalog</button>
-                            <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-3">&check; Završi (Na Pregled)</button>
-                        </div>
-                    </div>
-                </form>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    """
-    return render_template_string(f"<!DOCTYPE html><html>{STIL_I_NAVIGACIJA}{BODY_OPEN_TAG}{NAVBAR_TEMPLATE}{glavni_sadrzaj}</body></html>", nalozi=nalozi)
+    return render_template('bravarija.html', nalozi=nalozi)
 
 @app.route('/dodaj_poziciju/<int:nalog_id>/<string:izvor>', methods=['POST'])
 def dodaj_poziciju(nalog_id, izvor):
     naziv = request.form.get('novi_naziv_pozicije', '').strip()
     if not naziv: naziv = f"Pozicija-{datetime.now().strftime('%H%M%S')}"
     conn = get_db_connection()
-    conn.execute('INSERT INTO nalog_pozicije (nalog_id, naziv_pozicije, ciljana_kolicina) VALUES (?, ?, 0)', (nalog_id, naziv))
+    conn.execute('INSERT INTO nalog_pozicije (nalog_id, naziv_pozicije, ciljana_kolicina, laser_komada, laser_skart, bravarija_komada, bravarija_skart, laser_priprema_sati, laser_priprema_minute, laser_rezanje_sati, laser_rezanje_minute, bravarija_priprema_sati, bravarija_priprema_minute, bravarija_piganje_sati, bravarija_piganje_minute) VALUES (?, ?, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)', (nalog_id, naziv))
     conn.commit()
     conn.close()
     return redirect(url_for(f'sekcija_{izvor}'))
@@ -1975,4 +608,4 @@ def obrisi_poziciju(poz_id, izvor):
     return redirect(url_for(f'sekcija_{izvor}'))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=True)
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)

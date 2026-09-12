@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="mb-4 fw-bold text-white"><i class="fa-solid fa-fire text-danger me-2"></i>STANICA 1: REZANJE (LASER)</h3>
+{% if not nalozi %}<div class="alert alert-dark text-center my-5 py-5 border-0" style="background: #12141c; color: #94a3b8;">Nema otvorenih naloga na čekanju za rezanje.</div>{% endif %}
+
+{% for n in nalozi %}
+<div class="card p-4" style="border-top: 4px solid {% if n.status == 'Pauzirano - Laser' %}#ffc107{% else %}#ff0000{% endif %} !important;">
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-mob-col">
+        <div>
+            <h4 class="fw-bold text-white mb-0">{{ n.naziv_naloga }}</h4>
+            <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %} | Debljina: <b class="text-info">D: {{ n.debljina_ploce }}</b>{% endif %} | Nalog #{{ n.id }} | Ruta: {{ 'Samo Rezanje' if n.rutiranje == 'Samo Laser' else n.rutiranje }}</small>
+        </div>
+        <div class="text-end">
+            {% if not n.laser_zapoceto_u %}<a href="/zapocni_fazu/{{ n.id }}/laser" class="btn {% if n.status == 'Pauzirano - Laser' %}btn-warning text-dark{% else %}btn-success{% endif %} fw-bold px-4">{% if n.status == 'Pauzirano - Laser' %}NASTAVI NALOG{% else %}ZAPOČNI NALOG{% endif %}</a>
+            {% else %}
+                {% if n.odabrani_laser %}<span class="badge bg-dark border border-danger text-danger px-2 py-1 mb-1 shadow-sm" style="border-radius: 6px; font-size: 0.7rem; letter-spacing: 0.5px;"><i class="fa-solid fa-crosshairs me-1"></i>OBRADA NA: {{ n.odabrani_laser|upper }}</span><br>{% endif %}
+                <span class="badge bg-dark border border-info text-info p-2 fs-6"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if n.opis %}
+        {% set show_collapse = n.opis|length > 100 %}
+        {% if show_collapse %}
+            <button class="btn btn-sm btn-outline-info text-start w-100 my-2" type="button" data-bs-toggle="collapse" data-bs-target="#upute-{{ n.id }}"><i class="fa-solid fa-circle-info me-2"></i> Prikaži upute poslovođe</button>
+            <div class="collapse" id="upute-{{ n.id }}"><div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div></div>
+        {% else %}
+            <div class="napomena-box border-info my-2"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Upute poslovođe:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>
+        {% endif %}
+    {% endif %}
+    
+    <div class="mt-2 mb-4">
+        {% if n.pdf_datoteke|length == 1 %}<a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
+        {% elif n.pdf_datoteke|length > 1 %}
+            <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF datoteke ({{ n.pdf_datoteke|length }})</button>
+                <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
+                    {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        {% if n.lxdf_datoteke|length == 1 %}<a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
+        {% elif n.lxdf_datoteke|length > 1 %}
+            <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne datoteke ({{ n.lxdf_datoteke|length }})</button>
+                <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
+                    {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if n.laser_zapoceto_u %}
+    <div class="p-3 mb-3 dodaj-kontejner">
+        <form action="/dodaj_poziciju/{{ n.id }}/laser" method="POST" class="row g-2 align-items-center">
+            <div class="col-md-6"><input type="text" class="form-control form-control-sm" name="novi_naziv_pozicije" placeholder="Upišite šifru pozicije s nacrta..." required onkeydown="if(event.key === 'Enter') event.preventDefault();"></div>
+            <div class="col-md-3"><button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="fa-solid fa-plus"></i> Dodaj poziciju</button></div>
+        </form>
+    </div>
+    
+    <form method="POST" class="nav-forma">
+        <input type="hidden" name="id_naloga" value="{{ n.id }}">
+        <div class="p-3 mb-4 rounded-3 border border-info border-opacity-25" style="background-color: rgba(13, 202, 240, 0.03);">
+            <div class="row align-items-center g-3">
+                <div class="col-md-6"><label class="form-label text-info fw-bold mb-1"><i class="fa-solid fa-ruler-combined me-1"></i> Dimenzije uložene ploče</label><input type="text" class="form-control text-white border-info bg-dark navigabilno" name="dimenzije_ploce" placeholder="npr. 2000x1000x5" value="{{ n.dimenzije_ploce_laser }}"></div>
+                <div class="col-md-6"><label class="form-label text-info fw-bold mb-1"><i class="fa-solid fa-layer-group me-1"></i> Materijal ploče</label><input type="text" class="form-control text-white border-info bg-dark navigabilno" name="materijal_ploce" placeholder="npr. Inox, Alumunij, Čelik..." value="{{ n.materijal_ploce_laser }}"></div>
+            </div>
+        </div>
+        
+        <div class="table-responsive mb-3 p-2 tamni-kontejner">
+            <table class="table align-middle">
+                <thead><tr><th>Naziv Pozicije</th><th style="width:100px;">Potrebno</th><th style="width:120px;">Odrađeno</th><th style="width:120px;">Škart</th><th style="width:140px;">Priprema (h:m)</th><th style="width:140px;">Rezanje (h:m)</th><th class="text-end">X</th></tr></thead>
+                <tbody>
+                    {% for p in n.pozicije %}
+                    <tr>
+                        <td><input type="hidden" name="pozicija_id" value="{{ p.id }}"><input type="text" class="form-control text-danger fw-bold navigabilno" name="naziv_{{ p.id }}" value="{{ p.naziv_pozicije }}" required></td>
+                        <td><div class="fs-6 fw-bold text-info">{{ p.ciljana_kolicina }} kom</div></td>
+                        <td><input type="text" class="form-control text-white navigabilno" name="komada_{{ p.id }}" value="{{ p.laser_komada if p.laser_komada is not none else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
+                        <td><input type="text" class="form-control text-danger navigabilno" name="skart_{{ p.id }}" value="{{ p.laser_skart if p.laser_skart is not none else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <input type="text" class="form-control text-white px-1 text-center navigabilno" name="priprema_sati_{{ p.id }}" value="{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                                <span class="mx-1 text-muted">:</span>
+                                <input type="text" class="form-control text-white px-1 text-center navigabilno" name="priprema_minute_{{ p.id }}" value="{{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <input type="text" class="form-control text-white px-1 text-center navigabilno" name="rezanje_sati_{{ p.id }}" value="{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                                <span class="mx-1 text-muted">:</span>
+                                <input type="text" class="form-control text-white px-1 text-center navigabilno" name="rezanje_minute_{{ p.id }}" value="{{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                            </div>
+                        </td>
+                        <td class="text-end"><a href="/obrisi_poziciju/{{ p.id }}/laser" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-xmark"></i></a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="row align-items-start g-2 mt-4 pt-3 border-top border-secondary border-opacity-25">
+            <div class="col-md-4">
+                <label class="form-label text-white">Ime Operatera Lasera</label>
+				<input type="text" class="form-control text-white navigabilno" name="radnik" placeholder="Unesite ime..." value="{{ n.pozicije[0].laser_radnik if n.pozicije else '' }}" required oninput="this.value=this.value.replace(/[0-9]/g,'');">
+				<label class="form-label mt-3 text-white">Napomena Radnika (Opcionalno)</label>
+				<textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Ostavio sam u kutu kod vrata..." oninput="autoProsiri(this)">{{ n.laser_napomena }}</textarea>
+            </div>
+            <div class="col-md-8 ms-auto text-end d-flex gap-2 justify-content-end align-items-end h-100 mob-col-btn" style="padding-top: 30px;">
+                <button type="submit" name="akcija" value="pauziraj" class="btn btn-warning text-dark fw-bold px-3" formnovalidate><i class="fa-solid fa-pause me-1"></i> Pauziraj Nalog</button>
+                <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-3">&check; Završi (Na Pregled)</button>
+                {% if n.rutiranje != 'Samo Laser' and n.rutiranje != 'Samo Rezanje' %}
+                    <button type="submit" name="akcija" value="bravarija" class="btn btn-danger fw-bold px-3">Šalji u Bravariju &rarr;</button>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% if request.args.get('err') == 'zauzeto' %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            if(typeof prikaziGresku === 'function') {
+                prikaziGresku("Već imate aktivan nalog na ovoj stanici! Završite ili pauzirajte trenutni nalog prije pokretanja novog.");
+            }
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 300);
+    });
+</script>
+{% endif %}
+{% endblock %}

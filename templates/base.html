@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FirstCutLaser Pogon</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/morphdom@2.6.2/dist/morphdom-umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+        :root {
+            --fcl-paused: #fbbf24; --fcl-paused-bg: rgba(251, 191, 36, 0.04);
+            --fcl-active: #38bdf8; --fcl-active-bg: rgba(56, 189, 248, 0.04);
+            --fcl-completed: #10b981; --fcl-completed-bg: rgba(16, 185, 129, 0.04);
+            --fcl-pending: #94a3b8; --fcl-pending-bg: rgba(255, 255, 255, 0.02);
+        }
+        body { background-color: #0b0c10; font-family: 'Plus Jakarta Sans', sans-serif; color: #e2e8f0; overflow-y: scroll; overflow-x: hidden; }
+        .glavni-prostor { padding: 24px 30px; }
+        .navbar { background-color: #12141c; border-bottom: 3px solid #ff0000; box-shadow: 0 4px 25px rgba(0,0,0,0.5); padding: 14px 24px; border-radius: 8px; margin-bottom: 15px; }
+        .navbar-brand img { height: 42px; width: auto; object-fit: contain; }
+        .card { background: #12141c; border-radius: 14px; border: 1px solid #222736; box-shadow: 0 6px 20px rgba(0,0,0,0.4); margin-bottom: 24px; transition: all 0.3s ease; }
+        .card-header-custom { padding: 18px 24px; border-bottom: 1px solid #222736; background: #171b26; color: #ffffff; border-top-left-radius: 14px; border-top-right-radius: 14px; }
+        .table { color: #ffffff; border-color: #222736; margin-bottom: 0; }
+        .table th { background-color: #171b26; color: #f1f5f9 !important; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; padding: 14px; border-bottom: 2px solid #222736; letter-spacing: 0.03em; }
+        .table td { padding: 14px; vertical-align: middle; background-color: transparent; border-bottom: 1px solid #222736; }
+        .table-modern { border-collapse: separate; border-spacing: 0 10px; margin-top: -10px; }
+        .table-modern > thead > tr > th { border: none !important; background: transparent !important; color: #64748b !important; font-weight: 700; padding-bottom: 8px; font-size: 0.75rem; letter-spacing: 0.05em; }
+        .table-modern > tbody > tr { box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .table-modern > tbody > tr:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .table-modern > tbody > tr > td { border-top: 1px solid transparent; border-bottom: 1px solid transparent; background-color: #151822; padding: 18px 16px; }
+        .table-modern > tbody > tr > td:first-child { border-left: 3px solid transparent; border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+        .table-modern > tbody > tr > td:last-child { border-right: 1px solid transparent; border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+        .row-state-paused > td { background-color: var(--fcl-paused-bg); border-top-color: rgba(251, 191, 36, 0.08); border-bottom-color: rgba(251, 191, 36, 0.08); }
+        .row-state-paused > td:first-child { border-left-color: var(--fcl-paused); }
+        .row-state-paused > td:last-child { border-right-color: rgba(251, 191, 36, 0.08); }
+        .row-state-active > td { background-color: var(--fcl-active-bg); border-top-color: rgba(56, 189, 248, 0.08); border-bottom-color: rgba(56, 189, 248, 0.08); }
+        .row-state-active > td:first-child { border-left-color: var(--fcl-active); }
+        .row-state-active > td:last-child { border-right-color: rgba(56, 189, 248, 0.08); }
+        .row-state-completed > td { background-color: var(--fcl-completed-bg); border-top-color: rgba(16, 185, 129, 0.08); border-bottom-color: rgba(16, 185, 129, 0.08); }
+        .row-state-completed > td:first-child { border-left-color: var(--fcl-completed); }
+        .row-state-completed > td:last-child { border-right-color: rgba(16, 185, 129, 0.08); }
+        .row-state-pending > td { background-color: var(--fcl-pending-bg); border-top-color: rgba(100, 116, 139, 0.1); border-bottom-color: rgba(100, 116, 139, 0.1); }
+        .row-state-pending > td:first-child { border-left-color: var(--fcl-pending); }
+        .row-state-pending > td:last-child { border-right-color: rgba(100, 116, 139, 0.1); }
+        .txt-paused { color: var(--fcl-paused) !important; }
+        .txt-active { color: var(--fcl-active) !important; }
+        .txt-completed { color: var(--fcl-completed) !important; }
+        .badge-modern { border-radius: 8px; font-weight: 700; letter-spacing: 0.3px; }
+        .badge-paused { background-color: rgba(251, 191, 36, 0.15) !important; color: var(--fcl-paused) !important; border: 1px solid rgba(251, 191, 36, 0.4) !important; }
+        .badge-active { background-color: rgba(56, 189, 248, 0.15) !important; color: var(--fcl-active) !important; border: 1px solid rgba(56, 189, 248, 0.4) !important; }
+        .badge-completed { background-color: rgba(16, 185, 129, 0.15) !important; color: var(--fcl-completed) !important; border: 1px solid rgba(16, 185, 129, 0.4) !important; }
+        .badge-pending { background-color: rgba(100, 116, 139, 0.15) !important; color: #cbd5e1 !important; border: 1px solid rgba(100, 116, 139, 0.4) !important; }
+        .text-muted { color: #cbd5e1 !important; }
+        .text-info { color: #0dcaf0 !important; } 
+        .text-white { color: #ffffff !important; }
+        .form-label { color: #f1f5f9 !important; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.02em; }
+        .form-control::placeholder { color: #94a3b8 !important; opacity: 1; }
+        .form-control { background-color: #1a1e2b; border: 1px solid #2d3446; color: #ffffff; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; transition: all 0.2s; }
+        .form-control:focus { background-color: #23293b; border-color: #0dcaf0; color: #fff; box-shadow: 0 0 0 3px rgba(13,202,240,0.15); outline: none; }
+        textarea.auto-expand { resize: none; overflow-y: hidden; min-height: 45px; max-height: 150px; }
+        textarea.auto-expand:focus { overflow-y: auto; }
+        input[type="file"].form-control { padding: 10px 14px; color: #ffffff !important; line-height: 1.5; background-color: #1a1e2b !important; border: 1px solid #2d3446 !important; font-size: 0.9rem; height: auto; }
+        input[type="file"].form-control::file-selector-button { margin-left: -5px; margin-right: 14px; background-color: #2d3446 !important; color: #ffffff !important; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 0.85rem; }
+        .table .form-control { background-color: transparent; border: 1px solid transparent; padding: 8px 10px; border-radius: 6px; color: #ffffff !important; }
+        .table .form-control:focus { background-color: rgba(255,255,255,0.03); border: 1px solid #31384f; }
+        .btn-primary { background-color: #ff0000; border-color: #ff0000; font-weight: 600; border-radius: 8px; padding: 10px 20px; }
+        .btn-success { background-color: #16a34a; border-color: #16a34a; font-weight: 600; border-radius: 8px; color: white !important;}
+        .btn-warning { background-color: #eab308; border-color: #eab308; color: #000 !important; font-weight: 700; border-radius: 8px; }
+        .btn-nav { color: #d1d5db; font-weight: 600; text-decoration: none; padding: 8px 16px; border-radius: 6px; white-space: nowrap; }
+        .clock-box { background: #171b26; border: 1px solid #222736; border-radius: 8px; padding: 6px 14px; font-family: monospace; color: #ffffff; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .vidljiv-tekst { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); border-radius: 8px; padding: 20px; color: #ffffff !important; font-size: 1.1rem; }
+        .login-wrapper { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
+        .login-box { width: 100%; max-width: 420px; background: #12141c; border-radius: 16px; border-top: 5px solid #0dcaf0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding: 40px; }
+        .tamni-kontejner { background-color: #12141c; border: 1px solid #222736; border-radius: 8px; }
+        .dodaj-kontejner { background-color: #171b26; border: 1px solid #2d3446; border-radius: 8px; }
+        .napomena-box { background: rgba(13, 202, 240, 0.1); border-left: 3px solid #0dcaf0; padding: 12px; border-radius: 0 6px 6px 0; margin-top: 8px;}
+        .dropdown-item:hover { background-color: #23293b; color: #fff !important; }
+        @keyframes pulseLive { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .pulse-live { animation: pulseLive 2s infinite; }
+        
+        /* POPRAVLJEN TICKER OVERFLOW */
+        .ticker-wrap { width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; background-color: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.3); border-radius: 8px; padding: 12px 15px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(220,53,69,0.1); cursor: default; }
+        .ticker-content-wrapper { flex-grow: 1; overflow: hidden; position: relative; min-width: 0; }
+        .ticker-track { display: flex; width: max-content; animation: marquee 60s linear infinite; }
+        .ticker-wrap:hover .ticker-track { animation-play-state: paused; } 
+        .ticker-segment { display: flex; white-space: nowrap; }
+        .ticker-text { color: #fca5a5; font-weight: 700; font-size: 1.15rem; letter-spacing: 0.5px; padding-right: 50px; }
+        
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .is-desktop-device .nav-mob-col { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
+        .is-desktop-device .nav-mob-col::-webkit-scrollbar { height: 5px; }
+        .is-desktop-device .nav-mob-col::-webkit-scrollbar-thumb { background-color: #2d3446; border-radius: 4px; }
+        .is-mobile-device .nav-mob-col { flex-wrap: wrap; }
+        @media (max-width: 991px) {
+            .is-mobile-device .navbar-collapse { background: #1a1e2b; padding: 18px; border-radius: 8px; margin-top: 15px; border: 1px solid #2d3446; box-shadow: 0 8px 20px rgba(0,0,0,0.5); z-index: 1000; }
+            .is-mobile-device .nav-mob-col { flex-direction: column !important; align-items: stretch !important; margin: 0 !important; width: 100% !important; gap: 8px !important; }
+            .is-mobile-device .nav-mob-col .btn { text-align: center !important; margin: 0 !important; width: 100% !important; padding: 12px; font-size: 1.05rem; justify-content: center; display: flex; align-items: center; }
+            .is-mobile-device .nav-mob-col .clock-box { justify-content: center; margin: 0 !important; width: 100%; font-size: 1.2rem; padding: 12px; }
+            .is-mobile-device .navbar-toggler { border: none; outline: none; box-shadow: none; padding: 0; }
+            .glavni-prostor { padding: 15px 10px; }
+            .card-header-custom { padding: 15px !important; }
+            .card-body { padding: 15px !important; }
+            .flex-mob-col { flex-direction: column !important; align-items: flex-start !important; gap: 12px; }
+            .flex-mob-col > div { width: 100%; text-align: left !important; }
+            .flex-mob-col .btn, .flex-mob-col .badge { width: 100%; display: block; text-align: center; }
+            .mob-full-btn { display: block; width: 100%; margin-bottom: 8px; text-align: left; margin-right: 0 !important;}
+            .mob-col-btn { flex-direction: column !important; align-items: stretch !important; padding-top: 15px !important; }
+            .mob-col-btn .btn { width: 100%; margin: 5px 0 !important; }
+            .btn-rutiranje-grupa { flex-direction: column !important; display: flex; }
+            .btn-rutiranje-grupa button { width: 100%; margin-bottom: 8px; margin-right: 0 !important; }
+            .tamni-kontejner { padding: 0 !important; border: none; }
+        }
+    </style>
+    <script>
+        {% if pogon_role in ['Admin', 'Developer'] %}
+        document.addEventListener('DOMContentLoaded', function() {
+            var autoLogoutTimeout;
+            function resetAutoLogout() {
+                clearTimeout(autoLogoutTimeout);
+                autoLogoutTimeout = setTimeout(function() { window.location.href = '/logout'; }, 3600000); 
+            }
+            ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(function(evt) { document.addEventListener(evt, resetAutoLogout, false); });
+            resetAutoLogout();
+        });
+        {% endif %}
+
+        if (!Element.prototype.matches) { Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector; }
+        if (!Element.prototype.closest) { Element.prototype.closest = function(s) { var el = this; while (el && el.nodeType === 1) { if (el.matches(s)) return el; el = el.parentElement || el.parentNode; } return null; }; }
+
+        var kosaricaStavke = [];
+        var isSubmitting = false;
+        var pozadinskiSkener; 
+        var errorToastTimeout;
+
+        // NOVI MODERNI TOAST ZA GREŠKE U INVALID POLJIMA
+        function prikaziGresku(poruka) {
+            let stari = document.getElementById('fcl-toast-greska');
+            if (stari) stari.remove();
+            
+            let div = document.createElement('div');
+            div.id = 'fcl-toast-greska';
+            div.style.cssText = 'position:fixed; top:20px; right:20px; background:#ef4444; color:white; padding:15px 25px; border-radius:10px; z-index:99999; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-size: 1rem; border: 2px solid #b91c1c; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease-out;';
+            div.innerHTML = '<i class="fa-solid fa-triangle-exclamation fs-3"></i> <div><div style="font-size:1.1rem; line-height:1.2;">GREŠKA</div><div style="font-size:0.9rem; font-weight:500;">'+poruka+'</div></div><button type="button" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; margin-left:10px; padding: 0;" onclick="this.parentElement.remove()">&times;</button>';
+            
+            document.body.appendChild(div);
+            clearTimeout(errorToastTimeout);
+            errorToastTimeout = setTimeout(() => { if(document.getElementById('fcl-toast-greska')) document.getElementById('fcl-toast-greska').remove(); }, 4000);
+        }
+
+        function postaviGlasnuValidaciju() {
+            var inputs = document.querySelectorAll('input[required], textarea[required], select[required]');
+            for(var i=0; i<inputs.length; i++) {
+                if(!inputs[i].dataset.glasnaValidacija) {
+                    inputs[i].dataset.glasnaValidacija = "da";
+                    inputs[i].addEventListener('invalid', function(e) {
+                        e.preventDefault(); 
+                        prikaziGresku("Niste ispunili obavezno polje!");
+                        this.focus(); 
+                        this.style.borderColor = "#ef4444"; 
+                        this.style.boxShadow = "0 0 0 3px rgba(239, 68, 68, 0.2)";
+                    });
+                    inputs[i].addEventListener('input', function() {
+                        this.style.borderColor = ""; 
+                        this.style.boxShadow = "";
+                    });
+                }
+            }
+        }
+
+        function inicijalizirajKosaricu() {
+            var spremljeno = localStorage.getItem('fcl_kosarica');
+            if (spremljeno) { try { kosaricaStavke = JSON.parse(spremljeno); } catch(e) { kosaricaStavke = []; } }
+            osvjeziKosaricu();
+            var cartNaziv = document.getElementById('cart_naziv');
+            var cartKomada = document.getElementById('cart_komada');
+            if(cartNaziv && !cartNaziv.dataset.cartEvent) {
+                cartNaziv.dataset.cartEvent = "da";
+                cartNaziv.addEventListener('keydown', function(e) { if(e.key === 'Enter') { e.preventDefault(); dodajUKosaricu(); } });
+            }
+            if(cartKomada && !cartKomada.dataset.cartEvent) {
+                cartKomada.dataset.cartEvent = "da";
+                cartKomada.addEventListener('keydown', function(e) { if(e.key === 'Enter') { e.preventDefault(); dodajUKosaricu(); } });
+            }
+        }
+
+        function dodajUKosaricu() {
+            var naziv = document.getElementById('cart_naziv').value.trim();
+            var komada = document.getElementById('cart_komada').value;
+            if(!naziv) return; 
+            kosaricaStavke.push({naziv: naziv, komada: parseInt(komada) || 0});
+            document.getElementById('cart_naziv').value = '';
+            document.getElementById('cart_komada').value = '';
+            document.getElementById('cart_naziv').focus();
+            osvjeziKosaricu();
+            
+            // Namjerno čišćenje memorije košarice da se ne vraća prošli unos!
+            var baseKey = "fcl_" + window.location.pathname + "_";
+            localStorage.removeItem(baseKey + "cart_naziv");
+            localStorage.removeItem(baseKey + "cart_komada");
+        }
+
+        function ukloniIzKosarice(index) { kosaricaStavke.splice(index, 1); osvjeziKosaricu(); }
+
+        function osvjeziKosaricu() {
+            var tbl = document.getElementById('cart_table');
+            var body = document.getElementById('cart_body');
+            var hidden = document.getElementById('kosarica_data');
+            if (!tbl || !body || !hidden) return; 
+            body.innerHTML = '';
+            if(kosaricaStavke.length === 0) { tbl.style.display = 'none'; } else {
+                tbl.style.display = 'table';
+                for(var i=0; i<kosaricaStavke.length; i++) {
+                    var s = kosaricaStavke[i];
+                    var kolicinaText = s.komada > 0 ? s.komada + ' kom' : '-';
+                    body.innerHTML += '<tr><td class="text-info fw-bold">' + s.naziv + '</td><td class="text-white fw-bold" style="font-size: 0.95rem;">' + kolicinaText + '</td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="ukloniIzKosarice('+i+')"><i class="fa-solid fa-trash"></i></button></td></tr>';
+                }
+            }
+            hidden.value = JSON.stringify(kosaricaStavke);
+            localStorage.setItem('fcl_kosarica', JSON.stringify(kosaricaStavke));
+        }
+
+        function filtrirajArhivu() {
+            var input = document.getElementById("traziArhivu");
+            if(!input) return;
+            var filter = input.value.toLowerCase();
+            var redovi = document.querySelectorAll(".arhiva-red");
+            for (var i = 0; i < redovi.length; i++) {
+                var tekst = redovi[i].getAttribute("data-search").toLowerCase();
+                var id = redovi[i].getAttribute("data-id");
+                var detalji = document.getElementById("detalji-" + id);
+                if (tekst.includes(filter)) { redovi[i].style.display = ""; } 
+                else { redovi[i].style.display = "none"; if(detalji) detalji.classList.remove("show"); }
+            }
+        }
+
+        function azurirajBrojacDatoteka(input, labelId, iconClass, labelText) {
+            var label = document.getElementById(labelId);
+            if(!label) return;
+            if(input.files && input.files.length > 0) {
+                var html = '<div class="mt-2"><i class="fa-solid ' + iconClass + ' text-info me-1"></i> <span class="text-muted small">' + labelText + ':</span></div><div class="d-flex flex-wrap gap-1 mt-1">';
+                for(var i=0; i<input.files.length; i++) { html += '<span class="badge bg-dark border border-secondary text-info">' + input.files[i].name + '</span>'; }
+                html += '</div>';
+            } else { label.innerHTML = ''; }
+        }
+        
+        function updateDevTimer() {
+            var el = document.getElementById('dev-ticker-timer');
+            if(el) {
+                var target = el.getAttribute('data-do');
+                if(!target) return;
+                var targetDate = new Date(target);
+                var now = new Date();
+                var diff = Math.floor((targetDate - now)/1000);
+                if(diff > 0) {
+                    var h = Math.floor(diff/3600);
+                    var m = Math.floor((diff%3600)/60);
+                    var s = diff%60;
+                    el.innerText = h + "h " + m + "m " + s + "s";
+                } else { el.innerText = "Isteklo"; }
+            }
+        }
+
+        function postaviSubmitZastitu() {
+            var forms = document.querySelectorAll('form');
+            for(var f=0; f<forms.length; f++) { 
+                var form = forms[f];
+                if(form.dataset.zastita) continue;
+                form.dataset.zastita = "da";
+                
+                form.addEventListener('submit', function(e) { 
+                    isSubmitting = true; 
+                    if(typeof pozadinskiSkener !== 'undefined' && pozadinskiSkener) clearInterval(pozadinskiSkener);
+                    
+                    var btns = this.querySelectorAll('button[type="submit"], button[name="rutiranje"], button[name="akcija"]');
+                    for(var i=0; i<btns.length; i++) {
+                        if(!btns[i].innerHTML.includes("fa-spin")) {
+                            btns[i].innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i>Obrada...';
+                            btns[i].style.pointerEvents = 'none';
+                            btns[i].style.opacity = '0.7';
+                        }
+                    }
+                }); 
+            }
+        }
+
+        function pokreniZiveElemente() {
+            function osvjeziSat() {
+                var sad = new Date();
+                var el = document.getElementById('mreza-sat');
+                if(el) {
+                    var h = sad.getHours(), m = sad.getMinutes(), s = sad.getSeconds();
+                    el.innerText = (h<10?'0'+h:h) + ":" + (m<10?'0'+m:m) + ":" + (s<10?'0'+s:s);
+                }
+            }
+            osvjeziSat(); setInterval(osvjeziSat, 1000);
+            updateDevTimer(); setInterval(updateDevTimer, 1000);
+            
+            postaviEnterNavigacijuTabela(); postaviEnterNavigacijuKreiranje(); initAutoSave(); inicijalizirajKosaricu(); postaviGlasnuValidaciju(); postaviSubmitZastitu();
+            
+            pozadinskiSkener = setInterval(function() {
+                if (isSubmitting || window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
+
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', window.location.href, true);
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        try {
+                            var parser = new DOMParser();
+                            var newDoc = parser.parseFromString(xhr.responseText, 'text/html');
+                            
+                            var currentMain = document.getElementById('glavni-dinamicni-dio');
+                            var newMain = newDoc.getElementById('glavni-dinamicni-dio');
+                            var currentTicker = document.getElementById('ticker-prikaz');
+                            var newTicker = newDoc.getElementById('ticker-prikaz');
+
+                            if (currentMain && newMain) {
+                                if (typeof morphdom !== 'undefined') {
+                                    morphdom(currentMain, newMain, {
+                                        onBeforeElUpdated: function(fromEl, toEl) {
+                                            // STROGA ZABRANA DIRANJA POPUPA (MODALA)
+                                            if (fromEl.hasAttribute && fromEl.hasAttribute('data-morphdom-ignore')) {
+                                                return false;
+                                            }
+                                            if (fromEl.id === 'cart_table' || fromEl.id === 'cart_body' || fromEl.id === 'kosarica_data') {
+                                                return false; 
+                                            }
+                                            if (fromEl.tagName === 'INPUT' && fromEl.type === 'file') {
+                                                return false;
+                                            }
+                                            if (fromEl.id === 'sliderText') {
+                                                return false;
+                                            }
+                                            if (fromEl.tagName === 'TEXTAREA') {
+                                                toEl.innerHTML = fromEl.value;
+                                                toEl.value = fromEl.value;
+                                                if (document.activeElement === fromEl) return false;
+                                            } else if (fromEl.tagName === 'INPUT' || fromEl.tagName === 'SELECT') {
+                                                toEl.value = fromEl.value; 
+                                                if (document.activeElement === fromEl) return false; 
+                                            }
+                                            if (fromEl.classList && fromEl.classList.contains('show')) {
+                                                toEl.classList.add('show'); 
+                                            }
+                                            return true;
+                                        }
+                                    });
+                                    
+                                    if (currentTicker && newTicker && currentTicker.innerHTML.trim() !== newTicker.innerHTML.trim()) { 
+                                        currentTicker.innerHTML = newTicker.innerHTML; 
+                                    }
+
+                                    postaviSubmitZastitu();
+                                    if (typeof initAutoSave === 'function') initAutoSave();
+                                    if (typeof postaviEnterNavigacijuTabela === 'function') postaviEnterNavigacijuTabela();
+                                    if (typeof postaviEnterNavigacijuKreiranje === 'function') postaviEnterNavigacijuKreiranje();
+                                    if (typeof postaviGlasnuValidaciju === 'function') postaviGlasnuValidaciju();
+                                }
+                            }
+                        } catch(err) { console.log("Pozadinsko ažuriranje preskočeno."); }
+                    }
+                };
+                xhr.send();
+            }, 3000);
+        }
+        
+        function autoProsiri(el) { el.style.height = 'inherit'; var computed = el.scrollHeight; var novaVisina = computed + 24; if (novaVisina > 150) novaVisina = 150; el.style.height = novaVisina + 'px'; }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                var activeEl = document.activeElement;
+                if (activeEl && activeEl.tagName === 'INPUT' && activeEl.placeholder === '0' && activeEl.value === '') {
+                    activeEl.value = '0';
+                    if ("createEvent" in document) { var evt = document.createEvent("HTMLEvents"); evt.initEvent("input", false, true); activeEl.dispatchEvent(evt); } 
+                    else { activeEl.fireEvent("oninput"); }
+                }
+            }
+        });
+
+        function initAutoSave() {
+            var inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
+            for (var i = 0; i < inputs.length; i++) {
+                (function(input) {
+                    if (!input.name || input.type === 'file' || input.type === 'hidden') return;
+                    if (input.id === 'traziArhivu') return; 
+                    
+                    var form = input.closest('form');
+                    var nalogIdInput = form ? form.querySelector('input[name="id_naloga"]') : null;
+                    var key = "fcl_" + window.location.pathname + "_";
+                    if (nalogIdInput) key += "nalog_" + nalogIdInput.value + "_";
+                    key += input.name;
+                    
+                    var saved = localStorage.getItem(key);
+                    if (saved !== null) { input.value = saved; if(input.tagName.toLowerCase() === 'textarea') autoProsiri(input); }
+                    
+                    if(!input.dataset.autoSaveActivan) {
+                        input.dataset.autoSaveActivan = "da";
+                        input.addEventListener('input', function() {
+                            localStorage.setItem(key, input.value);
+                        });
+                    }
+                })(inputs[i]);
+            }
+
+            var forms = document.querySelectorAll('form');
+            for (var j = 0; j < forms.length; j++) {
+                if(!forms[j].dataset.autoSaveBrisanje) {
+                    forms[j].dataset.autoSaveBrisanje = "da";
+                    forms[j].addEventListener('submit', function(e) {
+                        var formInputs = this.querySelectorAll('input, textarea');
+                        for (var k = 0; k < formInputs.length; k++) {
+                            var input = formInputs[k];
+                            if (!input.name) continue;
+                            var nalogIdInput = this.querySelector('input[name="id_naloga"]');
+                            var key = "fcl_" + window.location.pathname + "_";
+                            if (nalogIdInput) key += "nalog_" + nalogIdInput.value + "_";
+                            key += input.name;
+                            localStorage.removeItem(key);
+                        }
+                        localStorage.removeItem('fcl_kosarica'); kosaricaStavke = [];
+                    });
+                }
+            }
+        }
+
+        function postaviEnterNavigacijuTabela() {
+            var forms = document.querySelectorAll('.nav-forma');
+            for (var i = 0; i < forms.length; i++) {
+                var inputs = forms[i].querySelectorAll('.navigabilno');
+                for (var j = 0; j < inputs.length; j++) {
+                    (function(input, index) {
+                        if(!input.dataset.enterNavTbl) {
+                            input.dataset.enterNavTbl = "da";
+                            input.addEventListener('keydown', function(e) {
+                                if (e.key === 'Enter') { e.preventDefault(); if (index < inputs.length - 1) { inputs[index + 1].focus(); } else { input.blur(); } }
+                            });
+                        }
+                    })(inputs[j], j);
+                }
+            }
+        }
+        
+        function postaviEnterNavigacijuKreiranje() {
+            var formKreiranje = document.getElementById('form-kreiranje');
+            if(formKreiranje) {
+                var inputs = formKreiranje.querySelectorAll('.kreiranje-nav');
+                for (var j = 0; j < inputs.length; j++) {
+                    (function(input, index) {
+                        if(!input.dataset.enterNavKrei) {
+                            input.dataset.enterNavKrei = "da";
+                            input.addEventListener('keydown', function(e) {
+                                if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (index < inputs.length - 1) { inputs[index + 1].focus(); } else { input.blur(); } }
+                            });
+                        }
+                    })(inputs[j], j);
+                }
+            }
+        }
+
+        window.onload = pokreniZiveElemente;
+    </script>
+</head>
+<body class="{% if prikazi_klijent_gumbe %}is-client{% else %}is-browser{% endif %} {% if is_mobile %}is-mobile-device{% else %}is-desktop-device{% endif %}">
+    {% if request.path not in ['/prijava_stanice', '/login', '/maintenance'] %}
+    <nav class="navbar {% if is_mobile %}navbar-expand-lg{% else %}navbar-expand{% endif %} navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="/"><img src="/logo.png" alt="FirstCutLaser"></a>
+            {% if is_mobile %}<button class="navbar-toggler border-0 shadow-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#fclNav"><i class="fa-solid fa-bars text-info fs-3"></i></button>{% endif %}
+            <div class="{% if is_mobile %}collapse navbar-collapse{% else %}d-flex flex-grow-1 align-items-center{% endif %}" id="fclNav">
+                <div class="d-flex gap-3 ms-auto align-items-center nav-mob-col">
+                    <a href="/" class="btn btn-nav text-white-50"><i class="fa-solid fa-desktop me-2"></i> Monitor Pogona</a>
+                    {% if z_stanica in ['uprava', 'laser1', 'laser2'] %}<a href="/laser" class="btn btn-nav text-danger"><i class="fa-solid fa-fire me-2"></i> Rezanje</a>{% endif %}
+                    {% if z_stanica in ['uprava', 'bravarija'] %}<a href="/bravarija" class="btn btn-nav text-warning"><i class="fa-solid fa-hammer me-2"></i> Bravarija</a>{% endif %}
+                    {% if z_stanica == 'uprava' %}<a href="/sefo_panel" class="btn btn-nav text-info border border-info border-opacity-25"><i class="fa-solid fa-user-gear me-2"></i> Upravljačka Ploča</a>{% endif %}
+                    <div class="clock-box" id="mreza-sat">00:00:00</div>
+                    {% if pogon_role in ['Admin', 'Developer'] and request.path in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
+                        <a href="/arhiva" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Arhiva Naloga"><i class="fa-solid fa-box-archive me-1"></i> Arhiva</a>
+                    {% endif %}
+                    {% if pogon_role == 'Developer' %}
+                        <a href="/dev_panel" class="btn btn-sm btn-outline-danger text-white px-3 py-2 border-danger border-opacity-50"><i class="fa-solid fa-terminal me-1"></i> DEV PANEL</a>
+                    {% endif %}
+                    {% if pogon_role in ['Admin', 'Developer'] %}
+                        <a href="/logout" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Odjava"><i class="fa-solid fa-power-off me-1"></i> Odjava</a>
+                    {% endif %}
+                    {% if is_server_window %}
+                        <button onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.izadji) { if(confirm('Želite li potpuno ugasiti server aplikaciju?')) pywebview.api.izadji(); } else { window.location.href='/ugasi_program'; }" class="btn btn-sm btn-danger fw-bold px-4 py-2"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</button>
+                    {% elif prikazi_klijent_gumbe %}
+                        <button id="klijent-postavke-btn" class="btn btn-sm btn-outline-secondary text-white-50 d-none" title="Postavke Klijenta (F12)" onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.reset_postavki) { if(confirm('Želite li resetirati IP i stanicu? Program će se ugasiti.')) pywebview.api.reset_postavki(); }"><i class="fa-solid fa-gear"></i></button>
+                        <button onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.izadji) { if(confirm('Želite li potpuno ugasiti klijent aplikaciju?')) pywebview.api.izadji(); }" class="btn btn-sm btn-danger fw-bold px-4 py-2"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</button>
+                    {% elif pogon_role in ['Admin', 'Developer'] and request.path not in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
+                        <a href="/ugasi_program" class="btn btn-sm btn-danger fw-bold px-4 py-2" title="Potpuno ugasi aplikaciju na Serveru"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</a>
+                    {% endif %}
+                    {% if not prikazi_klijent_gumbe %}
+                        <a href="/odjava_stanice" class="btn btn-sm btn-outline-danger px-3 py-2 ms-1" title="Zaključaj uređaj i izađi"><i class="fa-solid fa-lock"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="container-fluid glavni-prostor">
+        {% if request.path not in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
+        <div id="ticker-prikaz">
+            {% if aktivna_obavijest %}
+            <div class="ticker-wrap mb-4" id="ticker-aktivna-obavijest">
+                <i class="fa-solid fa-bolt text-danger ms-2 me-3 fs-4 pulse-live" style="flex-shrink: 0; z-index: 10;"></i>
+                <div class="ticker-content-wrapper">
+                    <div class="ticker-track">
+                        <div class="ticker-segment">{% for _ in range(15) %}<span class="ticker-text">{{ aktivna_obavijest }} &nbsp;&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;&nbsp;</span>{% endfor %}</div>
+                        <div class="ticker-segment">{% for _ in range(15) %}<span class="ticker-text">{{ aktivna_obavijest }} &nbsp;&nbsp;&nbsp;&nbsp;&bull;&nbsp;&nbsp;&nbsp;&nbsp;</span>{% endfor %}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        <div id="glavni-dinamicni-dio">{% block content %}{% endblock %}</div>
+    </div>
+    
+    <div class="modal fade" id="premiumDeleteModal" data-morphdom-ignore="true" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #151822; border: 1px solid rgba(220, 53, 69, 0.4); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+          <div class="modal-body text-center p-5">
+            <div class="mb-4"><div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(220,53,69,0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto;"><i class="fa-solid fa-trash-can text-danger" style="font-size: 2.5rem;"></i></div></div>
+            <h4 class="text-white fw-bold mb-3">Trajno brisanje naloga</h4>
+            <p class="text-muted mb-4" style="font-size: 1rem;">Jeste li potpuno sigurni da želite obrisati ovaj nalog i sve njegove datoteke? <br><b class="text-danger mt-2 d-block">Ova akcija je nepovratna.</b></p>
+            <div class="d-flex justify-content-center gap-3">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4 py-2" data-bs-dismiss="modal" style="border-radius: 10px;">Odustani</button>
+                <a id="confirmDeleteBtn" href="#" class="btn btn-danger fw-bold px-4 py-2 shadow" style="border-radius: 10px;">Da, trajno obriši</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>function potvrdiBrisanje(url) { document.getElementById('confirmDeleteBtn').href = url; new bootstrap.Modal(document.getElementById('premiumDeleteModal')).show(); }</script>
+    {% else %}
+        {% block login_content %}{% endblock %}
+    {% endif %}
+</body>
+</html>

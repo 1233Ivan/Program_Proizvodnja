@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block login_content %}
+<div class="login-wrapper">
+    <div class="login-box text-center">
+        <img src="/logo.png" class="mb-4 mt-2" style="max-height: 65px;">
+        <h5 class="fw-bold mb-1 text-danger text-uppercase"><i class="fa-solid fa-shield-halved me-2"></i>Pristup Pogonu</h5>
+        <p class="text-muted small mb-4">Uređaj nije prepoznat. Prijavite stanicu.</p>
+        {% if blokada_aktivna %}
+            <div class="alert alert-danger p-3 fw-bold fs-5 shadow-sm border border-danger"><i class="fa-solid fa-lock me-2 text-danger"></i> ZABRANJEN PRISTUP<br><small class="fs-6 fw-normal d-block mt-2 text-white">{{ poruka }}</small></div>
+        {% else %}
+            {% if poruka %}<div class="alert alert-warning py-2 small fw-bold text-dark border border-warning">{{ poruka }}</div>{% endif %}
+            <form method="POST">
+                <div class="mb-3 text-start"><label class="form-label">Vrsta uređaja / Lokacija</label>
+                    <select name="vrsta_stanice" class="form-control" style="cursor: pointer;">
+                        <option value="uprava">Slobodan Pristup (Uprava)</option>
+                        <option value="monitor">Monitor Pogona (Samo pregled)</option>
+                        <option value="laser1">Laser 1 (Glavni)</option>
+                        <option value="laser2">Laser 2</option>
+                        <option value="bravarija">Bravarija</option>
+                    </select>
+                </div>
+                <div class="mb-4 text-start"><label class="form-label">Glavni PIN Pogona</label><input type="password" class="form-control text-center fs-5 tracking-widest" name="pin" placeholder="••••" required autocomplete="off"></div>
+                <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mb-2 text-uppercase"><i class="fa-solid fa-unlock-keyhole me-2"></i>Otključaj Sustav</button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
