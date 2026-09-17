@@ -68,6 +68,7 @@
         input[type="file"].form-control::file-selector-button { margin-left: -5px; margin-right: 14px; background-color: #2d3446 !important; color: #ffffff !important; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 0.85rem; }
         .table .form-control { background-color: transparent; border: 1px solid transparent; padding: 8px 10px; border-radius: 6px; color: #ffffff !important; }
         .table .form-control:focus { background-color: rgba(255,255,255,0.03); border: 1px solid #31384f; }
+        .form-check-input { width: 1.25rem; height: 1.25rem; background-color: #1a1e2b; border-color: #2d3446; cursor: pointer; }
         .btn-primary { background-color: #ff0000; border-color: #ff0000; font-weight: 600; border-radius: 8px; padding: 10px 20px; }
         .btn-success { background-color: #16a34a; border-color: #16a34a; font-weight: 600; border-radius: 8px; color: white !important;}
         .btn-warning { background-color: #eab308; border-color: #eab308; color: #000 !important; font-weight: 700; border-radius: 8px; }
@@ -83,7 +84,6 @@
         @keyframes pulseLive { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .pulse-live { animation: pulseLive 2s infinite; }
         
-        /* POPRAVLJEN TICKER OVERFLOW */
         .ticker-wrap { width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; background-color: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.3); border-radius: 8px; padding: 12px 15px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(220,53,69,0.1); cursor: default; }
         .ticker-content-wrapper { flex-grow: 1; overflow: hidden; position: relative; min-width: 0; }
         .ticker-track { display: flex; width: max-content; animation: marquee 60s linear infinite; }
@@ -128,6 +128,9 @@
             }
             ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(function(evt) { document.addEventListener(evt, resetAutoLogout, false); });
             resetAutoLogout();
+            
+            // Masovno brisanje - provjera
+            setInterval(() => { if (typeof updateBulkBar === 'function') updateBulkBar(); }, 3500);
         });
         {% endif %}
 
@@ -139,7 +142,6 @@
         var pozadinskiSkener; 
         var errorToastTimeout;
 
-        // NOVI MODERNI TOAST ZA GREŠKE U INVALID POLJIMA
         function prikaziGresku(poruka) {
             let stari = document.getElementById('fcl-toast-greska');
             if (stari) stari.remove();
@@ -200,7 +202,6 @@
             document.getElementById('cart_naziv').focus();
             osvjeziKosaricu();
             
-            // Namjerno čišćenje memorije košarice da se ne vraća prošli unos!
             var baseKey = "fcl_" + window.location.pathname + "_";
             localStorage.removeItem(baseKey + "cart_naziv");
             localStorage.removeItem(baseKey + "cart_komada");
@@ -236,8 +237,12 @@
                 var id = redovi[i].getAttribute("data-id");
                 var detalji = document.getElementById("detalji-" + id);
                 if (tekst.includes(filter)) { redovi[i].style.display = ""; } 
-                else { redovi[i].style.display = "none"; if(detalji) detalji.classList.remove("show"); }
+                else { 
+                    redovi[i].style.display = "none"; 
+                    if(detalji) detalji.classList.remove("show"); 
+                }
             }
+            if(typeof updateBulkBar === 'function') updateBulkBar();
         }
 
         function azurirajBrojacDatoteka(input, labelId, iconClass, labelText) {
@@ -268,7 +273,7 @@
         }
 
         function postaviSubmitZastitu() {
-            var forms = document.querySelectorAll('form');
+            var forms = document.querySelectorAll('form:not(#bulkDeleteForm)');
             for(var f=0; f<forms.length; f++) { 
                 var form = forms[f];
                 if(form.dataset.zastita) continue;
@@ -324,7 +329,6 @@
                                 if (typeof morphdom !== 'undefined') {
                                     morphdom(currentMain, newMain, {
                                         onBeforeElUpdated: function(fromEl, toEl) {
-                                            // STROGA ZABRANA DIRANJA POPUPA (MODALA)
                                             if (fromEl.hasAttribute && fromEl.hasAttribute('data-morphdom-ignore')) {
                                                 return false;
                                             }
@@ -334,10 +338,14 @@
                                             if (fromEl.tagName === 'INPUT' && fromEl.type === 'file') {
                                                 return false;
                                             }
-                                            if (fromEl.id === 'sliderText') {
+                                            if (fromEl.id === 'sliderText' || fromEl.id === 'bulkActionBar') {
                                                 return false;
                                             }
-                                            if (fromEl.tagName === 'TEXTAREA') {
+                                            if (fromEl.tagName === 'INPUT' && (fromEl.type === 'checkbox' || fromEl.type === 'radio')) {
+                                                toEl.checked = fromEl.checked;
+                                                if (document.activeElement === fromEl) return false;
+                                            }
+                                            else if (fromEl.tagName === 'TEXTAREA') {
                                                 toEl.innerHTML = fromEl.value;
                                                 toEl.value = fromEl.value;
                                                 if (document.activeElement === fromEl) return false;
@@ -384,11 +392,10 @@
         });
 
         function initAutoSave() {
-            var inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
+            var inputs = document.querySelectorAll('input[type="text"]:not(#traziArhivu), input[type="number"], textarea');
             for (var i = 0; i < inputs.length; i++) {
                 (function(input) {
                     if (!input.name || input.type === 'file' || input.type === 'hidden') return;
-                    if (input.id === 'traziArhivu') return; 
                     
                     var form = input.closest('form');
                     var nalogIdInput = form ? form.querySelector('input[name="id_naloga"]') : null;
@@ -408,7 +415,7 @@
                 })(inputs[i]);
             }
 
-            var forms = document.querySelectorAll('form');
+            var forms = document.querySelectorAll('form:not(#bulkDeleteForm)');
             for (var j = 0; j < forms.length; j++) {
                 if(!forms[j].dataset.autoSaveBrisanje) {
                     forms[j].dataset.autoSaveBrisanje = "da";
@@ -522,6 +529,7 @@
         <div id="glavni-dinamicni-dio">{% block content %}{% endblock %}</div>
     </div>
     
+    <!-- SINGLE DELETE MODAL -->
     <div class="modal fade" id="premiumDeleteModal" data-morphdom-ignore="true" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background-color: #151822; border: 1px solid rgba(220, 53, 69, 0.4); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
@@ -537,7 +545,29 @@
         </div>
       </div>
     </div>
-    <script>function potvrdiBrisanje(url) { document.getElementById('confirmDeleteBtn').href = url; new bootstrap.Modal(document.getElementById('premiumDeleteModal')).show(); }</script>
+    
+    <!-- BULK DELETE MODAL -->
+    <div class="modal fade" id="masovnoDeleteModal" data-morphdom-ignore="true" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #151822; border: 1px solid rgba(220, 53, 69, 0.4); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+          <div class="modal-body text-center p-5">
+            <div class="mb-4"><div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(220,53,69,0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto;"><i class="fa-solid fa-trash-can text-danger" style="font-size: 2.5rem;"></i></div></div>
+            <h4 class="text-white fw-bold mb-3">Trajno brisanje više naloga</h4>
+            <p class="text-muted mb-4" style="font-size: 1rem;">Odabrali ste obrisati <b class="text-white" id="modalBulkCount">0</b> naloga.<br>Jeste li sigurni da ih želite zauvijek ukloniti zajedno sa svim pripadajućim nacrtima?</p>
+            <div class="d-flex justify-content-center gap-3">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-4 py-2" data-bs-dismiss="modal" style="border-radius: 10px;">Odustani</button>
+                <button type="button" class="btn btn-danger fw-bold px-4 py-2 shadow" style="border-radius: 10px;" onclick="izvrsiMasovnoBrisanje()">Obriši Sve Odabrano</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <script>
+        function potvrdiBrisanje(url) { document.getElementById('confirmDeleteBtn').href = url; new bootstrap.Modal(document.getElementById('premiumDeleteModal')).show(); }
+        function potvrdiMasovnoBrisanje() { document.getElementById('modalBulkCount').innerText = document.getElementById('bulkCount').innerText; new bootstrap.Modal(document.getElementById('masovnoDeleteModal')).show(); }
+        function izvrsiMasovnoBrisanje() { document.getElementById('bulkDeleteForm').submit(); }
+    </script>
     {% else %}
         {% block login_content %}{% endblock %}
     {% endif %}

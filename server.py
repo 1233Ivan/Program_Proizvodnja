@@ -50,7 +50,7 @@ def init_db():
         laser_zapoceto_u TEXT, bravarija_zapoceto_u TEXT, kreirano_u TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         opis TEXT DEFAULT '', laser_napomena TEXT DEFAULT '', bravarija_napomena TEXT DEFAULT '',
         rutiranje TEXT DEFAULT 'Pogon', odabrani_laser TEXT DEFAULT '', kreirao TEXT DEFAULT '',
-        dimenzije_ploce_laser TEXT DEFAULT '', materijal_ploce_laser TEXT DEFAULT ''
+        dimenzije_ploce_laser TEXT DEFAULT '', materijal_ploce_laser TEXT DEFAULT '', zavrseno_u TIMESTAMP
     )''')
     conn.execute('''CREATE TABLE IF NOT EXISTS nalog_pozicije (
         id INTEGER PRIMARY KEY AUTOINCREMENT, nalog_id INTEGER, naziv_pozicije TEXT NOT NULL,
@@ -73,7 +73,8 @@ def init_db():
         ("naziv_projekta", "TEXT DEFAULT ''"), ("laser_napomena", "TEXT DEFAULT ''"), 
         ("bravarija_napomena", "TEXT DEFAULT ''"), ("debljina_ploce", "TEXT DEFAULT ''"),
         ("odabrani_laser", "TEXT DEFAULT ''"), ("kreirao", "TEXT DEFAULT ''"),
-        ("dimenzije_ploce_laser", "TEXT DEFAULT ''"), ("materijal_ploce_laser", "TEXT DEFAULT ''")
+        ("dimenzije_ploce_laser", "TEXT DEFAULT ''"), ("materijal_ploce_laser", "TEXT DEFAULT ''"),
+        ("zavrseno_u", "TIMESTAMP")
     ]
     for kol, tip in kolone_radni:
         try: conn.execute(f"ALTER TABLE radni_nalozi ADD COLUMN {kol} {tip}")
@@ -101,6 +102,14 @@ def init_db():
     conn.close()
 
 init_db()
+
+def formatiraj_datum(datum_str):
+    if not datum_str: return ''
+    try:
+        d = str(datum_str).replace('T', ' ').split('.')[0]
+        dt = datetime.strptime(d, '%Y-%m-%d %H:%M:%S')
+        return dt.strftime('%d.%m.%Y. u %H:%M')
+    except: return str(datum_str)
 
 def allowed_file(filename): return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -252,8 +261,15 @@ def postavi_stanicu(ime_stanice):
 def index_pogon_hub():
     conn = get_db_connection()
     svi_nalozi = conn.execute('SELECT * FROM radni_nalozi ORDER BY id DESC').fetchall()
-    trenutno_na_laseru = [dict(n) for n in svi_nalozi if n['status'] in ['Laser', 'Pauzirano - Laser'] and (n['laser_zapoceto_u'] or n['status'] == 'Pauzirano - Laser')]
-    trenutno_u_bravariji = [dict(n) for n in svi_nalozi if n['status'] in ['Piganje', 'Pauzirano - Bravarija'] and (n['bravarija_zapoceto_u'] or n['status'] == 'Pauzirano - Bravarija')]
+    trenutno_na_laseru = []
+    trenutno_u_bravariji = []
+    for r in svi_nalozi:
+        n = dict(r)
+        n['kreirano_u_prikaz'] = formatiraj_datum(n['kreirano_u'])
+        if n['status'] in ['Laser', 'Pauzirano - Laser'] and (n['laser_zapoceto_u'] or n['status'] == 'Pauzirano - Laser'):
+            trenutno_na_laseru.append(n)
+        if n['status'] in ['Piganje', 'Pauzirano - Bravarija'] and (n['bravarija_zapoceto_u'] or n['status'] == 'Pauzirano - Bravarija'):
+            trenutno_u_bravariji.append(n)
     conn.close()
     return render_template('monitor.html', trenutno_na_laseru=trenutno_na_laseru, trenutno_u_bravariji=trenutno_u_bravariji)
 
@@ -337,6 +353,12 @@ def dev_panel():
 def index_master():
     if request.cookies.get('pogon_role') not in ['Admin', 'Developer']: return redirect(url_for('login'))
     conn = get_db_connection()
+    
+    # 14 DANA AUTO-ARHIVIRANJE: Svi aktivni nalozi stariji od 14 dana automatski se arhiviraju.
+    granica_za_arhivu = (datetime.now() - timedelta(days=14)).strftime('%Y-%m-%d %H:%M:%S')
+    conn.execute("UPDATE radni_nalozi SET status = 'Arhivirano', zavrseno_u = COALESCE(zavrseno_u, CURRENT_TIMESTAMP) WHERE status != 'Arhivirano' AND kreirano_u <= ?", (granica_za_arhivu,))
+    conn.commit()
+    
     if request.method == 'POST':
         naziv = request.form['naziv_naloga']
         projekt = request.form.get('naziv_projekta', '')
@@ -380,6 +402,8 @@ def index_master():
     
     for r in nalozi_rows:
         n = dict(r)
+        n['kreirano_u_prikaz'] = formatiraj_datum(n['kreirano_u'])
+        n['zavrseno_u_prikaz'] = formatiraj_datum(n['zavrseno_u'])
         n['pozicije'] = [dict(p) for p in conn.execute('SELECT * FROM nalog_pozicije WHERE nalog_id=?', (n['id'],)).fetchall()]
         n['lxdf_datoteke'] = parsiraj_listu_datoteka(n['lxdf_datoteka'])
         n['pdf_datoteke'] = parsiraj_listu_datoteka(n['pdf_datoteka'])
@@ -398,6 +422,8 @@ def arhiva():
     nalozi = []
     for r in nalozi_rows:
         n = dict(r)
+        n['kreirano_u_prikaz'] = formatiraj_datum(n['kreirano_u'])
+        n['zavrseno_u_prikaz'] = formatiraj_datum(n['zavrseno_u'])
         n['pozicije'] = [dict(p) for p in conn.execute('SELECT * FROM nalog_pozicije WHERE nalog_id=?', (n['id'],)).fetchall()]
         n['lxdf_datoteke'] = parsiraj_listu_datoteka(n['lxdf_datoteka'])
         n['pdf_datoteke'] = parsiraj_listu_datoteka(n['pdf_datoteka'])
@@ -462,10 +488,6 @@ def arhiviraj_nalog(id):
     conn.close()
     return redirect(url_for('index_master'))
 
-@app.route('/preuzmi/<filename>')
-def download_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=False)
-
 @app.route('/obrisi/<int:id>')
 def obrisi_nalog(id):
     if request.cookies.get('pogon_role') not in ['Admin', 'Developer']: return redirect(url_for('login'))
@@ -485,7 +507,30 @@ def obrisi_nalog(id):
     conn.close()
     return redirect(request.referrer or url_for('index_master'))
 
-# --- NOVA ZAŠTITA ZA ZAUZEĆE STANICE ---
+@app.route('/masovno_obrisi', methods=['POST'])
+def masovno_obrisi():
+    if request.cookies.get('pogon_role') not in ['Admin', 'Developer']: return redirect(url_for('login'))
+    id_list = request.form.getlist('nalog_ids')
+    conn = get_db_connection()
+    for n_id in id_list:
+        n = conn.execute('SELECT pdf_datoteka, lxdf_datoteka FROM radni_nalozi WHERE id=?', (n_id,)).fetchone()
+        if n:
+            for pdf in parsiraj_listu_datoteka(n['pdf_datoteka']):
+                fpath = os.path.join(UPLOAD_FOLDER, pdf['filename'])
+                if os.path.exists(fpath): os.remove(fpath)
+            for lx in parsiraj_listu_datoteka(n['lxdf_datoteka']):
+                fpath = os.path.join(UPLOAD_FOLDER, lx['filename'])
+                if os.path.exists(fpath): os.remove(fpath)
+        conn.execute('DELETE FROM radni_nalozi WHERE id=?', (n_id,))
+        conn.execute('DELETE FROM nalog_pozicije WHERE nalog_id=?', (n_id,))
+    conn.commit()
+    conn.close()
+    return redirect(request.referrer or url_for('arhiva'))
+
+@app.route('/preuzmi/<filename>')
+def download_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=False)
+
 @app.route('/zapocni_fazu/<int:id>/<string:faza>')
 def zapocni_fazu(id, faza):
     trenutni_iso = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -513,7 +558,6 @@ def zapocni_fazu(id, faza):
     conn.commit()
     conn.close()
     return redirect(url_for(f'sekcija_{faza}'))
-# ---------------------------------------
 
 @app.route('/laser', methods=['GET', 'POST'])
 def sekcija_laser():
@@ -534,7 +578,12 @@ def sekcija_laser():
         if akcija == 'pauziraj':
             conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Laser', laser_zapoceto_u=NULL, odabrani_laser='', laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=? WHERE id=?", (radnik_napomena, dimenzije_ploce, materijal_ploce, id_naloga))
         else:
-            conn.execute("UPDATE radni_nalozi SET status=?, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=? WHERE id=?", ('Piganje' if akcija == 'bravarija' else 'Na pregledu', radnik_napomena, dimenzije_ploce, materijal_ploce, id_naloga))
+            novi_status = 'Piganje' if akcija == 'bravarija' else 'Na pregledu'
+            vrijeme_zav = datetime.now().strftime('%Y-%m-%d %H:%M:%S') if novi_status == 'Na pregledu' else None
+            if vrijeme_zav:
+                conn.execute("UPDATE radni_nalozi SET status=?, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=?, zavrseno_u=? WHERE id=?", (novi_status, radnik_napomena, dimenzije_ploce, materijal_ploce, vrijeme_zav, id_naloga))
+            else:
+                conn.execute("UPDATE radni_nalozi SET status=?, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=? WHERE id=?", (novi_status, radnik_napomena, dimenzije_ploce, materijal_ploce, id_naloga))
         conn.commit()
         return redirect(url_for('sekcija_laser'))
         
@@ -573,7 +622,8 @@ def sekcija_bravarija():
         if akcija == 'pauziraj':
             conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Bravarija', bravarija_zapoceto_u=NULL, bravarija_napomena=? WHERE id=?", (radnik_napomena, id_naloga))
         else:
-            conn.execute("UPDATE radni_nalozi SET status='Na pregledu', bravarija_napomena=? WHERE id=?", (radnik_napomena, id_naloga))
+            vrijeme_zav = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            conn.execute("UPDATE radni_nalozi SET status='Na pregledu', bravarija_napomena=?, zavrseno_u=? WHERE id=?", (radnik_napomena, vrijeme_zav, id_naloga))
                          
         conn.commit()
         return redirect(url_for('sekcija_bravarija'))

@@ -1,125 +1,179 @@
 {% extends "base.html" %}
 {% block content %}
 <h3 class="mb-4 fw-bold text-white"><i class="fa-solid fa-box-archive text-secondary me-2"></i> ARHIVA ZAVRŠENIH NALOGA</h3>
-<div class="card">
+<div class="card" style="margin-bottom: 80px;">
     <div class="card-header-custom d-flex justify-content-between align-items-center flex-mob-col">
         <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check text-muted me-2"></i>Svi arhivirani poslovi</h5>
         <div class="position-relative" style="max-width: 350px; width: 100%;">
             <i class="fa-solid fa-magnifying-glass position-absolute text-muted" style="left: 14px; top: 12px;"></i>
-            <input type="text" id="traziArhivu" class="form-control bg-dark border-secondary text-white ps-5" placeholder="Pretraži (Kupac, Projekt, ID)..." onkeyup="filtrirajArhivu()">
+            <input type="text" id="traziArhivu" class="form-control bg-dark border-secondary text-white ps-5" placeholder="Pretraži (Kupac, Projekt, ID, Datum)..." onkeyup="filtrirajArhivu()">
         </div>
     </div>
     <div class="card-body p-0 pt-2">
-        <div class="table-responsive px-3">
-            <table class="table align-middle table-modern m-0">
-                <thead><tr><th class="ps-4">ID</th><th>Kupac / Projekt</th><th>Status / Ruta</th><th style="min-width: 320px;">Upute i Napomene</th><th>Nacrti</th><th class="pe-4">Opcije</th></tr></thead>
-                <tbody>
-                    {% if not nalozi %}<tr><td colspan="6" class="text-center py-5 text-muted">Nema arhiviranih naloga.</td></tr>{% endif %}
-                    {% for n in nalozi %}
-                    <tr class="row-state-completed arhiva-red" data-search="{{ n.id }} {{ n.naziv_naloga }} {{ n.naziv_projekta }}" data-id="{{ n.id }}" style="opacity: 0.85;">
-                        <td class="fs-5 text-muted ps-4 fw-bold">#{{ n.id }}</td>
-                        <td>
-                            <div class="fs-5 fw-bold text-white">{{ n.naziv_naloga }}</div>
-                            <div class="text-info small opacity-75">
-                                {{ n.naziv_projekta }}
-                                {% if n.debljina_ploce %} &bull; <span class="badge bg-dark text-info border border-info border-opacity-25">D: {{ n.debljina_ploce }}</span>{% endif %}
-                                {% if n.kreirao %} &bull; <i class="fa-solid fa-user-pen text-warning me-1"></i><span class="text-warning fw-bold">{{ n.kreirao }}</span>{% endif %}
-                            </div>
-                            {% if n.pozicije %}<button class="btn btn-sm btn-outline-secondary mt-2 py-0 px-2" style="font-size:0.75rem; border-radius:6px;" type="button" data-bs-toggle="collapse" data-bs-target="#detalji-{{ n.id }}"><i class="fa-solid fa-chevron-down me-1"></i> Detalji i Vrijeme</button>{% endif %}
-                        </td>
-                        <td><span class="badge badge-modern badge-pending py-2 px-3 shadow-sm"><i class="fa-solid fa-box-archive me-1"></i> ARHIVIRANO</span></td>
-                        <td style="max-width: 350px;">
-                            {% if n.opis or n.laser_napomena or n.bravarija_napomena %}
-                                {% set sve_ukupno = (n.opis|length if n.opis else 0) + (n.laser_napomena|length if n.laser_napomena else 0) + (n.bravarija_napomena|length if n.bravarija_napomena else 0) %}
-                                {% if sve_ukupno > 100 %}
-                                    <button class="btn btn-sm btn-outline-info w-100 text-start rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#opis-{{ n.id }}"><i class="fa-solid fa-book-open me-2"></i> Čitaj opise</button>
-                                    <div class="collapse mt-2" id="opis-{{ n.id }}">
-                                        {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Poslovođa:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                                        {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Laser:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                                        {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Bravarija:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
-                                    </div>
-                                {% else %}
-                                    <div>
-                                        {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Poslovođa:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
-                                        {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Laser:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
-                                        {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Bravarija:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
+        <form id="bulkDeleteForm" method="POST" action="/masovno_obrisi">
+            <div class="table-responsive px-3">
+                <table class="table align-middle table-modern m-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width: 40px;"><input class="form-check-input border-secondary shadow-none" type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
+                            <th>ID</th>
+                            <th>Kupac / Projekt</th>
+                            <th>Status / Ruta</th>
+                            <th style="min-width: 320px;">Upute i Napomene</th>
+                            <th>Nacrti</th>
+                            <th class="pe-4">Opcije</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if not nalozi %}<tr><td colspan="7" class="text-center py-5 text-muted">Nema arhiviranih naloga.</td></tr>{% endif %}
+                        {% for n in nalozi %}
+                        <tr class="row-state-completed arhiva-red" data-search="{{ n.id }} {{ n.naziv_naloga }} {{ n.naziv_projekta }} {{ n.kreirano_u_prikaz }} {{ n.zavrseno_u_prikaz }}" data-id="{{ n.id }}" style="opacity: 0.85;">
+                            <td class="ps-4 text-center">
+                                <input class="form-check-input border-secondary shadow-none nalog-checkbox" type="checkbox" name="nalog_ids" value="{{ n.id }}" onchange="updateBulkBar()">
+                            </td>
+                            <td class="fs-5 text-muted fw-bold">#{{ n.id }}</td>
+                            <td>
+                                <div class="fs-5 fw-bold text-white">{{ n.naziv_naloga }}</div>
+                                <div class="text-info small opacity-75">
+                                    {{ n.naziv_projekta }}
+                                    {% if n.debljina_ploce %} &bull; <span class="badge bg-dark text-info border border-info border-opacity-25">D: {{ n.debljina_ploce }}</span>{% endif %}
+                                    {% if n.kreirao %} &bull; <i class="fa-solid fa-user-pen text-warning me-1"></i><span class="text-warning fw-bold">{{ n.kreirao }}</span>{% endif %}
+                                </div>
+                                <div class="text-info small opacity-75 mt-1" style="font-size: 0.75rem;">
+                                    <i class="fa-regular fa-calendar-plus text-success me-1"></i>Kreirano: <b class="text-white">{{ n.kreirano_u_prikaz }}</b><br>
+                                    <i class="fa-regular fa-calendar-check text-info me-1"></i>Završeno: <b class="text-white">{{ n.zavrseno_u_prikaz }}</b>
+                                </div>
+                                {% if n.pozicije %}<button class="btn btn-sm btn-outline-secondary mt-2 py-0 px-2" style="font-size:0.75rem; border-radius:6px;" type="button" data-bs-toggle="collapse" data-bs-target="#detalji-{{ n.id }}"><i class="fa-solid fa-chevron-down me-1"></i> Detalji i Vrijeme</button>{% endif %}
+                            </td>
+                            <td><span class="badge badge-modern badge-pending py-2 px-3 shadow-sm"><i class="fa-solid fa-box-archive me-1"></i> ARHIVIRANO</span></td>
+                            <td style="max-width: 350px;">
+                                {% if n.opis or n.laser_napomena or n.bravarija_napomena %}
+                                    {% set sve_ukupno = (n.opis|length if n.opis else 0) + (n.laser_napomena|length if n.laser_napomena else 0) + (n.bravarija_napomena|length if n.bravarija_napomena else 0) %}
+                                    {% if sve_ukupno > 100 %}
+                                        <button class="btn btn-sm btn-outline-info w-100 text-start rounded-3" type="button" data-bs-toggle="collapse" data-bs-target="#opis-{{ n.id }}"><i class="fa-solid fa-book-open me-2"></i> Čitaj opise</button>
+                                        <div class="collapse mt-2" id="opis-{{ n.id }}">
+                                            {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Poslovođa:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
+                                            {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Laser:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
+                                            {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Bravarija:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div>
+                                            {% if n.opis %}<div class="napomena-box border-info"><b><i class="fa-solid fa-user-tie text-info me-1"></i> <span class="text-info">Poslovođa:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.opis }}</span></div>{% endif %}
+                                            {% if n.laser_napomena %}<div class="napomena-box border-danger mt-2"><b><i class="fa-solid fa-fire text-danger me-1"></i> <span class="text-info">Laser:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.laser_napomena }}</span></div>{% endif %}
+                                            {% if n.bravarija_napomena %}<div class="napomena-box border-warning mt-2"><b><i class="fa-solid fa-hammer text-warning me-1"></i> <span class="text-info">Bravarija:</span></b><br><span class="text-white fw-bold" style="font-size: 0.95rem;">{{ n.bravarija_napomena }}</span></div>{% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% else %}<span class="text-muted small">Nema napomena</span>{% endif %}
+                            </td>
+                            <td>
+                                {% if n.pdf_datoteke|length == 1 %}<a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1 rounded-3" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
+                                {% elif n.pdf_datoteke|length > 1 %}
+                                    <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                                        <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF ({{ n.pdf_datoteke|length }})</button>
+                                        <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
+                                            {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
+                                        </ul>
                                     </div>
                                 {% endif %}
-                            {% else %}<span class="text-muted small">Nema napomena</span>{% endif %}
-                        </td>
-                        <td>
-                            {% if n.pdf_datoteke|length == 1 %}<a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1 rounded-3" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
-                            {% elif n.pdf_datoteke|length > 1 %}
-                                <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                    <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF ({{ n.pdf_datoteke|length }})</button>
-                                    <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
-                                        {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
-                                    </ul>
+                                {% if n.lxdf_datoteke|length == 1 %}<a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1 rounded-3"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
+                                {% elif n.lxdf_datoteke|length > 1 %}
+                                    <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
+                                        <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne dat. ({{ n.lxdf_datoteke|length }})</button>
+                                        <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
+                                            {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4">
+                                <a href="/preuzmi_izvjestaj/{{ n.id }}" class="btn btn-outline-success btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;"><i class="fa-solid fa-download me-1"></i> Spremi (ZIP)</a>
+                                <a href="#" class="btn btn-outline-danger btn-sm w-100 mob-full-btn border-0" style="border-radius: 8px; background: rgba(220,53,69,0.1);" title="Trajno obriši" onclick="event.preventDefault(); potvrdiBrisanje('/obrisi/{{ n.id }}');"><i class="fa-solid fa-trash text-danger"></i> <span class="text-danger">Obriši</span></a>
+                            </td>
+                        </tr>
+                        {% if n.pozicije %}
+                        <tr class="collapse row-state-completed" id="detalji-{{ n.id }}">
+                            <td colspan="7" class="p-4" style="background-color: transparent;">
+                                <div class="tamni-kontejner p-0 shadow-lg mt-1 overflow-hidden" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822;">
+                                        <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;"><tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr></thead>
+                                        <tbody>
+                                            {% for p in n.pozicije %}
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                                <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
+                                                <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
+                                                    <div class="mb-2">
+                                                        <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada if p.laser_komada is not none else '0' }} kom</span>
+                                                        <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.laser_skart if p.laser_skart is not none else '0' }}</span>
+                                                    </div>
+                                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                                        <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '0' }}h {{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Rezanje: <b class="text-light">{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '0' }}h {{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '0' }}m</b>
+                                                    </div>
+                                                    {% if p.laser_radnik %}
+                                                    <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.laser_radnik }}</div>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
+                                                    <div class="mb-2">
+                                                        <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada if p.bravarija_komada is not none else '0' }} kom</span>
+                                                        <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.bravarija_skart if p.bravarija_skart is not none else '0' }}</span>
+                                                    </div>
+                                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                                        <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati is not none else '0' }}h {{ p.bravarija_priprema_minute if p.bravarija_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Piganje: <b class="text-light">{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati is not none else '0' }}h {{ p.bravarija_piganje_minute if p.bravarija_piganje_minute is not none else '0' }}m</b>
+                                                    </div>
+                                                    {% if p.bravarija_radnik %}
+                                                    <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.bravarija_radnik }}</div>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            {% endif %}
-                            {% if n.lxdf_datoteke|length == 1 %}<a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1 rounded-3"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
-                            {% elif n.lxdf_datoteke|length > 1 %}
-                                <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                    <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne dat. ({{ n.lxdf_datoteke|length }})</button>
-                                    <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
-                                        {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
-                                    </ul>
-                                </div>
-                            {% endif %}
-                        </td>
-                        <td class="pe-4">
-                            <a href="/preuzmi_izvjestaj/{{ n.id }}" class="btn btn-outline-success btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;"><i class="fa-solid fa-download me-1"></i> Spremi (ZIP)</a>
-                            <a href="#" class="btn btn-outline-danger btn-sm w-100 mob-full-btn border-0" style="border-radius: 8px; background: rgba(220,53,69,0.1);" title="Trajno obriši" onclick="event.preventDefault(); potvrdiBrisanje('/obrisi/{{ n.id }}');"><i class="fa-solid fa-trash text-danger"></i> <span class="text-danger">Obriši</span></a>
-                        </td>
-                    </tr>
-                    {% if n.pozicije %}
-                    <tr class="collapse row-state-completed" id="detalji-{{ n.id }}">
-                        <td colspan="6" class="p-4" style="background-color: transparent;">
-                            <div class="tamni-kontejner p-0 shadow-lg mt-1 overflow-hidden" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                                <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822;">
-                                    <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;"><tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr></thead>
-                                    <tbody>
-                                        {% for p in n.pozicije %}
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                            <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
-                                            <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
-                                                <div class="mb-2">
-                                                    <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
-                                                    <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada if p.laser_komada is not none else '0' }} kom</span>
-                                                    <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.laser_skart if p.laser_skart is not none else '0' }}</span>
-                                                </div>
-                                                <div class="text-muted" style="font-size: 0.8rem;">
-                                                    <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '0' }}h {{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Rezanje: <b class="text-light">{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '0' }}h {{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '0' }}m</b>
-                                                </div>
-                                                {% if p.laser_radnik %}
-                                                <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.laser_radnik }}</div>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
-                                                <div class="mb-2">
-                                                    <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
-                                                    <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada if p.bravarija_komada is not none else '0' }} kom</span>
-                                                    <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.bravarija_skart if p.bravarija_skart is not none else '0' }}</span>
-                                                </div>
-                                                <div class="text-muted" style="font-size: 0.8rem;">
-                                                    <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati is not none else '0' }}h {{ p.bravarija_priprema_minute if p.bravarija_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Piganje: <b class="text-light">{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati is not none else '0' }}h {{ p.bravarija_piganje_minute if p.bravarija_piganje_minute is not none else '0' }}m</b>
-                                                </div>
-                                                {% if p.bravarija_radnik %}
-                                                <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.bravarija_radnik }}</div>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
     </div>
 </div>
+
+<!-- LEBDEĆA TRAKA ZA MASOVNO BRISANJE -->
+<div id="bulkActionBar" class="position-fixed bottom-0 start-0 w-100 p-3 bg-dark border-top border-danger shadow-lg d-flex justify-content-between align-items-center" style="display: none !important; z-index: 1050; transform: translateY(100%); transition: transform 0.3s ease;">
+    <div class="container d-flex justify-content-between align-items-center">
+        <span class="text-white fs-5 fw-bold"><i class="fa-solid fa-check-double text-info me-2"></i> Označeno naloga: <span id="bulkCount" class="badge bg-danger fs-5 ms-2">0</span></span>
+        <button type="button" class="btn btn-danger fw-bold px-4 py-2" onclick="potvrdiMasovnoBrisanje()"><i class="fa-solid fa-trash-can me-2"></i> Obriši Sve Odabrano</button>
+    </div>
+</div>
+
+<script>
+    function toggleAll(source) {
+        let checkboxes = document.querySelectorAll('.nalog-checkbox');
+        for(let i=0; i<checkboxes.length; i++) {
+            let row = checkboxes[i].closest('tr');
+            if (row.style.display !== 'none') { checkboxes[i].checked = source.checked; }
+        }
+        updateBulkBar();
+    }
+    
+    function updateBulkBar() {
+        let checkboxes = document.querySelectorAll('.nalog-checkbox:checked');
+        let count = checkboxes.length;
+        let bar = document.getElementById('bulkActionBar');
+        let countText = document.getElementById('bulkCount');
+        
+        if(count > 0) {
+            countText.innerText = count;
+            bar.style.setProperty('display', 'flex', 'important');
+            setTimeout(() => bar.style.transform = 'translateY(0)', 10);
+        } else {
+            bar.style.transform = 'translateY(100%)';
+            setTimeout(() => bar.style.setProperty('display', 'none', 'important'), 300);
+        }
+    }
+</script>
 {% endblock %}
