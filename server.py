@@ -12,6 +12,21 @@ from datetime import datetime, timedelta
 from flask import Flask, request, redirect, url_for, render_template, send_from_directory, session, make_response, send_file
 from werkzeug.utils import secure_filename
 
+def dobij_zg_vrijeme():
+    utc_sada = datetime.utcnow()
+    godina = utc_sada.year
+    pocetak_ljetnog = datetime(godina, 3, 31)
+    pocetak_ljetnog -= timedelta(days=(pocetak_ljetnog.weekday() + 1) % 7)
+    pocetak_ljetnog = pocetak_ljetnog.replace(hour=1, minute=0, second=0)
+    kraj_ljetnog = datetime(godina, 10, 31)
+    kraj_ljetnog -= timedelta(days=(kraj_ljetnog.weekday() + 1) % 7)
+    kraj_ljetnog = kraj_ljetnog.replace(hour=1, minute=0, second=0)
+    
+    if pocetak_ljetnog <= utc_sada < kraj_ljetnog:
+        return utc_sada + timedelta(hours=2)
+    else:
+        return utc_sada + timedelta(hours=1)
+
 app = Flask(__name__)
 app.secret_key = 'firstcut_pogon_secure_key_2026'
 app.permanent_session_lifetime = timedelta(days=365)
@@ -106,7 +121,7 @@ init_db()
 def formatiraj_datum(datum_str):
     if not datum_str: return ''
     try:
-        d = str(datum_str).replace('T', ' ').split('.')[0]
+        d = str(datum_str).replace('T', ' ').replace('Z', '').split('.')[0]
         dt = datetime.strptime(d, '%Y-%m-%d %H:%M:%S')
         return dt.strftime('%d.%m.%Y. u %H:%M')
     except: return str(datum_str)
@@ -142,9 +157,9 @@ def provjera_pristupa():
     z_stanica = request.cookies.get('zakljucana_stanica')
     if not z_stanica: return redirect(url_for('prijava_stanice'))
     if request.path == '/': return
-    if z_stanica in ['laser1', 'laser2'] and not any(request.path.startswith(r) for r in ['/laser', '/zapocni_fazu', '/dodaj_poziciju', '/obrisi_poziciju', '/preuzmi']): return redirect('/laser')
-    elif z_stanica == 'bravarija' and not any(request.path.startswith(r) for r in ['/bravarija', '/zapocni_fazu', '/dodaj_poziciju', '/obrisi_poziciju', '/preuzmi']): return redirect('/bravarija')
-    elif z_stanica == 'monitor' and not request.path.startswith('/preuzmi'): return redirect('/')
+    if z_stanica in ['laser1', 'laser2'] and not any(request.path.startswith(r) for r in ['/laser', '/zapocni_fazu', '/dodaj_poziciju', '/obrisi_poziciju', '/preuzmi', '/preuzmi_zip_datoteka']): return redirect('/laser')
+    elif z_stanica == 'bravarija' and not any(request.path.startswith(r) for r in ['/bravarija', '/zapocni_fazu', '/dodaj_poziciju', '/obrisi_poziciju', '/preuzmi', '/preuzmi_zip_datoteka']): return redirect('/bravarija')
+    elif z_stanica == 'monitor' and not any(request.path.startswith(r) for r in ['/preuzmi', '/preuzmi_zip_datoteka']): return redirect('/')
 
 @app.context_processor
 def inject_globalne_varijable():
@@ -157,7 +172,7 @@ def inject_globalne_varijable():
     aktivna_obavijest, aktivna_obavijest_do = None, None
     try:
         conn = get_db_connection()
-        ob = conn.execute("SELECT tekst, vrijedi_do FROM obavijesti WHERE vrijedi_do > ? ORDER BY id DESC LIMIT 1", (datetime.now().isoformat(),)).fetchone()
+        ob = conn.execute("SELECT tekst, vrijedi_do FROM obavijesti WHERE vrijedi_do > ? ORDER BY id DESC LIMIT 1", (dobij_zg_vrijeme().isoformat(),)).fetchone()
         if ob: aktivna_obavijest, aktivna_obavijest_do = ob['tekst'], ob['vrijedi_do']
         conn.close()
     except: pass
@@ -197,7 +212,7 @@ def prijava_stanice():
     otisak_uređaja = hashlib.md5(f"{prava_ip}_{request.headers.get('User-Agent', 'nepoznat')}".encode('utf-8')).hexdigest()
     blokada = conn.execute("SELECT * FROM blokade WHERE ip_adresa=?", (otisak_uređaja,)).fetchone()
     
-    sada = datetime.now()
+    sada = dobij_zg_vrijeme()
     blokada_aktivna = False
     if blokada and blokada['blokiran_do']:
         vrijeme_isteka = datetime.fromisoformat(blokada['blokiran_do'])
@@ -311,7 +326,7 @@ def dev_panel():
         if akcija == 'lansiraj_ticker':
             tekst = request.form.get('ticker_tekst')
             trajanje_minuta = float(request.form.get('trajanje_minuta', 60))
-            vrijedi_do = (datetime.now() + timedelta(minutes=trajanje_minuta)).isoformat()
+            vrijedi_do = (dobij_zg_vrijeme() + timedelta(minutes=trajanje_minuta)).isoformat()
             conn.execute("DELETE FROM obavijesti")
             conn.execute("INSERT INTO obavijesti (tekst, vrijedi_do) VALUES (?, ?)", (tekst, vrijedi_do))
             conn.commit()
@@ -354,9 +369,9 @@ def index_master():
     if request.cookies.get('pogon_role') not in ['Admin', 'Developer']: return redirect(url_for('login'))
     conn = get_db_connection()
     
-    # 14 DANA AUTO-ARHIVIRANJE: Svi aktivni nalozi stariji od 14 dana automatski se arhiviraju.
-    granica_za_arhivu = (datetime.now() - timedelta(days=14)).strftime('%Y-%m-%d %H:%M:%S')
-    conn.execute("UPDATE radni_nalozi SET status = 'Arhivirano', zavrseno_u = COALESCE(zavrseno_u, CURRENT_TIMESTAMP) WHERE status != 'Arhivirano' AND kreirano_u <= ?", (granica_za_arhivu,))
+    zg_sada = dobij_zg_vrijeme().strftime('%Y-%m-%d %H:%M:%S')
+    granica_za_arhivu = (dobij_zg_vrijeme() - timedelta(days=14)).strftime('%Y-%m-%d %H:%M:%S')
+    conn.execute("UPDATE radni_nalozi SET status = 'Arhivirano', zavrseno_u = COALESCE(zavrseno_u, ?) WHERE status != 'Arhivirano' AND kreirano_u <= ?", (zg_sada, granica_za_arhivu,))
     conn.commit()
     
     if request.method == 'POST':
@@ -370,7 +385,7 @@ def index_master():
         p_names = []
         for f in request.files.getlist('pdf_file'):
             if f and allowed_file(f.filename):
-                fname = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f.filename}")
+                fname = secure_filename(f"{dobij_zg_vrijeme().strftime('%Y%m%d%H%M%S')}_{f.filename}")
                 f.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
                 p_names.append(fname)
         p_name_db = json.dumps(p_names) if p_names else None
@@ -378,14 +393,16 @@ def index_master():
         l_names = []
         for f in request.files.getlist('lxdf_file'):
             if f and allowed_file(f.filename):
-                fname = secure_filename(f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f.filename}")
+                fname = secure_filename(f"{dobij_zg_vrijeme().strftime('%Y%m%d%H%M%S')}_{f.filename}")
                 f.save(os.path.join(app.config['UPLOAD_FOLDER'], fname))
                 l_names.append(fname)
         l_name_db = json.dumps(l_names) if l_names else None
         
         pocetni_status = 'Piganje' if rutiranje == 'Samo Bravarija' else 'Laser'
-        cursor = conn.execute('INSERT INTO radni_nalozi (naziv_naloga, naziv_projekta, debljina_ploce, pdf_datoteka, lxdf_datoteka, opis, rutiranje, status, kreirao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-                     (naziv, projekt, debljina_ploce, p_name_db, l_name_db, opis, rutiranje, pocetni_status, kreirao))
+        vrijeme_kreiranja = dobij_zg_vrijeme().strftime('%Y-%m-%d %H:%M:%S')
+        
+        cursor = conn.execute('INSERT INTO radni_nalozi (naziv_naloga, naziv_projekta, debljina_ploce, pdf_datoteka, lxdf_datoteka, opis, rutiranje, status, kreirao, kreirano_u) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+                     (naziv, projekt, debljina_ploce, p_name_db, l_name_db, opis, rutiranje, pocetni_status, kreirao, vrijeme_kreiranja))
         nalog_id = cursor.lastrowid
         
         try:
@@ -431,6 +448,7 @@ def arhiva():
     conn.close()
     return render_template('arhiva.html', nalozi=nalozi)
 
+# --- SPREMI ZIP (Glavni proizvodni izvještaj sa HTML-om) ---
 @app.route('/preuzmi_izvjestaj/<int:id>')
 def preuzmi_izvjestaj(id):
     conn = get_db_connection()
@@ -440,22 +458,33 @@ def preuzmi_izvjestaj(id):
         return redirect(url_for('index_master'))
         
     pozicije = conn.execute("SELECT * FROM nalog_pozicije WHERE nalog_id=?", (id,)).fetchall()
-    firma = secure_filename(n['naziv_naloga']) if n['naziv_naloga'] else "Firma"
-    projekt = secure_filename(n['naziv_projekta']) if n['naziv_projekta'] else "Projekt"
-    debljina = secure_filename(n['debljina_ploce']) if n['debljina_ploce'] else "Debljina"
-    predlozeno_ime_zipa = f"{firma}_{projekt}_{debljina}.zip".replace("__", "_")
-    memory_file = io.BytesIO()
     
+    firma = secure_filename(n['naziv_naloga']) if n['naziv_naloga'] else "Firma"
+    projekt = secure_filename(n['naziv_projekta']) if n['naziv_projekta'] else ""
+    
+    dijelovi = [firma]
+    if projekt:
+        dijelovi.append(projekt)
+    dijelovi.append(f"Izvjestaj_Nalog_{id}")
+    
+    glavni_folder = "_".join(dijelovi).replace("__", "_")
+    predlozeno_ime_zipa = f"{glavni_folder}.zip"
+    
+    memory_file = io.BytesIO()
     try:
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             pdf_datoteke = parsiraj_listu_datoteka(n['pdf_datoteka'])
             for pdf in pdf_datoteke:
                 fpath = os.path.join(app.config['UPLOAD_FOLDER'], pdf['filename'])
-                if os.path.exists(fpath): zf.write(fpath, pdf['filename'])
+                if os.path.exists(fpath): 
+                    zf.write(fpath, f"{glavni_folder}/PDF_Datoteke/{pdf['filename']}")
+            
             lxdf_datoteke = parsiraj_listu_datoteka(n['lxdf_datoteka'])
             for lx in lxdf_datoteke:
                 fpath = os.path.join(app.config['UPLOAD_FOLDER'], lx['filename'])
-                if os.path.exists(fpath): zf.write(fpath, lx['filename'])
+                if os.path.exists(fpath): 
+                    zf.write(fpath, f"{glavni_folder}/DXF_Datoteke/{lx['filename']}")
+            
             logo_base64 = ""
             logo_ext = ""
             for ext in ['png', 'jpg', 'jpeg']:
@@ -471,11 +500,51 @@ def preuzmi_izvjestaj(id):
                 vrijeme_laser = f"Priprema: {p['laser_priprema_sati']}h {p['laser_priprema_minute']}m<br>Rezanje: {p['laser_rezanje_sati']}h {p['laser_rezanje_minute']}m" if p['laser_priprema_sati'] or p['laser_priprema_minute'] or p['laser_rezanje_sati'] or p['laser_rezanje_minute'] else f"Vrijeme: {p['laser_sati']}h {p['laser_minute']}m"
                 vrijeme_bravarija = f"Priprema: {p['bravarija_priprema_sati']}h {p['bravarija_priprema_minute']}m<br>Piganje: {p['bravarija_piganje_sati']}h {p['bravarija_piganje_minute']}m" if p['bravarija_priprema_sati'] or p['bravarija_priprema_minute'] or p['bravarija_piganje_sati'] or p['bravarija_piganje_minute'] else f"Vrijeme: {p['bravarija_sati']}h {p['bravarija_minute']}m"
                 report_html += f"""<tr><td style="font-weight: 700; color: #0f172a; font-size: 15px;">{p['naziv_pozicije']}</td><td><div><span class="badge badge-info">POTREBNO: {p['ciljana_kolicina']} KOM</span><br><span class="badge badge-success" style="margin-top:4px;">ODRAĐENO: {p['laser_komada']} KOM</span><span class="badge badge-danger">{p['laser_skart']} ŠKART</span></div><div class="radnik-info">{vrijeme_laser}<br>Radnik: {p['laser_radnik'] if p['laser_radnik'] else '-'}</div></td><td><div><span class="badge badge-info">POTREBNO: {p['ciljana_kolicina']} KOM</span><br><span class="badge badge-success" style="margin-top:4px;">ODRAĐENO: {p['bravarija_komada']} KOM</span><span class="badge badge-danger">{p['bravarija_skart']} ŠKART</span></div><div class="radnik-info">{vrijeme_bravarija}<br>Radnik: {p['bravarija_radnik'] if p['bravarija_radnik'] else '-'}</div></td></tr>"""
-            report_html += f"""</tbody></table></div><div class="footer">Sustav First Cut Laser d.o.o. &bull; Izvještaj generiran: {datetime.now().strftime('%d.%m.%Y. u %H:%M')}</div></div></body></html>"""
-            zf.writestr(f"Pregled_Naloga_{id}.html", report_html.encode('utf-8'))
+            report_html += f"""</tbody></table></div><div class="footer">Sustav First Cut Laser d.o.o. &bull; Izvještaj generiran: {dobij_zg_vrijeme().strftime('%d.%m.%Y. u %H:%M')}</div></div></body></html>"""
+            zf.writestr(f"{glavni_folder}/Pregled_Naloga_{id}.html", report_html.encode('utf-8'))
     except Exception as e: pass
     
     conn.close()
+    memory_file.seek(0)
+    return send_file(memory_file, download_name=predlozeno_ime_zipa, as_attachment=True)
+
+# --- PREUZMI ZIP DATOTEKA (Samo PDF i DXF datoteke) ---
+@app.route('/preuzmi_zip_datoteka/<int:id>')
+def preuzmi_zip_datoteka(id):
+    conn = get_db_connection()
+    n = conn.execute("SELECT * FROM radni_nalozi WHERE id=?", (id,)).fetchone()
+    conn.close()
+    if not n:
+        return redirect(request.referrer or url_for('index_master'))
+        
+    firma = secure_filename(n['naziv_naloga']) if n['naziv_naloga'] else "Firma"
+    projekt = secure_filename(n['naziv_projekta']) if n['naziv_projekta'] else ""
+    
+    dijelovi = [firma]
+    if projekt:
+        dijelovi.append(projekt)
+    dijelovi.append("PDF_DXF_Datoteke")
+    
+    glavni_folder = "_".join(dijelovi).replace("__", "_")
+    predlozeno_ime_zipa = f"{glavni_folder}.zip"
+        
+    memory_file = io.BytesIO()
+    try:
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            pdf_datoteke = parsiraj_listu_datoteka(n['pdf_datoteka'])
+            for pdf in pdf_datoteke:
+                fpath = os.path.join(app.config['UPLOAD_FOLDER'], pdf['filename'])
+                if os.path.exists(fpath): 
+                    zf.write(fpath, f"{glavni_folder}/PDF_Datoteke/{pdf['filename']}")
+                    
+            lxdf_datoteke = parsiraj_listu_datoteka(n['lxdf_datoteka'])
+            for lx in lxdf_datoteke:
+                fpath = os.path.join(app.config['UPLOAD_FOLDER'], lx['filename'])
+                if os.path.exists(fpath): 
+                    zf.write(fpath, f"{glavni_folder}/DXF_Datoteke/{lx['filename']}")
+    except Exception as e:
+        pass
+    
     memory_file.seek(0)
     return send_file(memory_file, download_name=predlozeno_ime_zipa, as_attachment=True)
 
@@ -533,7 +602,7 @@ def download_file(filename):
 
 @app.route('/zapocni_fazu/<int:id>/<string:faza>')
 def zapocni_fazu(id, faza):
-    trenutni_iso = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    trenutno_vrijeme = dobij_zg_vrijeme().strftime('%Y-%m-%d %H:%M:%S')
     conn = get_db_connection()
     
     if faza == 'laser': 
@@ -545,7 +614,7 @@ def zapocni_fazu(id, faza):
             conn.close()
             return redirect(url_for('sekcija_laser', err='zauzeto'))
             
-        conn.execute("UPDATE radni_nalozi SET status='Laser', laser_zapoceto_u=?, odabrani_laser=? WHERE id=?", (trenutni_iso, ime_lasera, id))
+        conn.execute("UPDATE radni_nalozi SET status='Laser', laser_zapoceto_u=?, odabrani_laser=? WHERE id=?", (trenutno_vrijeme, ime_lasera, id))
         
     elif faza == 'bravarija': 
         aktivni = conn.execute("SELECT id FROM radni_nalozi WHERE status='Piganje' AND bravarija_zapoceto_u IS NOT NULL").fetchone()
@@ -553,7 +622,7 @@ def zapocni_fazu(id, faza):
             conn.close()
             return redirect(url_for('sekcija_bravarija', err='zauzeto'))
             
-        conn.execute("UPDATE radni_nalozi SET status='Piganje', bravarija_zapoceto_u=? WHERE id=?", (trenutni_iso, id))
+        conn.execute("UPDATE radni_nalozi SET status='Piganje', bravarija_zapoceto_u=? WHERE id=?", (trenutno_vrijeme, id))
         
     conn.commit()
     conn.close()
@@ -579,7 +648,7 @@ def sekcija_laser():
             conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Laser', laser_zapoceto_u=NULL, odabrani_laser='', laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=? WHERE id=?", (radnik_napomena, dimenzije_ploce, materijal_ploce, id_naloga))
         else:
             novi_status = 'Piganje' if akcija == 'bravarija' else 'Na pregledu'
-            vrijeme_zav = datetime.now().strftime('%Y-%m-%d %H:%M:%S') if novi_status == 'Na pregledu' else None
+            vrijeme_zav = dobij_zg_vrijeme().strftime('%Y-%m-%d %H:%M:%S') if novi_status == 'Na pregledu' else None
             if vrijeme_zav:
                 conn.execute("UPDATE radni_nalozi SET status=?, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=?, zavrseno_u=? WHERE id=?", (novi_status, radnik_napomena, dimenzije_ploce, materijal_ploce, vrijeme_zav, id_naloga))
             else:
@@ -622,7 +691,7 @@ def sekcija_bravarija():
         if akcija == 'pauziraj':
             conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Bravarija', bravarija_zapoceto_u=NULL, bravarija_napomena=? WHERE id=?", (radnik_napomena, id_naloga))
         else:
-            vrijeme_zav = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            vrijeme_zav = dobij_zg_vrijeme().strftime('%Y-%m-%d %H:%M:%S')
             conn.execute("UPDATE radni_nalozi SET status='Na pregledu', bravarija_napomena=?, zavrseno_u=? WHERE id=?", (radnik_napomena, vrijeme_zav, id_naloga))
                          
         conn.commit()
@@ -642,7 +711,7 @@ def sekcija_bravarija():
 @app.route('/dodaj_poziciju/<int:nalog_id>/<string:izvor>', methods=['POST'])
 def dodaj_poziciju(nalog_id, izvor):
     naziv = request.form.get('novi_naziv_pozicije', '').strip()
-    if not naziv: naziv = f"Pozicija-{datetime.now().strftime('%H%M%S')}"
+    if not naziv: naziv = f"Pozicija-{dobij_zg_vrijeme().strftime('%H%M%S')}"
     conn = get_db_connection()
     conn.execute('INSERT INTO nalog_pozicije (nalog_id, naziv_pozicije, ciljana_kolicina, laser_komada, laser_skart, bravarija_komada, bravarija_skart, laser_priprema_sati, laser_priprema_minute, laser_rezanje_sati, laser_rezanje_minute, bravarija_priprema_sati, bravarija_priprema_minute, bravarija_piganje_sati, bravarija_piganje_minute) VALUES (?, ?, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)', (nalog_id, naziv))
     conn.commit()

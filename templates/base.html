@@ -84,15 +84,54 @@
         @keyframes pulseLive { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .pulse-live { animation: pulseLive 2s infinite; }
         
-        .ticker-wrap { width: 100%; max-width: 100%; overflow: hidden; box-sizing: border-box; background-color: rgba(220,53,69,0.1); border: 1px solid rgba(220,53,69,0.3); border-radius: 8px; padding: 12px 15px; display: flex; align-items: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(220,53,69,0.1); cursor: default; }
-        .ticker-content-wrapper { flex-grow: 1; overflow: hidden; position: relative; min-width: 0; }
-        .ticker-track { display: flex; width: max-content; animation: marquee 60s linear infinite; }
+        /* CSS ZA TICKER (INLINE-BLOCK + TRANSLATE3D) */
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            background-color: rgba(220,53,69,0.1);
+            border: 1px solid rgba(220,53,69,0.3);
+            border-radius: 8px;
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(220,53,69,0.1);
+        }
+        .ticker-content-wrapper {
+            flex-grow: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+        .ticker-track {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 25s linear infinite; /* Početno vrijeme, skripta ga automatski ispravi */
+            padding-left: 10px;
+        }
         .ticker-wrap:hover .ticker-track { animation-play-state: paused; } 
-        .ticker-segment { display: flex; white-space: nowrap; }
-        .ticker-text { color: #fca5a5; font-weight: 700; font-size: 1.15rem; letter-spacing: 0.5px; padding-right: 50px; }
+        .ticker-segment {
+            display: inline-block;
+            white-space: nowrap;
+        }
+        .ticker-text {
+            color: #fca5a5;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
+            padding-right: 50px;
+            display: inline-block;
+        }
+        @keyframes marquee { 
+            0% { transform: translate3d(0, 0, 0); } 
+            100% { transform: translate3d(-50%, 0, 0); } 
+        }
         
-        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        /* PREMIUM FILES MODAL CSS */
+        .premium-nacrti-btn { background: rgba(13, 202, 240, 0.05); transition: all 0.3s ease; border-color: rgba(13, 202, 240, 0.4); }
+        .premium-nacrti-btn:hover { background: rgba(13, 202, 240, 0.15); border-color: #0dcaf0; transform: translateY(-2px); box-shadow: 0 8px 15px rgba(13,202,240,0.15) !important; }
+        .file-row { transition: all 0.2s ease; }
+        .file-row:hover { background: rgba(255,255,255,0.06) !important; transform: scale(1.01); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         
         .is-desktop-device .nav-mob-col { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
         .is-desktop-device .nav-mob-col::-webkit-scrollbar { height: 5px; }
@@ -129,7 +168,6 @@
             ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(function(evt) { document.addEventListener(evt, resetAutoLogout, false); });
             resetAutoLogout();
             
-            // Masovno brisanje - provjera
             setInterval(() => { if (typeof updateBulkBar === 'function') updateBulkBar(); }, 3500);
         });
         {% endif %}
@@ -141,6 +179,20 @@
         var isSubmitting = false;
         var pozadinskiSkener; 
         var errorToastTimeout;
+
+        // PAMETNA FUNKCIJA ZA BRZINU TEKSTA OBAVIJESTI
+        function prilagodiBrzinuTickera() {
+            var track = document.querySelector('.ticker-track');
+            var segment = document.querySelector('.ticker-segment');
+            if (track && segment) {
+                var width = segment.offsetWidth;
+                if (width > 0) {
+                    // Želimo da tekst putuje ugodnom brzinom od cca 70 piksela po sekundi
+                    var brzina = width / 70; 
+                    track.style.animationDuration = brzina + 's';
+                }
+            }
+        }
 
         function prikaziGresku(poruka) {
             let stari = document.getElementById('fcl-toast-greska');
@@ -309,6 +361,9 @@
             
             postaviEnterNavigacijuTabela(); postaviEnterNavigacijuKreiranje(); initAutoSave(); inicijalizirajKosaricu(); postaviGlasnuValidaciju(); postaviSubmitZastitu();
             
+            // Inicijalno namjesti brzinu
+            prilagodiBrzinuTickera();
+            
             pozadinskiSkener = setInterval(function() {
                 if (isSubmitting || window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
 
@@ -360,8 +415,15 @@
                                         }
                                     });
                                     
-                                    if (currentTicker && newTicker && currentTicker.innerHTML.trim() !== newTicker.innerHTML.trim()) { 
-                                        currentTicker.innerHTML = newTicker.innerHTML; 
+                                    // NOVI 100% SIGURNI SUSTAV ZA TICKER (Čita čisti tekst i prilagođava brzinu)
+                                    if (currentTicker && newTicker) {
+                                        var stariTekst = (currentTicker.textContent || "").replace(/\s+/g, '');
+                                        var noviTekst = (newTicker.textContent || "").replace(/\s+/g, '');
+                                        if (stariTekst !== noviTekst) {
+                                            currentTicker.innerHTML = newTicker.innerHTML;
+                                            // Tekst se promijenio, preračunaj mu brzinu prema njegovoj novoj duljini!
+                                            setTimeout(prilagodiBrzinuTickera, 50); 
+                                        }
                                     }
 
                                     postaviSubmitZastitu();
@@ -512,7 +574,7 @@
     </nav>
     <div class="container-fluid glavni-prostor">
         {% if request.path not in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
-        <div id="ticker-prikaz">
+        <div id="ticker-prikaz" data-obavijest="{{ aktivna_obavijest|default('') }}">
             {% if aktivna_obavijest %}
             <div class="ticker-wrap mb-4" id="ticker-aktivna-obavijest">
                 <i class="fa-solid fa-bolt text-danger ms-2 me-3 fs-4 pulse-live" style="flex-shrink: 0; z-index: 10;"></i>
@@ -562,11 +624,27 @@
         </div>
       </div>
     </div>
+
+    <!-- PREMIUM PREGLED NACRTA MODAL -->
+    <div class="modal fade" id="premiumFilesModal" data-morphdom-ignore="true" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content" id="premiumFilesContentTarget" style="background-color: #12141c; border: 1px solid rgba(13, 202, 240, 0.3); border-radius: 24px; box-shadow: 0 25px 80px rgba(0,0,0,0.8);">
+            <!-- Sadržaj se dinamički ubacuje preko JavaScripta -->
+        </div>
+      </div>
+    </div>
     
     <script>
         function potvrdiBrisanje(url) { document.getElementById('confirmDeleteBtn').href = url; new bootstrap.Modal(document.getElementById('premiumDeleteModal')).show(); }
         function potvrdiMasovnoBrisanje() { document.getElementById('modalBulkCount').innerText = document.getElementById('bulkCount').innerText; new bootstrap.Modal(document.getElementById('masovnoDeleteModal')).show(); }
         function izvrsiMasovnoBrisanje() { document.getElementById('bulkDeleteForm').submit(); }
+        
+        function openPremiumFilesModal(nalogId) {
+            var template = document.getElementById('files-data-' + nalogId);
+            if (!template) return;
+            document.getElementById('premiumFilesContentTarget').innerHTML = template.innerHTML;
+            new bootstrap.Modal(document.getElementById('premiumFilesModal')).show();
+        }
     </script>
     {% else %}
         {% block login_content %}{% endblock %}

@@ -66,23 +66,63 @@
                                 {% else %}<span class="text-muted small">Nema napomena</span>{% endif %}
                             </td>
                             <td>
-                                {% if n.pdf_datoteke|length == 1 %}<a href="/preuzmi/{{ n.pdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-danger mob-full-btn mb-1 rounded-3" target="_blank"><i class="fa-solid fa-file-pdf"></i> Otvori PDF</a>
-                                {% elif n.pdf_datoteke|length > 1 %}
-                                    <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                        <button class="btn btn-sm btn-outline-danger dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-file-pdf"></i> Otvori PDF ({{ n.pdf_datoteke|length }})</button>
-                                        <ul class="dropdown-menu dropdown-menu-dark shadow border border-danger border-opacity-25" style="background-color: #1a1e2b;">
-                                            {% for pdf in n.pdf_datoteke %}<li><a class="dropdown-item text-danger py-2" href="/preuzmi/{{ pdf.filename }}" target="_blank"><i class="fa-solid fa-download me-2"></i>{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</a></li>{% endfor %}
-                                        </ul>
-                                    </div>
-                                {% endif %}
-                                {% if n.lxdf_datoteke|length == 1 %}<a href="/preuzmi/{{ n.lxdf_datoteke[0].filename }}" class="btn btn-sm btn-outline-info mob-full-btn mb-1 rounded-3"><i class="fa-solid fa-file-code"></i> Preuzmi {{ n.lxdf_datoteke[0].ext }}</a>
-                                {% elif n.lxdf_datoteke|length > 1 %}
-                                    <div class="dropdown d-inline-block mob-full-btn mb-1" style="vertical-align: top;">
-                                        <button class="btn btn-sm btn-outline-info dropdown-toggle w-100 text-start text-md-center rounded-3" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i class="fa-solid fa-layer-group"></i> Strojne dat. ({{ n.lxdf_datoteke|length }})</button>
-                                        <ul class="dropdown-menu dropdown-menu-dark shadow border border-info border-opacity-25" style="background-color: #1a1e2b;">
-                                            {% for lx in n.lxdf_datoteke %}<li><a class="dropdown-item text-info py-2" href="/preuzmi/{{ lx.filename }}"><i class="fa-solid fa-download me-2"></i>{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</a></li>{% endfor %}
-                                        </ul>
-                                    </div>
+                                {% set ukupno_datoteka = (n.pdf_datoteke|length) + (n.lxdf_datoteke|length) %}
+                                {% if ukupno_datoteka > 0 %}
+                                    <button type="button" class="btn btn-outline-info premium-nacrti-btn mob-full-btn rounded-3 fw-bold shadow-sm" style="border-width: 2px;" onclick="openPremiumFilesModal({{ n.id }})">
+                                        <i class="fa-solid fa-folder-open me-2 fs-5 align-middle"></i> Pregled Datoteka ({{ ukupno_datoteka }})
+                                    </button>
+                                    <template id="files-data-{{ n.id }}">
+                                        <div class="modal-header border-0 bg-dark bg-opacity-50 pt-4 pb-3 px-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                                            <h4 class="modal-title fw-bold text-white"><i class="fa-solid fa-layer-group text-info me-3"></i>Datoteke Naloga #{{ n.id }}</h4>
+                                            <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body p-4" style="background-color: #12141c; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
+                                            <div class="d-flex flex-column mb-4 p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
+                                                <span class="text-white fw-bold fs-5">{{ n.naziv_naloga }}</span>
+                                                <span class="text-info small opacity-75">{{ n.naziv_projekta }}</span>
+                                            </div>
+
+                                            <a href="/preuzmi_zip_datoteka/{{ n.id }}" class="btn btn-info w-100 py-3 mb-4 rounded-4 fw-bold text-dark shadow fs-5" style="background: linear-gradient(135deg, #0dcaf0, #0891b2); border: none; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                                <i class="fa-solid fa-file-zipper me-2 fs-4 align-middle"></i> Preuzmi datoteke kao ZIP
+                                            </a>
+
+                                            {% if n.pdf_datoteke|length > 0 %}
+                                            <h6 class="text-muted fw-bold mb-3 text-uppercase" style="letter-spacing: 1px;"><i class="fa-solid fa-file-pdf text-danger me-2"></i>PDF Dokumenti</h6>
+                                            <div class="d-flex flex-column gap-2 mb-4">
+                                                {% for pdf in n.pdf_datoteke %}
+                                                <div class="file-row d-flex align-items-center justify-content-between p-3 rounded-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(220,53,69,0.2);">
+                                                    <div class="d-flex align-items-center overflow-hidden pe-3">
+                                                        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(220,53,69,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;" class="me-3">
+                                                            <i class="fa-solid fa-file-pdf text-danger fs-5"></i>
+                                                        </div>
+                                                        <div class="text-truncate text-white fw-bold" style="font-size: 0.95rem;">{{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</div>
+                                                    </div>
+                                                    <a href="/preuzmi/{{ pdf.filename }}" class="btn btn-sm btn-danger px-4 py-2 fw-bold rounded-pill flex-shrink-0 shadow-sm" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Otvori</a>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+
+                                            {% if n.lxdf_datoteke|length > 0 %}
+                                            <h6 class="text-muted fw-bold mb-3 text-uppercase" style="letter-spacing: 1px;"><i class="fa-solid fa-file-code text-info me-2"></i>Strojne Datoteke (DXF/LXDS)</h6>
+                                            <div class="d-flex flex-column gap-2">
+                                                {% for lx in n.lxdf_datoteke %}
+                                                <div class="file-row d-flex align-items-center justify-content-between p-3 rounded-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(13,202,240,0.2);">
+                                                    <div class="d-flex align-items-center overflow-hidden pe-3">
+                                                        <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(13,202,240,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;" class="me-3">
+                                                            <i class="fa-solid fa-file-code text-info fs-5"></i>
+                                                        </div>
+                                                        <div class="text-truncate text-white fw-bold" style="font-size: 0.95rem;">{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</div>
+                                                    </div>
+                                                    <a href="/preuzmi/{{ lx.filename }}" class="btn btn-sm btn-info text-dark px-4 py-2 fw-bold rounded-pill flex-shrink-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Preuzmi</a>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </template>
+                                {% else %}
+                                    <span class="text-muted small"><i class="fa-solid fa-folder-xmark me-1"></i> Nema datoteka</span>
                                 {% endif %}
                             </td>
                             <td class="pe-4">
