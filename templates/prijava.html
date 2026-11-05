@@ -19,7 +19,7 @@
                         <option value="bravarija">Bravarija</option>
                     </select>
                 </div>
-                <div class="mb-4 text-start"><label class="form-label">Glavni PIN Pogona</label><input type="password" class="form-control text-center fs-5 tracking-widest" name="pin" placeholder="••••" required autocomplete="off"></div>
+                <div class="mb-4 text-start"><label class="form-label">Glavni PIN Pogona</label><input type="password" class="form-control text-center fs-5 tracking-widest" name="pin" placeholder="••••" required autocomplete="off" inputmode="numeric" pattern="[0-9]*"></div>
                 <button type="submit" class="btn btn-danger w-100 py-2 fw-bold mb-2 text-uppercase"><i class="fa-solid fa-unlock-keyhole me-2"></i>Otključaj Sustav</button>
             </form>
         {% endif %}

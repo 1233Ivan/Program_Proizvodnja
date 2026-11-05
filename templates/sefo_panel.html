@@ -17,7 +17,7 @@
                         <h6 class="text-info fw-bold mb-3"><i class="fa-solid fa-cart-flatbed me-2"></i>Dodavanje stavki (Pozicija) u nalog (Opcionalno)</h6>
                         <div class="row g-2 align-items-end mb-3">
                             <div class="col-md-5"><label class="form-label small text-muted mb-1">Naziv pozicije s nacrta</label><input type="text" id="cart_naziv" class="form-control form-control-sm border-info" placeholder="npr. Nosač A"></div>
-                            <div class="col-md-3"><label class="form-label small text-muted mb-1">Potrebno (kom)</label><input type="number" id="cart_komada" class="form-control form-control-sm border-info" placeholder="0" min="0"></div>
+                            <div class="col-md-3"><label class="form-label small text-muted mb-1">Potrebno (kom)</label><input type="number" id="cart_komada" class="form-control form-control-sm border-info" placeholder="0" min="0" inputmode="numeric"></div>
                             <div class="col-md-4"><button type="button" class="btn btn-sm btn-info text-white w-100 fw-bold py-2" onclick="dodajUKosaricu()"><i class="fa-solid fa-plus me-1"></i> Dodaj stavku</button></div>
                         </div>
                         <div class="table-responsive tamni-kontejner p-0">
@@ -47,9 +47,17 @@
 </div>
 
 <div class="card mb-4" style="border-top: 4px solid #38bdf8;">
-    <div class="card-header-custom d-flex justify-content-between align-items-center"><h5 class="mb-0 fw-bold"><i class="fa-solid fa-industry text-info me-2"></i>Aktivni Nalozi (U Radu / Na Čekanju)</h5></div>
+    <div class="card-header-custom d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-industry text-info me-2"></i>Aktivni Nalozi (U Radu / Na Čekanju)</h5>
+        <div style="max-width: 320px; width: 100%;">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-dark border-secondary text-info"><i class="fa-solid fa-magnifying-glass"></i></span>
+                <input type="text" id="traziAktivne" class="form-control form-control-sm border-secondary text-white" placeholder="Pretraži aktivne naloge..." oninput="filtrirajSefoPanel()">
+            </div>
+        </div>
+    </div>
     <div class="card-body p-0 pt-2">
-        <div class="table-responsive px-3">
+        <div class="table-responsive px-2 px-md-3">
             <table class="table align-middle table-modern m-0">
                 <thead><tr><th class="ps-4">ID</th><th>Kupac / Projekt</th><th>Status / Ruta</th><th style="min-width: 320px;">Upute i Napomene</th><th>Nacrti</th><th class="pe-4">Opcije</th></tr></thead>
                 <tbody>
@@ -59,7 +67,7 @@
                     {% if 'Pauzirano' in n.status %}{% set row_state = 'paused' %}
                     {% elif (n.status == 'Laser' and n.laser_zapoceto_u) or (n.status == 'Piganje' and n.bravarija_zapoceto_u) %}{% set row_state = 'active' %}{% endif %}
                     
-                    <tr class="row-state-{{ row_state }}">
+                    <tr class="row-state-{{ row_state }} aktivni-red" data-id="{{ n.id }}" data-search="{{ n.id }} {{ n.naziv_naloga }} {{ n.naziv_projekta }} {{ n.kreirao }} {{ n.rutiranje }} {{ n.status }}">
                         <td class="fs-5 text-muted ps-4 fw-bold">#{{ n.id }}</td>
                         <td>
                             <div class="fs-5 fw-bold {% if row_state == 'paused' %}txt-paused{% elif row_state == 'active' %}txt-active{% else %}text-white{% endif %}">{{ n.naziv_naloga }}</div>
@@ -112,7 +120,7 @@
                                 <button type="button" class="btn btn-outline-info premium-nacrti-btn mob-full-btn rounded-3 fw-bold shadow-sm" style="border-width: 2px;" onclick="openPremiumFilesModal({{ n.id }})">
                                     <i class="fa-solid fa-folder-open me-2 fs-5 align-middle"></i> Pregled Datoteka ({{ ukupno_datoteka }})
                                 </button>
-                                <template id="files-data-{{ n.id }}">
+                                <div id="files-data-{{ n.id }}" class="d-none">
                                     <div class="modal-header border-0 bg-dark bg-opacity-50 pt-4 pb-3 px-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
                                         <h4 class="modal-title fw-bold text-white"><i class="fa-solid fa-layer-group text-info me-3"></i>Datoteke Naloga #{{ n.id }}</h4>
                                         <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -131,7 +139,7 @@
                                         <h6 class="text-muted fw-bold mb-3 text-uppercase" style="letter-spacing: 1px;"><i class="fa-solid fa-file-pdf text-danger me-2"></i>PDF Dokumenti</h6>
                                         <div class="d-flex flex-column gap-2 mb-4">
                                             {% for pdf in n.pdf_datoteke %}
-                                            <div class="file-row d-flex align-items-center justify-content-between p-3 rounded-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(220,53,69,0.2);">
+                                             <div class="file-row d-flex align-items-center justify-content-between p-3 rounded-4" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(220,53,69,0.2);">
                                                 <div class="d-flex align-items-center overflow-hidden pe-3">
                                                     <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(220,53,69,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0;" class="me-3">
                                                         <i class="fa-solid fa-file-pdf text-danger fs-5"></i>
@@ -155,62 +163,87 @@
                                                     </div>
                                                     <div class="text-truncate text-white fw-bold" style="font-size: 0.95rem;">{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</div>
                                                 </div>
-                                                <a href="/preuzmi/{{ lx.filename }}" class="btn btn-sm btn-info text-dark px-4 py-2 fw-bold rounded-pill flex-shrink-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Preuzmi</a>
+                                                <a href="/preuzmi/{{ lx.filename }}?dl=1" class="btn btn-sm btn-info text-dark px-4 py-2 fw-bold rounded-pill flex-shrink-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Preuzmi</a>
                                             </div>
                                             {% endfor %}
                                         </div>
                                         {% endif %}
                                     </div>
-                                </template>
+                                </div>
                             {% else %}
                                 <span class="text-muted small"><i class="fa-solid fa-folder-xmark me-1"></i> Nema datoteka</span>
                             {% endif %}
                         </td>
                         <td class="pe-4">
+                            <button type="button" class="btn btn-outline-info btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;" data-id="{{ n.id }}" data-naziv="{{ n.naziv_naloga or '' }}" data-projekt="{{ n.naziv_projekta or '' }}" data-debljina="{{ n.debljina_ploce or '' }}" data-rutiranje="{{ n.rutiranje or 'Pogon' }}" data-opis="{{ n.opis or '' }}" onclick="otvoriUrediNalogModal(this)"><i class="fa-solid fa-pen-to-square me-1"></i> Uredi</button>
                             <a href="#" class="btn btn-outline-danger btn-sm w-100 mob-full-btn border-0" style="border-radius: 8px; background: rgba(220,53,69,0.1);" title="Trajno obriši" onclick="event.preventDefault(); potvrdiBrisanje('/obrisi/{{ n.id }}');"><i class="fa-solid fa-trash text-danger"></i> <span class="text-danger">Obriši</span></a>
                         </td>
                     </tr>
                     {% if n.pozicije %}
                     <tr class="collapse row-state-{{ row_state }}" id="detalji-{{ n.id }}">
-                        <td colspan="6" class="p-4" style="background-color: transparent;">
+                        <td colspan="6" class="p-2 p-md-4" style="background-color: transparent;">
                             <div class="tamni-kontejner p-0 shadow-lg mt-1 overflow-hidden" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
                                 <h6 class="fw-bold text-info bg-dark bg-opacity-50 p-3 mb-0 border-bottom border-secondary border-opacity-25"><i class="fa-solid fa-chart-simple me-2"></i>Specifikacija odrađenih pozicija</h6>
-                                <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822;">
-                                    <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;"><tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr></thead>
-                                    <tbody>
-                                        {% for p in n.pozicije %}
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                            <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
-                                            <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
-                                                <div class="mb-2">
-                                                    <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
-                                                    <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada if p.laser_komada is not none else '0' }} kom</span>
-                                                    <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.laser_skart if p.laser_skart is not none else '0' }}</span>
-                                                </div>
-                                                <div class="text-muted" style="font-size: 0.8rem;">
-                                                    <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '0' }}h {{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Rezanje: <b class="text-light">{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '0' }}h {{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '0' }}m</b>
-                                                </div>
-                                                {% if p.laser_radnik %}
-                                                <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.laser_radnik }}</div>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
-                                                <div class="mb-2">
-                                                    <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
-                                                    <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada if p.bravarija_komada is not none else '0' }} kom</span>
-                                                    <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.bravarija_skart if p.bravarija_skart is not none else '0' }}</span>
-                                                </div>
-                                                <div class="text-muted" style="font-size: 0.8rem;">
-                                                    <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati is not none else '0' }}h {{ p.bravarija_priprema_minute if p.bravarija_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Piganje: <b class="text-light">{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati is not none else '0' }}h {{ p.bravarija_piganje_minute if p.bravarija_piganje_minute is not none else '0' }}m</b>
-                                                </div>
-                                                {% if p.bravarija_radnik %}
-                                                <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.bravarija_radnik }}</div>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822; min-width: 600px;">
+                                        <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;"><tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr></thead>
+                                        <tbody>
+                                            {% for p in n.pozicije %}
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                                <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
+                                                <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
+                                                    <div class="mb-2">
+                                                        <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada if p.laser_komada is not none else '0' }} kom</span>
+                                                        <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.laser_skart if p.laser_skart is not none else '0' }}</span>
+                                                    </div>
+                                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                                        <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '0' }}h {{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Rezanje: <b class="text-light">{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '0' }}h {{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '0' }}m</b>
+                                                    </div>
+                                                    {% if p.laser_radnik or n.laser_radnik %}
+                                                    <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.laser_radnik or n.laser_radnik }}</div>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
+                                                    <div class="mb-2">
+                                                        <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada if p.bravarija_komada is not none else '0' }} kom</span>
+                                                        <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.bravarija_skart if p.bravarija_skart is not none else '0' }}</span>
+                                                    </div>
+                                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                                        <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati is not none else '0' }}h {{ p.bravarija_priprema_minute if p.bravarija_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Piganje: <b class="text-light">{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati is not none else '0' }}h {{ p.bravarija_piganje_minute if p.bravarija_piganje_minute is not none else '0' }}m</b>
+                                                    </div>
+                                                    {% if p.bravarija_radnik or n.bravarija_radnik %}
+                                                    <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.bravarija_radnik or n.bravarija_radnik }}</div>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot style="background: rgba(0,0,0,0.4); border-top: 2px solid rgba(255,255,255,0.1);">
+                                            <tr>
+                                                <td class="ps-4 py-3 fw-bold text-info"><i class="fa-solid fa-calculator me-2"></i>UKUPNO ZA NALOG:</td>
+                                                <td class="text-center py-3 border-start border-secondary border-opacity-25">
+                                                    <span class="badge bg-info text-white fw-bold me-1">Cilj: {{ n.ukupno.cilj_ukupno }}</span>
+                                                    <span class="badge bg-success text-white fw-bold me-1">Odrađeno: {{ n.ukupno.laser_komada_ukupno }}</span>
+                                                    <span class="badge bg-danger text-white fw-bold">Škart: {{ n.ukupno.laser_skart_ukupno }}</span>
+                                                    <div class="text-light small mt-1 font-monospace">Ukupno laser: <b>{{ n.ukupno.laser_ukupno_tekst }}</b></div>
+                                                </td>
+                                                <td class="text-center py-3 border-start border-secondary border-opacity-25">
+                                                    <span class="badge bg-info text-white fw-bold me-1">Cilj: {{ n.ukupno.cilj_ukupno }}</span>
+                                                    <span class="badge bg-success text-white fw-bold me-1">Odrađeno: {{ n.ukupno.bravarija_komada_ukupno }}</span>
+                                                    <span class="badge bg-danger text-white fw-bold">Škart: {{ n.ukupno.bravarija_skart_ukupno }}</span>
+                                                    <div class="text-light small mt-1 font-monospace">Ukupno bravarija: <b>{{ n.ukupno.bravarija_ukupno_tekst }}</b></div>
+                                                </td>
+                                            </tr>
+                                            <tr style="background: rgba(13, 202, 240, 0.05);">
+                                                <td colspan="3" class="text-end pe-4 py-2 text-info fw-bold small">
+                                                    <i class="fa-solid fa-stopwatch me-1"></i> SVEUKUPNO UTROŠENO VRIJEME: <span class="badge bg-dark border border-info text-info fs-6 ms-2">{{ n.ukupno.sveukupno_vrijeme_tekst }}</span>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -225,7 +258,7 @@
 <div class="card mb-4" style="border-top: 4px solid #10b981;">
     <div class="card-header-custom d-flex justify-content-between align-items-center"><h5 class="mb-0 fw-bold"><i class="fa-solid fa-check-double text-success me-2"></i>Završeni Nalozi (Spremno za Pregled)</h5></div>
     <div class="card-body p-0 pt-2">
-        <div class="table-responsive px-3">
+        <div class="table-responsive px-2 px-md-3">
             <table class="table align-middle table-modern m-0">
                 <thead><tr><th class="ps-4">ID</th><th>Kupac / Projekt</th><th>Status / Ruta</th><th style="min-width: 320px;">Upute i Napomene</th><th>Nacrti</th><th class="pe-4">Opcije</th></tr></thead>
                 <tbody>
@@ -239,6 +272,8 @@
                                 {{ n.naziv_projekta }}
                                 {% if n.debljina_ploce %} &bull; <span class="badge bg-dark text-info border border-info border-opacity-25">D: {{ n.debljina_ploce }}</span>{% endif %}
                                 {% if n.kreirao %} &bull; <i class="fa-solid fa-user-pen text-warning me-1"></i><span class="text-warning fw-bold">{{ n.kreirao }}</span>{% endif %}
+                                {% if n.dimenzije_ploce_laser %} &bull; <i class="fa-solid fa-ruler-combined text-info me-1"></i><span class="text-info">Ploča: {{ n.dimenzije_ploce_laser }}</span>{% endif %}
+                                {% if n.materijal_ploce_laser %} &bull; <i class="fa-solid fa-layer-group text-info me-1"></i><span class="text-info">Materijal: {{ n.materijal_ploce_laser }}</span>{% endif %}
                             </div>
                             <div class="text-info small opacity-75 mt-1" style="font-size: 0.75rem;">
                                 <i class="fa-regular fa-calendar-plus text-success me-1"></i>Kreirano: <b class="text-white">{{ n.kreirano_u_prikaz }}</b><br>
@@ -272,7 +307,7 @@
                                 <button type="button" class="btn btn-outline-info premium-nacrti-btn mob-full-btn rounded-3 fw-bold shadow-sm" style="border-width: 2px;" onclick="openPremiumFilesModal({{ n.id }})">
                                     <i class="fa-solid fa-folder-open me-2 fs-5 align-middle"></i> Pregled Datoteka ({{ ukupno_datoteka }})
                                 </button>
-                                <template id="files-data-{{ n.id }}">
+                                <div id="files-data-{{ n.id }}" class="d-none">
                                     <div class="modal-header border-0 bg-dark bg-opacity-50 pt-4 pb-3 px-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
                                         <h4 class="modal-title fw-bold text-white"><i class="fa-solid fa-layer-group text-info me-3"></i>Datoteke Naloga #{{ n.id }}</h4>
                                         <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -315,63 +350,99 @@
                                                     </div>
                                                     <div class="text-truncate text-white fw-bold" style="font-size: 0.95rem;">{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</div>
                                                 </div>
-                                                <a href="/preuzmi/{{ lx.filename }}" class="btn btn-sm btn-info text-dark px-4 py-2 fw-bold rounded-pill flex-shrink-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Preuzmi</a>
+                                                <a href="/preuzmi/{{ lx.filename }}?dl=1" class="btn btn-sm btn-info text-dark px-4 py-2 fw-bold rounded-pill flex-shrink-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Preuzmi</a>
                                             </div>
                                             {% endfor %}
                                         </div>
                                         {% endif %}
                                     </div>
-                                </template>
+                                </div>
                             {% else %}
                                 <span class="text-muted small"><i class="fa-solid fa-folder-xmark me-1"></i> Nema datoteka</span>
                             {% endif %}
                         </td>
                         <td class="pe-4">
                             <a href="/preuzmi_izvjestaj/{{ n.id }}" class="btn btn-outline-success btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;"><i class="fa-solid fa-download me-1"></i> Spremi (ZIP)</a>
+                            
+                            <div class="dropdown mb-2 w-100">
+                                <button class="btn btn-outline-warning btn-sm dropdown-toggle w-100 fw-bold mob-full-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 8px;">
+                                    <i class="fa-solid fa-rotate-left me-1"></i> Vrati u rad
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-dark">
+                                    <li><a class="dropdown-item text-danger fw-bold" href="/vrati_u_rad/{{ n.id }}/laser"><i class="fa-solid fa-fire me-2"></i>Vrati na Laser</a></li>
+                                    <li><a class="dropdown-item text-warning fw-bold" href="/vrati_u_rad/{{ n.id }}/bravarija"><i class="fa-solid fa-hammer me-2"></i>Vrati u Bravariju</a></li>
+                                </ul>
+                            </div>
+                            
                             <a href="/arhiviraj_nalog/{{ n.id }}" class="btn btn-outline-secondary btn-sm w-100 mb-2 fw-bold mob-full-btn text-white" style="border-radius: 8px;"><i class="fa-solid fa-box-archive me-1"></i> Arhiviraj</a>
                             <a href="#" class="btn btn-outline-danger btn-sm w-100 mob-full-btn border-0" style="border-radius: 8px; background: rgba(220,53,69,0.1);" title="Trajno obriši" onclick="event.preventDefault(); potvrdiBrisanje('/obrisi/{{ n.id }}');"><i class="fa-solid fa-trash text-danger"></i> <span class="text-danger">Obriši</span></a>
                         </td>
                     </tr>
                     {% if n.pozicije %}
                     <tr class="collapse row-state-completed" id="detalji-zav-{{ n.id }}">
-                        <td colspan="6" class="p-4" style="background-color: transparent;">
+                        <td colspan="6" class="p-2 p-md-4" style="background-color: transparent;">
                             <div class="tamni-kontejner p-0 shadow-lg mt-1 overflow-hidden" style="border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
-                                <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822;">
-                                    <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;"><tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr></thead>
-                                    <tbody>
-                                        {% for p in n.pozicije %}
-                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                                            <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
-                                            <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
-                                                <div class="mb-2">
-                                                    <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
-                                                    <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada if p.laser_komada is not none else '0' }} kom</span>
-                                                    <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.laser_skart if p.laser_skart is not none else '0' }}</span>
-                                                </div>
-                                                <div class="text-muted" style="font-size: 0.8rem;">
-                                                    <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '0' }}h {{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Rezanje: <b class="text-light">{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '0' }}h {{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '0' }}m</b>
-                                                </div>
-                                                {% if p.laser_radnik %}
-                                                <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.laser_radnik }}</div>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
-                                                <div class="mb-2">
-                                                    <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
-                                                    <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada if p.bravarija_komada is not none else '0' }} kom</span>
-                                                    <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.bravarija_skart if p.bravarija_skart is not none else '0' }}</span>
-                                                </div>
-                                                <div class="text-muted" style="font-size: 0.8rem;">
-                                                    <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati is not none else '0' }}h {{ p.bravarija_priprema_minute if p.bravarija_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Piganje: <b class="text-light">{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati is not none else '0' }}h {{ p.bravarija_piganje_minute if p.bravarija_piganje_minute is not none else '0' }}m</b>
-                                                </div>
-                                                {% if p.bravarija_radnik %}
-                                                <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.bravarija_radnik }}</div>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                                <h6 class="fw-bold text-success bg-dark bg-opacity-50 p-3 mb-0 border-bottom border-secondary border-opacity-25"><i class="fa-solid fa-chart-simple me-2"></i>Specifikacija odrađenih pozicija (Završeno)</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-borderless text-white mb-0" style="background-color: #151822; min-width: 600px;">
+                                        <thead class="bg-dark bg-opacity-75 text-secondary" style="font-size: 0.8rem;"><tr><th class="ps-4 py-3">NAZIV POZICIJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-fire text-danger me-1"></i> REZANJE</th><th class="text-center py-3 border-start border-secondary border-opacity-25"><i class="fa-solid fa-hammer text-warning me-1"></i> BRAVARIJA</th></tr></thead>
+                                        <tbody>
+                                            {% for p in n.pozicije %}
+                                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                                <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
+                                                <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
+                                                    <div class="mb-2">
+                                                        <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada if p.laser_komada is not none else '0' }} kom</span>
+                                                        <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.laser_skart if p.laser_skart is not none else '0' }}</span>
+                                                    </div>
+                                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                                        <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '0' }}h {{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Rezanje: <b class="text-light">{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '0' }}h {{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '0' }}m</b>
+                                                    </div>
+                                                    {% if p.laser_radnik or n.laser_radnik %}
+                                                    <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.laser_radnik or n.laser_radnik }}</div>
+                                                    {% endif %}
+                                                </td>
+                                                <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
+                                                    <div class="mb-2">
+                                                        <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
+                                                        <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada if p.bravarija_komada is not none else '0' }} kom</span>
+                                                        <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.bravarija_skart if p.bravarija_skart is not none else '0' }}</span>
+                                                    </div>
+                                                    <div class="text-muted" style="font-size: 0.8rem;">
+                                                        <i class="fa-regular fa-clock me-1"></i> Priprema: <b class="text-light">{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati is not none else '0' }}h {{ p.bravarija_priprema_minute if p.bravarija_priprema_minute is not none else '0' }}m</b> &nbsp;|&nbsp; Piganje: <b class="text-light">{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati is not none else '0' }}h {{ p.bravarija_piganje_minute if p.bravarija_piganje_minute is not none else '0' }}m</b>
+                                                    </div>
+                                                    {% if p.bravarija_radnik or n.bravarija_radnik %}
+                                                    <div class="text-warning mt-1" style="font-size: 0.8rem;"><i class="fa-solid fa-user-gear me-1"></i> {{ p.bravarija_radnik or n.bravarija_radnik }}</div>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot style="background: rgba(0,0,0,0.4); border-top: 2px solid rgba(255,255,255,0.1);">
+                                            <tr>
+                                                <td class="ps-4 py-3 fw-bold text-success"><i class="fa-solid fa-calculator me-2"></i>UKUPNO ZA NALOG:</td>
+                                                <td class="text-center py-3 border-start border-secondary border-opacity-25">
+                                                    <span class="badge bg-info text-white fw-bold me-1">Cilj: {{ n.ukupno.cilj_ukupno }}</span>
+                                                    <span class="badge bg-success text-white fw-bold me-1">Odrađeno: {{ n.ukupno.laser_komada_ukupno }}</span>
+                                                    <span class="badge bg-danger text-white fw-bold">Škart: {{ n.ukupno.laser_skart_ukupno }}</span>
+                                                    <div class="text-light small mt-1 font-monospace">Ukupno laser: <b>{{ n.ukupno.laser_ukupno_tekst }}</b></div>
+                                                </td>
+                                                <td class="text-center py-3 border-start border-secondary border-opacity-25">
+                                                    <span class="badge bg-info text-white fw-bold me-1">Cilj: {{ n.ukupno.cilj_ukupno }}</span>
+                                                    <span class="badge bg-success text-white fw-bold me-1">Odrađeno: {{ n.ukupno.bravarija_komada_ukupno }}</span>
+                                                    <span class="badge bg-danger text-white fw-bold">Škart: {{ n.ukupno.bravarija_skart_ukupno }}</span>
+                                                    <div class="text-light small mt-1 font-monospace">Ukupno bravarija: <b>{{ n.ukupno.bravarija_ukupno_tekst }}</b></div>
+                                                </td>
+                                            </tr>
+                                            <tr style="background: rgba(16, 185, 129, 0.05);">
+                                                <td colspan="3" class="text-end pe-4 py-2 text-success fw-bold small">
+                                                    <i class="fa-solid fa-stopwatch me-1"></i> SVEUKUPNO UTROŠENO VRIJEME: <span class="badge bg-dark border border-success text-success fs-6 ms-2">{{ n.ukupno.sveukupno_vrijeme_tekst }}</span>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -382,4 +453,88 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL ZA UREĐIVANJE NALOGA -->
+<div class="modal fade" id="urediNalogModal" data-morphdom-ignore="true" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="background-color: #12141c; border: 1px solid rgba(13, 202, 240, 0.3); border-radius: 20px; box-shadow: 0 25px 80px rgba(0,0,0,0.8);">
+      <div class="modal-header border-bottom border-secondary border-opacity-25 px-4 pt-4 pb-3">
+        <h5 class="modal-title fw-bold text-white"><i class="fa-solid fa-pen-to-square text-info me-2"></i>Uredi Radni Nalog <span id="modalUrediNalogId" class="text-info">#</span></h5>
+        <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formUrediNalog" method="POST" enctype="multipart/form-data">
+        <div class="modal-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label text-white">Naziv Firme / Kupca</label>
+                    <input type="text" class="form-control" name="naziv_naloga" id="uredi_naziv_naloga" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-white">Naziv Projekta</label>
+                    <input type="text" class="form-control" name="naziv_projekta" id="uredi_naziv_projekta">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-white">Debljina ploče</label>
+                    <input type="text" class="form-control" name="debljina_ploce" id="uredi_debljina_ploce">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-white">Ruta Proizvodnje</label>
+                    <select class="form-control" name="rutiranje" id="uredi_rutiranje">
+                        <option value="Pogon">Pogon (Rezanje + Bravarija)</option>
+                        <option value="Samo Rezanje">Samo Rezanje (Laser)</option>
+                        <option value="Samo Bravarija">Samo Bravarija</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label text-white">Opis i Upute za pogon</label>
+                    <textarea class="form-control auto-expand" name="opis" id="uredi_opis" rows="2"></textarea>
+                </div>
+                <div class="col-12 pt-3 border-top border-secondary border-opacity-25">
+                    <h6 class="text-info fw-bold mb-2"><i class="fa-solid fa-cloud-arrow-up me-2"></i>Dodaj nove nacrte u nalog</h6>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Dodatni PDF nacrti</label>
+                            <input type="file" class="form-control" name="dodatni_pdf_file" accept=".pdf" multiple>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small text-muted">Dodatne strojne datoteke (DXF/LXDS)</label>
+                            <input type="file" class="form-control" name="dodatni_lxdf_file" accept=".lxds,.dxf" multiple>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 pt-3 border-top border-secondary border-opacity-25">
+                    <h6 class="text-warning fw-bold mb-2"><i class="fa-solid fa-plus-circle me-2"></i>Dodaj novu poziciju u nalog (Opcionalno)</h6>
+                    <div class="row g-2">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control form-control-sm" name="nova_pozicija_naziv" placeholder="Naziv nove pozicije...">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" class="form-control form-control-sm" name="nova_pozicija_kolicina" placeholder="Ciljana količina (kom)" min="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer border-top border-secondary border-opacity-25 px-4 py-3">
+            <button type="button" class="btn btn-outline-secondary fw-bold px-4 py-2" data-bs-dismiss="modal" style="border-radius: 8px;">Odustani</button>
+            <button type="submit" class="btn btn-info fw-bold text-dark px-4 py-2 shadow" style="border-radius: 8px;"><i class="fa-solid fa-check me-1"></i> Spremi Izmjene</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    function otvoriUrediNalogModal(btn) {
+        const id = btn.dataset.id;
+        document.getElementById('modalUrediNalogId').innerText = '#' + id;
+        document.getElementById('formUrediNalog').action = '/uredi_nalog/' + id;
+        document.getElementById('uredi_naziv_naloga').value = btn.dataset.naziv || '';
+        document.getElementById('uredi_naziv_projekta').value = btn.dataset.projekt || '';
+        document.getElementById('uredi_debljina_ploce').value = btn.dataset.debljina || '';
+        document.getElementById('uredi_rutiranje').value = btn.dataset.rutiranje || 'Pogon';
+        document.getElementById('uredi_opis').value = btn.dataset.opis || '';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('urediNalogModal')).show();
+    }
+</script>
 {% endblock %}

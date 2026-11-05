@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #0b0c10; font-family: 'Plus Jakarta Sans', sans-serif; color: #e2e8f0; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0; }
+        body { background-color: #0b0c10; font-family: 'Plus Jakarta Sans', sans-serif; color: #e2e8f0; min-height: 100dvh; display: flex; align-items: center; justify-content: center; overflow-y: auto; margin: 0; padding: 16px; }
         .maint-container { text-align: center; padding: 40px; background: #12141c; border-radius: 20px; border-top: 6px solid #ef4444; box-shadow: 0 15px 40px rgba(0,0,0,0.6); max-width: 500px; width: 90%; position: relative; }
         .logo-img { height: 70px; margin-bottom: 30px; cursor: pointer; user-select: none; -webkit-user-drag: none; transition: transform 0.2s; }
         .logo-img:active { transform: scale(0.95); }
@@ -21,10 +21,10 @@
         h1 { font-weight: 800; font-size: 1.8rem; letter-spacing: 1px; color: #ffffff; }
         p { color: #94a3b8; font-size: 1.1rem; margin-bottom: 0; }
         
-        #hidden-login { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #12141c; border-radius: 20px; z-index: 10; padding: 40px; box-sizing: border-box; }
+        #hidden-login { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; min-height: 100%; overflow-y: auto; background: #12141c; border-radius: 20px; z-index: 10; padding: 30px 20px; box-sizing: border-box; }
         
         .form-control::placeholder { color: #94a3b8 !important; opacity: 1; font-weight: 500; }
-        .form-control { background-color: #1a1e2b; border: 1px solid #2d3446; color: #ffffff; border-radius: 8px; padding: 12px 16px; font-size: 1rem; }
+        .form-control { background-color: #1a1e2b; border: 1px solid #2d3446; color: #ffffff; border-radius: 8px; padding: 12px 16px; font-size: 16px; }
         .form-control:focus { background-color: #23293b; border-color: #ef4444; color: #fff; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); outline: none; }
     </style>
 </head>

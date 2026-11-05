@@ -1,0 +1,14 @@
+# Baza podataka i WAL datoteke (NIKADA ne pratiti u Gitu kako update koda ne bi pregazio podatke u firmi!)
+proizvodnja.db
+proizvodnja.db-wal
+proizvodnja.db-shm
+proizvodnja.db-journal
+
+# Produkcijski nacrti i automatske sigurnosne kopije
+pohrana_nacrta/
+sigurnosne_kopije/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.bak

@@ -20,7 +20,6 @@
             </div>
         </div>
 
-        <!-- Uklonjen 'h-100' kako bi se kartica prirodno zatvorila -->
         <div class="card" style="border-top: 4px solid #ef4444;">
             <div class="card-header-custom"><h6 class="mb-0 fw-bold text-danger"><i class="fa-solid fa-bullhorn me-2"></i> Globalni Pogon Broadcast (Ticker)</h6></div>
             <div class="card-body p-4">
@@ -82,6 +81,9 @@
                     <li class="list-group-item d-flex justify-content-between text-white" style="background: transparent; border-color: #222736;">Ukupno Naloga u bazi: <b class="text-info">{{ uk_naloga }}</b></li>
                     <li class="list-group-item d-flex justify-content-between text-white" style="background: transparent; border-color: #222736;">Ukupno Pozicija u bazi: <b class="text-info">{{ uk_pozicija }}</b></li>
                 </ul>
+                <div class="mt-3 pt-3 border-top border-secondary border-opacity-25">
+                    <a href="/preuzmi_backup_baze" class="btn btn-outline-info w-100 fw-bold py-2"><i class="fa-solid fa-cloud-arrow-down me-2"></i>Preuzmi Sigurnosnu Kopiju Baze (.db)</a>
+                </div>
                 <small class="text-muted d-block mt-3">* Preporuka je arhivirati stare naloge ako baza prijeđe 50 MB kako bi pogon radio maksimalnom brzinom.</small>
             </div>
         </div>

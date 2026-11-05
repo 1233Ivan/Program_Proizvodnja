@@ -12,7 +12,10 @@
         </div>
         <div>
             {% if not n.bravarija_zapoceto_u %}<a href="/zapocni_fazu/{{ n.id }}/bravarija" class="btn {% if n.status == 'Pauzirano - Bravarija' %}btn-warning text-dark{% else %}btn-success{% endif %} fw-bold px-4">{% if n.status == 'Pauzirano - Bravarija' %}NASTAVI NALOG{% else %}ZAPOČNI NALOG{% endif %}</a>
-            {% else %}<span class="badge bg-dark border border-info text-info p-2 fs-6"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>{% endif %}
+            {% else %}
+                <span class="badge bg-dark border border-info text-info p-2 fs-6 me-1"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>
+                <span class="auto-save-badge saved"><i class="fa-solid fa-check me-1"></i>Spremljeno</span>
+            {% endif %}
         </div>
     </div>
     
@@ -38,7 +41,7 @@
             <button type="button" class="btn btn-outline-info premium-nacrti-btn mob-full-btn rounded-3 fw-bold shadow-sm" style="border-width: 2px;" onclick="openPremiumFilesModal({{ n.id }})">
                 <i class="fa-solid fa-folder-open me-2 fs-5 align-middle"></i> Pregled Datoteka ({{ ukupno_datoteka }})
             </button>
-            <template id="files-data-{{ n.id }}">
+            <div id="files-data-{{ n.id }}" class="d-none">
                 <div class="modal-header border-0 bg-dark bg-opacity-50 pt-4 pb-3 px-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
                     <h4 class="modal-title fw-bold text-white"><i class="fa-solid fa-layer-group text-info me-3"></i>Datoteke Naloga #{{ n.id }}</h4>
                     <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -81,13 +84,13 @@
                                 </div>
                                 <div class="text-truncate text-white fw-bold" style="font-size: 0.95rem;">{{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</div>
                             </div>
-                            <a href="/preuzmi/{{ lx.filename }}" class="btn btn-sm btn-info text-dark px-4 py-2 fw-bold rounded-pill flex-shrink-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Preuzmi</a>
+                            <a href="/preuzmi/{{ lx.filename }}?dl=1" class="btn btn-sm btn-info text-dark px-4 py-2 fw-bold rounded-pill flex-shrink-0 shadow-sm"><i class="fa-solid fa-download me-1"></i> Preuzmi</a>
                         </div>
                         {% endfor %}
                     </div>
                     {% endif %}
                 </div>
-            </template>
+            </div>
         {% else %}
             <span class="text-muted small"><i class="fa-solid fa-folder-xmark me-1"></i> Nema datoteka</span>
         {% endif %}
@@ -95,55 +98,79 @@
 
     {% if n.bravarija_zapoceto_u %}
     <div class="p-3 mb-3 dodaj-kontejner">
-        <form action="/dodaj_poziciju/{{ n.id }}/bravarija" method="POST" class="row g-2 align-items-center">
-            <div class="col-md-6"><input type="text" class="form-control form-control-sm" name="novi_naziv_pozicije" placeholder="Upišite šifru pozicije s nacrta..." required onkeydown="if(event.key === 'Enter') event.preventDefault();"></div>
-            <div class="col-md-3"><button type="submit" class="btn btn-sm btn-outline-warning text-white w-100"><i class="fa-solid fa-plus"></i> Dodaj poziciju</button></div>
+        <form action="/dodaj_poziciju/{{ n.id }}/bravarija" method="POST" class="row g-2 align-items-center" id="form-dodaj-poz-{{ n.id }}" onsubmit="event.preventDefault(); return dodajPozicijuSigurno(this, 'forma-nalog-{{ n.id }}');">
+            <div class="col-md-6">
+                <input type="text" class="form-control form-control-sm" name="novi_naziv_pozicije" id="novi_naziv_pozicije_{{ n.id }}" placeholder="Upišite šifru pozicije s nacrta..." required onkeydown="if(event.key === 'Enter') { event.preventDefault(); dodajPozicijuSigurno(document.getElementById('form-dodaj-poz-{{ n.id }}'), 'forma-nalog-{{ n.id }}'); }">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-sm btn-outline-warning text-white w-100"><i class="fa-solid fa-plus"></i> Dodaj poziciju</button>
+            </div>
         </form>
     </div>
     
-    <form method="POST" class="nav-forma">
+    <form method="POST" class="nav-forma" id="forma-nalog-{{ n.id }}">
         <input type="hidden" name="id_naloga" value="{{ n.id }}">
+        <input type="hidden" name="izvor" value="bravarija">
         <div class="table-responsive mb-3 p-2 tamni-kontejner">
-            <table class="table align-middle">
+            <table class="table align-middle mob-kartica-pozicije">
                 <thead><tr><th>Naziv Pozicije</th><th style="width:100px;">Potrebno</th><th style="width:120px;">Odrađeno</th><th style="width:120px;">Škart</th><th style="width:140px;">Priprema (h:m)</th><th style="width:140px;">Piganje (h:m)</th><th class="text-end">X</th></tr></thead>
                 <tbody>
                     {% for p in n.pozicije %}
                     <tr>
-                        <td><input type="hidden" name="pozicija_id" value="{{ p.id }}"><input type="text" class="form-control text-warning fw-bold navigabilno" name="naziv_{{ p.id }}" value="{{ p.naziv_pozicije }}" required></td>
-                        <td><div class="fs-6 fw-bold text-info">{{ p.ciljana_kolicina }} kom</div></td>
-                        <td><input type="text" class="form-control text-white navigabilno" name="komada_{{ p.id }}" value="{{ p.bravarija_komada if p.bravarija_komada is not none else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
-                        <td><input type="text" class="form-control text-danger navigabilno" name="skart_{{ p.id }}" value="{{ p.bravarija_skart if p.bravarija_skart is not none else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
-                        <td>
+                        <td data-label="Pozicija"><input type="hidden" name="pozicija_id" value="{{ p.id }}"><input type="text" class="form-control text-warning fw-bold navigabilno" name="naziv_{{ p.id }}" value="{{ p.naziv_pozicije }}" required></td>
+                        <td data-label="Potrebno"><div class="fs-6 fw-bold text-info">{{ p.ciljana_kolicina }} kom</div></td>
+                        <td data-label="Odrađeno"><input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white navigabilno" name="komada_{{ p.id }}" value="{{ p.bravarija_komada if p.bravarija_komada is not none else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
+                        <td data-label="Škart"><input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-danger navigabilno" name="skart_{{ p.id }}" value="{{ p.bravarija_skart if p.bravarija_skart is not none else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
+                        <td data-label="Priprema (h:m)">
                             <div class="d-flex align-items-center">
-                                <input type="text" class="form-control text-white px-1 text-center navigabilno" name="priprema_sati_{{ p.id }}" value="{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati is not none else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white px-1 text-center navigabilno" name="priprema_sati_{{ p.id }}" value="{{ p.bravarija_priprema_sati if p.bravarija_priprema_sati is not none else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
                                 <span class="mx-1 text-muted">:</span>
-                                <input type="text" class="form-control text-white px-1 text-center navigabilno" name="priprema_minute_{{ p.id }}" value="{{ p.bravarija_priprema_minute if p.bravarija_priprema_minute is not none else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white px-1 text-center navigabilno" name="priprema_minute_{{ p.id }}" value="{{ p.bravarija_priprema_minute if p.bravarija_priprema_minute is not none else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Piganje (h:m)">
                             <div class="d-flex align-items-center">
-                                <input type="text" class="form-control text-white px-1 text-center navigabilno" name="piganje_sati_{{ p.id }}" value="{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati is not none else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white px-1 text-center navigabilno" name="piganje_sati_{{ p.id }}" value="{{ p.bravarija_piganje_sati if p.bravarija_piganje_sati is not none else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
                                 <span class="mx-1 text-muted">:</span>
-                                <input type="text" class="form-control text-white px-1 text-center navigabilno" name="piganje_minute_{{ p.id }}" value="{{ p.bravarija_piganje_minute if p.bravarija_piganje_minute is not none else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white px-1 text-center navigabilno" name="piganje_minute_{{ p.id }}" value="{{ p.bravarija_piganje_minute if p.bravarija_piganje_minute is not none else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
                             </div>
                         </td>
-                        <td class="text-end"><a href="/obrisi_poziciju/{{ p.id }}/bravarija" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-xmark"></i></a></td>
+                        <td data-label="Ukloni" class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Ukloni poziciju" data-naziv="{{ p.naziv_pozicije }}" onclick="potvrdiBrisanjePozicije('/obrisi_poziciju/{{ p.id }}/bravarija', this.getAttribute('data-naziv'), document.getElementById('forma-nalog-{{ n.id }}'))"><i class="fa-solid fa-xmark"></i></button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         
+        {% if n.pozicije %}
+        <div class="p-3 mb-3 rounded-3" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <span class="text-muted small text-uppercase fw-bold me-2"><i class="fa-solid fa-calculator text-warning me-1"></i> Ukupno Bravarija:</span>
+                    <span class="badge bg-info text-white fw-bold me-1">Cilj: {{ n.ukupno.cilj_ukupno }} kom</span>
+                    <span class="badge bg-success text-white fw-bold me-1 zivi-komada">Odrađeno: {{ n.ukupno.bravarija_komada_ukupno }} kom</span>
+                    <span class="badge bg-danger text-white fw-bold zivi-skart">Škart: {{ n.ukupno.bravarija_skart_ukupno }}</span>
+                </div>
+                <div class="text-end">
+                    <span class="text-muted small me-2">Vrijeme (Priprema + Piganje):</span>
+                    <span class="badge bg-dark border border-warning text-warning fs-6 fw-bold zivi-vrijeme">{{ n.ukupno.bravarija_ukupno_tekst }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="row align-items-start g-2 mt-4 pt-3 border-top border-secondary border-opacity-25">
             <div class="col-md-5">
                 <label class="form-label text-white">Ime Bravara</label>
-                <input type="text" class="form-control text-white navigabilno" name="radnik" placeholder="Unesite ime..." value="{{ n.pozicije[0].bravarija_radnik if n.pozicije else '' }}" required oninput="this.value=this.value.replace(/[0-9]/g,'');">
+                <input type="text" class="form-control text-white navigabilno" name="radnik" placeholder="Unesite ime..." value="{{ n.bravarija_radnik or (n.pozicije[0].bravarija_radnik if n.pozicije else '') }}" required oninput="this.value=this.value.replace(/[0-9]/g,'');">
 				<label class="form-label mt-3 text-white">Napomena Bravara (Opcionalno)</label>
 				<textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Obrađeno i stavljeno na paletu..." oninput="autoProsiri(this)">{{ n.bravarija_napomena }}</textarea>
             </div>
             <div class="col-md-7 ms-auto text-end align-items-end d-flex gap-2 justify-content-end h-100 mob-col-btn" style="padding-top: 30px;">
-                <button type="submit" name="akcija" value="pauziraj" class="btn btn-outline-warning fw-bold px-3" formnovalidate><i class="fa-solid fa-pause me-1"></i> Pauziraj Nalog</button>
                 <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-3">&check; Završi (Na Pregled)</button>
+                <button type="submit" name="akcija" value="pauziraj" class="btn btn-outline-warning fw-bold px-3" formnovalidate><i class="fa-solid fa-pause me-1"></i> Pauziraj Nalog</button>
             </div>
         </div>
     </form>

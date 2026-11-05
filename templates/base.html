@@ -66,8 +66,10 @@
         textarea.auto-expand:focus { overflow-y: auto; }
         input[type="file"].form-control { padding: 10px 14px; color: #ffffff !important; line-height: 1.5; background-color: #1a1e2b !important; border: 1px solid #2d3446 !important; font-size: 0.9rem; height: auto; }
         input[type="file"].form-control::file-selector-button { margin-left: -5px; margin-right: 14px; background-color: #2d3446 !important; color: #ffffff !important; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 0.85rem; }
-        .table .form-control { background-color: transparent; border: 1px solid transparent; padding: 8px 10px; border-radius: 6px; color: #ffffff !important; }
-        .table .form-control:focus { background-color: rgba(255,255,255,0.03); border: 1px solid #31384f; }
+        
+        .table .form-control { background-color: #1a1e2b; border: 1px solid #2d3446; padding: 8px 10px; border-radius: 6px; color: #ffffff !important; }
+        .table .form-control:focus { background-color: #23293b; border-color: #0dcaf0; }
+        
         .form-check-input { width: 1.25rem; height: 1.25rem; background-color: #1a1e2b; border-color: #2d3446; cursor: pointer; }
         .btn-primary { background-color: #ff0000; border-color: #ff0000; font-weight: 600; border-radius: 8px; padding: 10px 20px; }
         .btn-success { background-color: #16a34a; border-color: #16a34a; font-weight: 600; border-radius: 8px; color: white !important;}
@@ -75,8 +77,8 @@
         .btn-nav { color: #d1d5db; font-weight: 600; text-decoration: none; padding: 8px 16px; border-radius: 6px; white-space: nowrap; }
         .clock-box { background: #171b26; border: 1px solid #222736; border-radius: 8px; padding: 6px 14px; font-family: monospace; color: #ffffff; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
         .vidljiv-tekst { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); border-radius: 8px; padding: 20px; color: #ffffff !important; font-size: 1.1rem; }
-        .login-wrapper { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
-        .login-box { width: 100%; max-width: 420px; background: #12141c; border-radius: 16px; border-top: 5px solid #0dcaf0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding: 40px; }
+        .login-wrapper { min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .login-box { width: 100%; max-width: 420px; background: #12141c; border-radius: 16px; border-top: 5px solid #0dcaf0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding: 36px 28px; }
         .tamni-kontejner { background-color: #12141c; border: 1px solid #222736; border-radius: 8px; }
         .dodaj-kontejner { background-color: #171b26; border: 1px solid #2d3446; border-radius: 8px; }
         .napomena-box { background: rgba(13, 202, 240, 0.1); border-left: 3px solid #0dcaf0; padding: 12px; border-radius: 0 6px 6px 0; margin-top: 8px;}
@@ -84,6 +86,17 @@
         @keyframes pulseLive { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .pulse-live { animation: pulseLive 2s infinite; }
         
+        /* Indikator Real-Time Sinkronizacije */
+        .sync-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 4px; transition: all 0.3s ease; }
+        .sync-live { background-color: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.8); }
+        .sync-recon { background-color: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.8); }
+        .sync-offline { background-color: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8); }
+
+        /* Auto-Save Status Značka */
+        .auto-save-badge { font-size: 0.75rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; transition: all 0.3s ease; }
+        .auto-save-badge.saved { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .auto-save-badge.saving { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+
         /* CSS ZA TICKER (INLINE-BLOCK + TRANSLATE3D) */
         .ticker-wrap {
             width: 100%;
@@ -106,7 +119,7 @@
         .ticker-track {
             display: inline-block;
             white-space: nowrap;
-            animation: marquee 25s linear infinite; /* Početno vrijeme, skripta ga automatski ispravi */
+            animation: marquee 25s linear infinite;
             padding-left: 10px;
         }
         .ticker-wrap:hover .ticker-track { animation-play-state: paused; } 
@@ -133,28 +146,84 @@
         .file-row { transition: all 0.2s ease; }
         .file-row:hover { background: rgba(255,255,255,0.06) !important; transform: scale(1.01); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         
-        .is-desktop-device .nav-mob-col { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
-        .is-desktop-device .nav-mob-col::-webkit-scrollbar { height: 5px; }
-        .is-desktop-device .nav-mob-col::-webkit-scrollbar-thumb { background-color: #2d3446; border-radius: 4px; }
-        .is-mobile-device .nav-mob-col { flex-wrap: wrap; }
-        @media (max-width: 991px) {
-            .is-mobile-device .navbar-collapse { background: #1a1e2b; padding: 18px; border-radius: 8px; margin-top: 15px; border: 1px solid #2d3446; box-shadow: 0 8px 20px rgba(0,0,0,0.5); z-index: 1000; }
-            .is-mobile-device .nav-mob-col { flex-direction: column !important; align-items: stretch !important; margin: 0 !important; width: 100% !important; gap: 8px !important; }
-            .is-mobile-device .nav-mob-col .btn { text-align: center !important; margin: 0 !important; width: 100% !important; padding: 12px; font-size: 1.05rem; justify-content: center; display: flex; align-items: center; }
-            .is-mobile-device .nav-mob-col .clock-box { justify-content: center; margin: 0 !important; width: 100%; font-size: 1.2rem; padding: 12px; }
-            .is-mobile-device .navbar-toggler { border: none; outline: none; box-shadow: none; padding: 0; }
+        .nav-mob-col { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
+        .nav-mob-col::-webkit-scrollbar { height: 5px; }
+        .nav-mob-col::-webkit-scrollbar-thumb { background-color: #2d3446; border-radius: 4px; }
+
+        @media (max-width: 991.98px) {
+            .navbar-collapse { background: #1a1e2b; padding: 18px; border-radius: 8px; margin-top: 15px; border: 1px solid #2d3446; box-shadow: 0 8px 20px rgba(0,0,0,0.5); z-index: 1000; }
+            .nav-mob-col { flex-direction: column !important; align-items: stretch !important; margin: 0 !important; width: 100% !important; gap: 8px !important; }
+            .nav-mob-col .btn { text-align: center !important; margin: 0 !important; width: 100% !important; padding: 12px; font-size: 1.05rem; justify-content: center; display: flex; align-items: center; }
+            .nav-mob-col .clock-box { justify-content: center; margin: 0 !important; width: 100%; font-size: 1.2rem; padding: 12px; }
+            .navbar-toggler { border: none; outline: none; box-shadow: none; padding: 0; }
             .glavni-prostor { padding: 15px 10px; }
             .card-header-custom { padding: 15px !important; }
             .card-body { padding: 15px !important; }
             .flex-mob-col { flex-direction: column !important; align-items: flex-start !important; gap: 12px; }
             .flex-mob-col > div { width: 100%; text-align: left !important; }
-            .flex-mob-col .btn, .flex-mob-col .badge { width: 100%; display: block; text-align: center; }
+            .flex-mob-col > .btn, .flex-mob-col > .badge { width: 100%; display: block; text-align: center; }
             .mob-full-btn { display: block; width: 100%; margin-bottom: 8px; text-align: left; margin-right: 0 !important;}
             .mob-col-btn { flex-direction: column !important; align-items: stretch !important; padding-top: 15px !important; }
             .mob-col-btn .btn { width: 100%; margin: 5px 0 !important; }
             .btn-rutiranje-grupa { flex-direction: column !important; display: flex; }
             .btn-rutiranje-grupa button { width: 100%; margin-bottom: 8px; margin-right: 0 !important; }
-            .tamni-kontejner { padding: 0 !important; border: none; }
+            .nav-forma .tamni-kontejner { padding: 0 !important; border: none; }
+            
+            input.form-control, select.form-control, textarea.form-control { font-size: 16px !important; }
+        }
+
+        /* Responzivne kartice za tablice pozicija na mobitelu */
+        @media (max-width: 767.98px) {
+            .mob-kartica-pozicije thead { display: none; }
+            .mob-kartica-pozicije tr { 
+                display: block; 
+                background: #171b26; 
+                border: 1px solid #2d3446; 
+                border-radius: 12px; 
+                padding: 12px; 
+                margin-bottom: 12px; 
+                box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            }
+            .mob-kartica-pozicije td { 
+                display: flex; 
+                align-items: center; 
+                justify-content: space-between; 
+                padding: 6px 0 !important; 
+                border: none !important; 
+                background: transparent !important;
+            }
+            .mob-kartica-pozicije td::before { 
+                content: attr(data-label); 
+                font-weight: 700; 
+                font-size: 0.8rem; 
+                color: #94a3b8; 
+                text-transform: uppercase; 
+                margin-right: 12px; 
+                flex-shrink: 0;
+            }
+            .mob-kartica-pozicije td .form-control,
+            .mob-kartica-pozicije td .input-group {
+                width: 58% !important;
+                max-width: 210px;
+                margin-left: auto;
+            }
+            .mob-kartica-pozicije td:first-child { 
+                border-bottom: 1px solid #2d3446 !important; 
+                padding-bottom: 8px !important; 
+                margin-bottom: 8px; 
+            }
+            .mob-kartica-pozicije td:first-child::before { display: none; }
+            .mob-kartica-pozicije td:first-child .form-control { font-size: 1.05rem; width: 100% !important; max-width: 100%; }
+            .mob-kartica-pozicije td:last-child { 
+                border-top: 1px solid #2d3446 !important; 
+                padding-top: 8px !important; 
+                margin-top: 8px; 
+                justify-content: flex-end; 
+            }
+            .mob-kartica-pozicije td:last-child::before { display: none; }
+        }
+        @media (max-width: 480px) {
+            .login-box { padding: 28px 18px; }
         }
     </style>
     <script>
@@ -167,27 +236,48 @@
             }
             ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'].forEach(function(evt) { document.addEventListener(evt, resetAutoLogout, false); });
             resetAutoLogout();
-            
-            setInterval(() => { if (typeof updateBulkBar === 'function') updateBulkBar(); }, 3500);
         });
         {% endif %}
 
         if (!Element.prototype.matches) { Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector; }
         if (!Element.prototype.closest) { Element.prototype.closest = function(s) { var el = this; while (el && el.nodeType === 1) { if (el.matches(s)) return el; el = el.parentElement || el.parentNode; } return null; }; }
 
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, function(m) {
+                return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m];
+            });
+        }
+
+        function generateUUID() {
+            return 'fcl-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 9);
+        }
+
+        // Globalni jedinstveni klijentski identifikator (za sprječavanje self-echo filtriranja)
+        var fclClientId = (function() {
+            var cid = sessionStorage.getItem('fcl_client_id');
+            if (!cid) {
+                cid = generateUUID();
+                sessionStorage.setItem('fcl_client_id', cid);
+            }
+            return cid;
+        })();
+
         var kosaricaStavke = [];
         var isSubmitting = false;
-        var pozadinskiSkener; 
-        var errorToastTimeout;
+        var pozadinskiSkener = null; 
+        var toastTimeout = null;
+        var zadnjiETag = null;
+        var isPolling = false;
+        var autoSaveTimer = null;
+        var sseSource = null;
 
-        // PAMETNA FUNKCIJA ZA BRZINU TEKSTA OBAVIJESTI
         function prilagodiBrzinuTickera() {
             var track = document.querySelector('.ticker-track');
             var segment = document.querySelector('.ticker-segment');
             if (track && segment) {
                 var width = segment.offsetWidth;
                 if (width > 0) {
-                    // Želimo da tekst putuje ugodnom brzinom od cca 70 piksela po sekundi
                     var brzina = width / 70; 
                     track.style.animationDuration = brzina + 's';
                 }
@@ -195,17 +285,49 @@
         }
 
         function prikaziGresku(poruka) {
-            let stari = document.getElementById('fcl-toast-greska');
+            var stari = document.getElementById('fcl-toast-obavijest');
             if (stari) stari.remove();
             
-            let div = document.createElement('div');
-            div.id = 'fcl-toast-greska';
-            div.style.cssText = 'position:fixed; top:20px; right:20px; background:#ef4444; color:white; padding:15px 25px; border-radius:10px; z-index:99999; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-size: 1rem; border: 2px solid #b91c1c; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease-out;';
-            div.innerHTML = '<i class="fa-solid fa-triangle-exclamation fs-3"></i> <div><div style="font-size:1.1rem; line-height:1.2;">GREŠKA</div><div style="font-size:0.9rem; font-weight:500;">'+poruka+'</div></div><button type="button" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; margin-left:10px; padding: 0;" onclick="this.parentElement.remove()">&times;</button>';
+            var div = document.createElement('div');
+            div.id = 'fcl-toast-obavijest';
+            div.style.cssText = 'position:fixed; top:20px; right:16px; left:16px; max-width:440px; margin-left:auto; background:#ef4444; color:white; padding:15px 20px; border-radius:12px; z-index:99999; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-size: 1rem; border: 2px solid #b91c1c; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease-out;';
+            div.innerHTML = '<i class="fa-solid fa-triangle-exclamation fs-3"></i> <div style="flex-grow:1;"><div style="font-size:1.1rem; line-height:1.2;">GREŠKA</div><div style="font-size:0.9rem; font-weight:500;">'+escapeHtml(poruka)+'</div></div><button type="button" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; margin-left:10px; padding: 0;" onclick="this.parentElement.remove()">&times;</button>';
             
             document.body.appendChild(div);
-            clearTimeout(errorToastTimeout);
-            errorToastTimeout = setTimeout(() => { if(document.getElementById('fcl-toast-greska')) document.getElementById('fcl-toast-greska').remove(); }, 4000);
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(function() { 
+                var el = document.getElementById('fcl-toast-obavijest');
+                if (el) el.remove(); 
+            }, 4500);
+        }
+
+        function prikaziUspjeh(poruka) {
+            var stari = document.getElementById('fcl-toast-obavijest');
+            if (stari) stari.remove();
+            
+            var div = document.createElement('div');
+            div.id = 'fcl-toast-obavijest';
+            div.style.cssText = 'position:fixed; top:20px; right:16px; left:16px; max-width:440px; margin-left:auto; background:#10b981; color:white; padding:15px 20px; border-radius:12px; z-index:99999; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-size: 1rem; border: 2px solid #059669; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease-out;';
+            div.innerHTML = '<i class="fa-solid fa-circle-check fs-3"></i> <div style="flex-grow:1;"><div style="font-size:1.1rem; line-height:1.2;">USPJEŠNO</div><div style="font-size:0.9rem; font-weight:500;">'+escapeHtml(poruka)+'</div></div><button type="button" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; margin-left:10px; padding: 0;" onclick="this.parentElement.remove()">&times;</button>';
+            
+            document.body.appendChild(div);
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(function() { 
+                var el = document.getElementById('fcl-toast-obavijest');
+                if (el) el.remove(); 
+            }, 3000);
+        }
+
+        function prikaziUpozorenje(poruka) {
+            var stari = document.getElementById('fcl-toast-obavijest');
+            if (stari) stari.remove();
+            
+            var div = document.createElement('div');
+            div.id = 'fcl-toast-obavijest';
+            div.style.cssText = 'position:fixed; top:20px; right:16px; left:16px; max-width:460px; margin-left:auto; background:#f59e0b; color:#000; padding:15px 20px; border-radius:12px; z-index:99999; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-size: 1rem; border: 2px solid #d97706; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease-out;';
+            div.innerHTML = '<i class="fa-solid fa-spinner fa-spin fs-3"></i> <div style="flex-grow:1;"><div style="font-size:1.05rem; line-height:1.2;">POVEZIVANJE U TIJEKU</div><div style="font-size:0.88rem; font-weight:600;">'+escapeHtml(poruka)+'</div></div><button type="button" style="background:none; border:none; color:#000; font-size:1.5rem; cursor:pointer; margin-left:10px; padding: 0;" onclick="this.parentElement.remove()">&times;</button>';
+            
+            document.body.appendChild(div);
         }
 
         function postaviGlasnuValidaciju() {
@@ -245,13 +367,16 @@
         }
 
         function dodajUKosaricu() {
-            var naziv = document.getElementById('cart_naziv').value.trim();
-            var komada = document.getElementById('cart_komada').value;
+            var cartNaziv = document.getElementById('cart_naziv');
+            var cartKomada = document.getElementById('cart_komada');
+            if (!cartNaziv) return;
+            var naziv = cartNaziv.value.trim();
+            var komada = cartKomada ? cartKomada.value : '';
             if(!naziv) return; 
             kosaricaStavke.push({naziv: naziv, komada: parseInt(komada) || 0});
-            document.getElementById('cart_naziv').value = '';
-            document.getElementById('cart_komada').value = '';
-            document.getElementById('cart_naziv').focus();
+            cartNaziv.value = '';
+            if (cartKomada) cartKomada.value = '';
+            cartNaziv.focus();
             osvjeziKosaricu();
             
             var baseKey = "fcl_" + window.location.pathname + "_";
@@ -272,7 +397,7 @@
                 for(var i=0; i<kosaricaStavke.length; i++) {
                     var s = kosaricaStavke[i];
                     var kolicinaText = s.komada > 0 ? s.komada + ' kom' : '-';
-                    body.innerHTML += '<tr><td class="text-info fw-bold">' + s.naziv + '</td><td class="text-white fw-bold" style="font-size: 0.95rem;">' + kolicinaText + '</td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="ukloniIzKosarice('+i+')"><i class="fa-solid fa-trash"></i></button></td></tr>';
+                    body.innerHTML += '<tr><td class="text-info fw-bold">' + escapeHtml(s.naziv) + '</td><td class="text-white fw-bold" style="font-size: 0.95rem;">' + escapeHtml(kolicinaText) + '</td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="ukloniIzKosarice('+i+')"><i class="fa-solid fa-trash"></i></button></td></tr>';
                 }
             }
             hidden.value = JSON.stringify(kosaricaStavke);
@@ -285,7 +410,7 @@
             var filter = input.value.toLowerCase();
             var redovi = document.querySelectorAll(".arhiva-red");
             for (var i = 0; i < redovi.length; i++) {
-                var tekst = redovi[i].getAttribute("data-search").toLowerCase();
+                var tekst = (redovi[i].getAttribute("data-search") || "").toLowerCase();
                 var id = redovi[i].getAttribute("data-id");
                 var detalji = document.getElementById("detalji-" + id);
                 if (tekst.includes(filter)) { redovi[i].style.display = ""; } 
@@ -297,13 +422,34 @@
             if(typeof updateBulkBar === 'function') updateBulkBar();
         }
 
+        function filtrirajSefoPanel() {
+            var input = document.getElementById("traziAktivne");
+            if (!input) return;
+            var filter = input.value.toLowerCase();
+            var redovi = document.querySelectorAll(".aktivni-red");
+            for (var i = 0; i < redovi.length; i++) {
+                var tekst = (redovi[i].getAttribute("data-search") || "").toLowerCase();
+                var id = redovi[i].getAttribute("data-id");
+                var detalji = document.getElementById("detalji-" + id);
+                if (tekst.includes(filter)) { redovi[i].style.display = ""; }
+                else {
+                    redovi[i].style.display = "none";
+                    if (detalji) detalji.classList.remove("show");
+                }
+            }
+        }
+
         function azurirajBrojacDatoteka(input, labelId, iconClass, labelText) {
             var label = document.getElementById(labelId);
             if(!label) return;
             if(input.files && input.files.length > 0) {
                 var html = '<div class="mt-2"><i class="fa-solid ' + iconClass + ' text-info me-1"></i> <span class="text-muted small">' + labelText + ':</span></div><div class="d-flex flex-wrap gap-1 mt-1">';
-                for(var i=0; i<input.files.length; i++) { html += '<span class="badge bg-dark border border-secondary text-info">' + input.files[i].name + '</span>'; }
+                for(var i=0; i<input.files.length; i++) { 
+                    var cleanName = escapeHtml(input.files[i].name);
+                    html += '<span class="badge bg-dark border border-secondary text-info">' + cleanName + '</span>'; 
+                }
                 html += '</div>';
+                label.innerHTML = html;
             } else { label.innerHTML = ''; }
         }
         
@@ -324,27 +470,387 @@
             }
         }
 
+        function postaviAutoSaveStatus(form, status) {
+            var card = form ? form.closest('.card') : null;
+            var badge = (form ? form.querySelector('.auto-save-badge') : null) || (card ? card.querySelector('.auto-save-badge') : null);
+            if (!badge) return;
+            if (status === 'saving') {
+                badge.className = 'auto-save-badge saving';
+                badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Spremanje...';
+            } else if (status === 'saved') {
+                badge.className = 'auto-save-badge saved';
+                badge.innerHTML = '<i class="fa-solid fa-check me-1"></i>Spremljeno';
+            } else if (status === 'error') {
+                badge.className = 'auto-save-badge bg-danger text-white border-0';
+                badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>Greška spremanja';
+            }
+        }
+
+        function azurirajZiviZbrojForme(form) {
+            if (!form || !form.classList.contains('nav-forma')) return;
+            var pids = form.querySelectorAll('input[name="pozicija_id"]');
+            var ukKom = 0, ukSkart = 0, ukMin = 0;
+            var isLaser = (window.location.pathname.indexOf('/laser') !== -1) || (form.querySelector('input[name="izvor"]') && form.querySelector('input[name="izvor"]').value === 'laser');
+            for (var i = 0; i < pids.length; i++) {
+                var pid = pids[i].value;
+                var komEl = form.querySelector('input[name="komada_' + pid + '"]');
+                var skartEl = form.querySelector('input[name="skart_' + pid + '"]');
+                var psEl = form.querySelector('input[name="priprema_sati_' + pid + '"]');
+                var pmEl = form.querySelector('input[name="priprema_minute_' + pid + '"]');
+                var rsEl = form.querySelector('input[name="' + (isLaser ? 'rezanje_sati_' : 'piganje_sati_') + pid + '"]');
+                var rmEl = form.querySelector('input[name="' + (isLaser ? 'rezanje_minute_' : 'piganje_minute_') + pid + '"]');
+                ukKom += parseInt(komEl ? komEl.value : 0) || 0;
+                ukSkart += parseInt(skartEl ? skartEl.value : 0) || 0;
+                ukMin += ((parseInt(psEl ? psEl.value : 0) || 0) * 60) + (parseInt(pmEl ? pmEl.value : 0) || 0);
+                ukMin += ((parseInt(rsEl ? rsEl.value : 0) || 0) * 60) + (parseInt(rmEl ? rmEl.value : 0) || 0);
+            }
+            var komBadge = form.querySelector('.zivi-komada');
+            var skartBadge = form.querySelector('.zivi-skart');
+            var vrijBadge = form.querySelector('.zivi-vrijeme');
+            if (komBadge) komBadge.innerText = 'Odrađeno: ' + ukKom + ' kom';
+            if (skartBadge) skartBadge.innerText = 'Škart: ' + ukSkart;
+            if (vrijBadge) vrijBadge.innerText = Math.floor(ukMin / 60) + 'h ' + (ukMin % 60) + 'm';
+        }
+
+        function dodajPozicijuSigurno(addForm, mainFormId) {
+            if (isSubmitting) return false;
+            var input = addForm.querySelector('input[name="novi_naziv_pozicije"]');
+            if (input && !input.value.trim()) {
+                prikaziGresku("Upišite naziv pozicije!");
+                input.focus();
+                return false;
+            }
+            isSubmitting = true;
+            var btn = addForm.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.style.pointerEvents = 'none';
+                btn.style.opacity = '0.6';
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Dodajem...';
+            }
+            var mainF = document.getElementById(mainFormId);
+            flushDbAutoSaveNow(mainF).then(function() {
+                HTMLFormElement.prototype.submit.call(addForm);
+            });
+            return false;
+        }
+
+        function flushDbAutoSaveNow(form) {
+            if (!form || !form.classList.contains('nav-forma')) return Promise.resolve();
+            postaviAutoSaveStatus(form, 'saving');
+            var formData = new FormData(form);
+            if (window.location.pathname.indexOf('/laser') !== -1) formData.append('izvor', 'laser');
+            else if (window.location.pathname.indexOf('/bravarija') !== -1) formData.append('izvor', 'bravarija');
+            formData.append('client_id', fclClientId);
+            
+            return fetch('/api/autosave_nalog', {
+                method: 'POST',
+                headers: { 'X-Client-ID': fclClientId },
+                body: formData
+            }).then(function(res) {
+                if (res.ok) {
+                    postaviAutoSaveStatus(form, 'saved');
+                    // Očisti dirty oznake nakon uspješnog automatskog spremanja
+                    var dirties = form.querySelectorAll('[data-dirty="1"]');
+                    for (var d = 0; d < dirties.length; d++) {
+                        delete dirties[d].dataset.dirty;
+                    }
+                } else {
+                    postaviAutoSaveStatus(form, 'error');
+                }
+            }).catch(function() {
+                postaviAutoSaveStatus(form, 'error');
+            });
+        }
+
+        function triggerDbAutoSave(form) {
+            if (!form || !form.classList.contains('nav-forma')) return;
+            postaviAutoSaveStatus(form, 'saving');
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(function() {
+                flushDbAutoSaveNow(form);
+            }, 400);
+        }
+
+        // --- POTVRĐENO SLANJE FORMI S RETRY MEHANIZMOM (0% GUBITKA PODATAKA) ---
+        function posaljiFormuSigurno(form, submitter, pokusaj) {
+            pokusaj = pokusaj || 1;
+            var maxPokusaja = 5;
+            
+            // Osiguraj jedinstveni request_uuid token
+            var uuidInput = form.querySelector('input[name="request_uuid"]');
+            if (!uuidInput) {
+                uuidInput = document.createElement('input');
+                uuidInput.type = 'hidden';
+                uuidInput.name = 'request_uuid';
+                uuidInput.value = generateUUID();
+                form.appendChild(uuidInput);
+            }
+            
+            var formData = new FormData(form);
+            if (submitter && submitter.name) {
+                formData.append(submitter.name, submitter.value || '');
+            }
+            if (form.classList.contains('nav-forma')) {
+                if (window.location.pathname.indexOf('/laser') !== -1) formData.append('izvor', 'laser');
+                else if (window.location.pathname.indexOf('/bravarija') !== -1) formData.append('izvor', 'bravarija');
+            }
+            
+            return fetch(form.action || window.location.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-Client-ID': fclClientId,
+                    'X-Idempotency-Key': uuidInput.value
+                },
+                body: formData
+            }).then(function(response) {
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.text().then(function(txt) {
+                    try { return JSON.parse(txt); } catch(e) { return { ok: true, html: txt }; }
+                });
+            }).then(function(data) {
+                // TEK NAKON USPJEHA NA SERVERU BRIŠEMO LOCALSTORAGE!
+                var formInputs = form.querySelectorAll('input, textarea');
+                for (var k = 0; k < formInputs.length; k++) {
+                    var input = formInputs[k];
+                    if (!input.name) continue;
+                    var nalogIdInput = form.querySelector('input[name="id_naloga"]');
+                    var key = "fcl_" + window.location.pathname + "_";
+                    if (nalogIdInput) key += "nalog_" + nalogIdInput.value + "_";
+                    key += input.name;
+                    localStorage.removeItem(key);
+                }
+                if (form.id === 'form-kreiranje') {
+                    localStorage.removeItem('fcl_kosarica'); 
+                    kosaricaStavke = [];
+                    osvjeziKosaricu();
+                }
+                
+                prikaziUspjeh("Uspješno spremljeno u sustav!");
+                setTimeout(function() {
+                    window.location.reload();
+                }, 400);
+            }).catch(function(err) {
+                if (pokusaj < maxPokusaja) {
+                    prikaziUpozorenje("Poslužitelj se ažurira ili je veza u prekidu — automatski ponavljam slanje (Pokušaj " + pokusaj + "/" + maxPokusaja + ")...");
+                    var delay = pokusaj * 1500;
+                    setTimeout(function() {
+                        posaljiFormuSigurno(form, submitter, pokusaj + 1);
+                    }, delay);
+                } else {
+                    isSubmitting = false;
+                    prikaziGresku("Neuspjelo slanje nakon više pokušaja! Podaci su ostali netaknuti na ekranu.");
+                    if (submitter) {
+                        submitter.innerHTML = submitter.dataset.originalHtml || 'Pokušaj ponovno';
+                    }
+                    var btns = form.querySelectorAll('button[type="submit"], button[name="rutiranje"], button[name="akcija"]');
+                    for (var b = 0; b < btns.length; b++) {
+                        btns[b].style.pointerEvents = '';
+                        btns[b].style.opacity = '1';
+                    }
+                }
+            });
+        }
+
         function postaviSubmitZastitu() {
             var forms = document.querySelectorAll('form:not(#bulkDeleteForm)');
             for(var f=0; f<forms.length; f++) { 
                 var form = forms[f];
                 if(form.dataset.zastita) continue;
+                if(form.id && form.id.indexOf('form-dodaj-poz-') === 0) continue;
                 form.dataset.zastita = "da";
                 
+                var isAjaxForm = (form.id === 'form-kreiranje' || form.id === 'formUrediNalog' || form.classList.contains('nav-forma'));
+                
+                if (isAjaxForm && !form.querySelector('input[name="request_uuid"]')) {
+                    var uuidField = document.createElement('input');
+                    uuidField.type = 'hidden';
+                    uuidField.name = 'request_uuid';
+                    uuidField.value = generateUUID();
+                    form.appendChild(uuidField);
+                }
+                
                 form.addEventListener('submit', function(e) { 
+                    if (isSubmitting) {
+                        e.preventDefault();
+                        return;
+                    }
                     isSubmitting = true; 
-                    if(typeof pozadinskiSkener !== 'undefined' && pozadinskiSkener) clearInterval(pozadinskiSkener);
                     
+                    var submitter = e.submitter;
+                    if(submitter) {
+                        submitter.dataset.originalHtml = submitter.innerHTML;
+                        if (!submitter.innerHTML.includes("fa-spin")) {
+                            submitter.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i>Obrada...';
+                        }
+                    }
                     var btns = this.querySelectorAll('button[type="submit"], button[name="rutiranje"], button[name="akcija"]');
                     for(var i=0; i<btns.length; i++) {
-                        if(!btns[i].innerHTML.includes("fa-spin")) {
-                            btns[i].innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i>Obrada...';
-                            btns[i].style.pointerEvents = 'none';
-                            btns[i].style.opacity = '0.7';
-                        }
+                        btns[i].style.pointerEvents = 'none';
+                        btns[i].style.opacity = '0.6';
+                    }
+                    if(submitter) submitter.style.opacity = '0.85';
+                    
+                    if (this.id === 'form-kreiranje' || this.id === 'formUrediNalog' || this.classList.contains('nav-forma')) {
+                        e.preventDefault();
+                        posaljiFormuSigurno(this, submitter, 1);
                     }
                 }); 
             }
+        }
+
+        function izvrsiPozadinskoOsvjezavanje() {
+            if (isPolling || isSubmitting || window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
+            if (document.hidden) return;
+
+            isPolling = true;
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', window.location.href, true);
+            if (zadnjiETag) {
+                xhr.setRequestHeader('If-None-Match', zadnjiETag);
+            }
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    isPolling = false;
+                    if (xhr.status === 304) {
+                        return;
+                    }
+                    if (xhr.status === 200) {
+                        try {
+                            var noviEtag = xhr.getResponseHeader('ETag');
+                            if (noviEtag) zadnjiETag = noviEtag;
+
+                            var parser = new DOMParser();
+                            var newDoc = parser.parseFromString(xhr.responseText, 'text/html');
+                            
+                            var currentMain = document.getElementById('glavni-dinamicni-dio');
+                            var newMain = newDoc.getElementById('glavni-dinamicni-dio');
+                            var currentTicker = document.getElementById('ticker-prikaz');
+                            var newTicker = newDoc.getElementById('ticker-prikaz');
+
+                            if (currentMain && newMain && typeof morphdom !== 'undefined') {
+                                morphdom(currentMain, newMain, {
+                                    onBeforeElUpdated: function(fromEl, toEl) {
+                                        if (fromEl.hasAttribute && fromEl.hasAttribute('data-morphdom-ignore')) {
+                                            return false;
+                                        }
+                                        if (fromEl.id === 'cart_table' || fromEl.id === 'cart_body' || fromEl.id === 'kosarica_data') {
+                                            return false; 
+                                        }
+                                        if (fromEl.tagName === 'INPUT' && fromEl.type === 'file') {
+                                            return false;
+                                        }
+                                        if (fromEl.id === 'sliderText' || fromEl.id === 'bulkActionBar' || fromEl.id === 'traziAktivne' || fromEl.id === 'traziArhivu') {
+                                            return false;
+                                        }
+
+                                        // Zaštita polja koja korisnik trenutno uređuje (ili ima dirty oznaku)
+                                        if (fromEl.dataset && fromEl.dataset.dirty === "1") {
+                                            toEl.value = fromEl.value;
+                                            return false;
+                                        }
+
+                                        var isCurrentActive = (document.activeElement === fromEl);
+                                        var isInsideActiveForm = false;
+                                        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT')) {
+                                            var activeForm = document.activeElement.closest('form');
+                                            if (activeForm && activeForm.contains(fromEl)) {
+                                                isInsideActiveForm = true;
+                                            }
+                                        }
+
+                                        if (fromEl.tagName === 'INPUT' && (fromEl.type === 'checkbox' || fromEl.type === 'radio')) {
+                                            if (isCurrentActive) return false;
+                                            toEl.checked = fromEl.checked;
+                                        }
+                                        else if (fromEl.tagName === 'TEXTAREA') {
+                                            if (isCurrentActive || isInsideActiveForm) {
+                                                toEl.value = fromEl.value;
+                                                return false;
+                                            }
+                                        } else if (fromEl.tagName === 'INPUT' || fromEl.tagName === 'SELECT') {
+                                            if (isCurrentActive || isInsideActiveForm) {
+                                                toEl.value = fromEl.value; 
+                                                return false; 
+                                            }
+                                        }
+                                        if (fromEl.classList && fromEl.classList.contains('show')) {
+                                            toEl.classList.add('show'); 
+                                        }
+                                        return true;
+                                    }
+                                });
+                                
+                                if (currentTicker && newTicker) {
+                                    var stariTekst = (currentTicker.textContent || "").replace(/\s+/g, '');
+                                    var noviTekst = (newTicker.textContent || "").replace(/\s+/g, '');
+                                    if (stariTekst !== noviTekst) {
+                                        currentTicker.innerHTML = newTicker.innerHTML;
+                                        setTimeout(prilagodiBrzinuTickera, 50); 
+                                    }
+                                }
+
+                                if (typeof filtrirajArhivu === 'function') filtrirajArhivu();
+                                if (typeof filtrirajSefoPanel === 'function') filtrirajSefoPanel();
+                                if (typeof updateBulkBar === 'function') updateBulkBar();
+                                postaviSubmitZastitu();
+                                if (typeof initAutoSave === 'function') initAutoSave();
+                                if (typeof postaviEnterNavigacijuTabela === 'function') postaviEnterNavigacijuTabela();
+                                if (typeof postaviEnterNavigacijuKreiranje === 'function') postaviEnterNavigacijuKreiranje();
+                                if (typeof postaviGlasnuValidaciju === 'function') postaviGlasnuValidaciju();
+                            }
+                        } catch(err) { }
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        // --- SERVER-SENT EVENTS (SSE) KLIJENTSKA SINKRONIZACIJA ---
+        function postaviSyncDot(stanje) {
+            var dot = document.getElementById('sync-status-dot');
+            if (!dot) return;
+            dot.className = 'sync-dot ' + (stanje === 'live' ? 'sync-live' : stanje === 'recon' ? 'sync-recon' : 'sync-offline');
+            dot.title = stanje === 'live' ? 'Trenutna veza s pogonom aktivna' : stanje === 'recon' ? 'Ponovno povezivanje...' : 'Veza prekinuta';
+        }
+
+        function pokreniSSE() {
+            if (window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
+            if (typeof EventSource === 'undefined') {
+                // Fallback na 3-sekundno ispitivanje ako preglednik ne podržava SSE
+                setInterval(izvrsiPozadinskoOsvjezavanje, 3000);
+                return;
+            }
+            
+            if (sseSource) {
+                try { sseSource.close(); } catch(e) {}
+            }
+            
+            postaviSyncDot('recon');
+            sseSource = new EventSource('/api/stream?client_id=' + encodeURIComponent(fclClientId));
+            
+            sseSource.addEventListener('connected', function(e) {
+                postaviSyncDot('live');
+            });
+            
+            sseSource.addEventListener('change', function(e) {
+                postaviSyncDot('live');
+                try {
+                    var data = JSON.parse(e.data);
+                    // Ako je ovaj klijent poslao izmjenu (npr. auto-save), ne osvježavamo vlastiti DOM dok tipkamo!
+                    if (data.sender_id && data.sender_id === fclClientId) {
+                        return;
+                    }
+                } catch(err) {}
+                izvrsiPozadinskoOsvjezavanje();
+            });
+            
+            sseSource.onerror = function() {
+                postaviSyncDot('recon');
+                // EventSource ima ugrađeni automatski reconnect
+            };
         }
 
         function pokreniZiveElemente() {
@@ -360,101 +866,56 @@
             updateDevTimer(); setInterval(updateDevTimer, 1000);
             
             postaviEnterNavigacijuTabela(); postaviEnterNavigacijuKreiranje(); initAutoSave(); inicijalizirajKosaricu(); postaviGlasnuValidaciju(); postaviSubmitZastitu();
-            
-            // Inicijalno namjesti brzinu
             prilagodiBrzinuTickera();
             
-            pozadinskiSkener = setInterval(function() {
-                if (isSubmitting || window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
-
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', window.location.href, true);
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        try {
-                            var parser = new DOMParser();
-                            var newDoc = parser.parseFromString(xhr.responseText, 'text/html');
-                            
-                            var currentMain = document.getElementById('glavni-dinamicni-dio');
-                            var newMain = newDoc.getElementById('glavni-dinamicni-dio');
-                            var currentTicker = document.getElementById('ticker-prikaz');
-                            var newTicker = newDoc.getElementById('ticker-prikaz');
-
-                            if (currentMain && newMain) {
-                                if (typeof morphdom !== 'undefined') {
-                                    morphdom(currentMain, newMain, {
-                                        onBeforeElUpdated: function(fromEl, toEl) {
-                                            if (fromEl.hasAttribute && fromEl.hasAttribute('data-morphdom-ignore')) {
-                                                return false;
-                                            }
-                                            if (fromEl.id === 'cart_table' || fromEl.id === 'cart_body' || fromEl.id === 'kosarica_data') {
-                                                return false; 
-                                            }
-                                            if (fromEl.tagName === 'INPUT' && fromEl.type === 'file') {
-                                                return false;
-                                            }
-                                            if (fromEl.id === 'sliderText' || fromEl.id === 'bulkActionBar') {
-                                                return false;
-                                            }
-                                            if (fromEl.tagName === 'INPUT' && (fromEl.type === 'checkbox' || fromEl.type === 'radio')) {
-                                                toEl.checked = fromEl.checked;
-                                                if (document.activeElement === fromEl) return false;
-                                            }
-                                            else if (fromEl.tagName === 'TEXTAREA') {
-                                                toEl.innerHTML = fromEl.value;
-                                                toEl.value = fromEl.value;
-                                                if (document.activeElement === fromEl) return false;
-                                            } else if (fromEl.tagName === 'INPUT' || fromEl.tagName === 'SELECT') {
-                                                toEl.value = fromEl.value; 
-                                                if (document.activeElement === fromEl) return false; 
-                                            }
-                                            if (fromEl.classList && fromEl.classList.contains('show')) {
-                                                toEl.classList.add('show'); 
-                                            }
-                                            return true;
-                                        }
-                                    });
-                                    
-                                    // NOVI 100% SIGURNI SUSTAV ZA TICKER (Čita čisti tekst i prilagođava brzinu)
-                                    if (currentTicker && newTicker) {
-                                        var stariTekst = (currentTicker.textContent || "").replace(/\s+/g, '');
-                                        var noviTekst = (newTicker.textContent || "").replace(/\s+/g, '');
-                                        if (stariTekst !== noviTekst) {
-                                            currentTicker.innerHTML = newTicker.innerHTML;
-                                            // Tekst se promijenio, preračunaj mu brzinu prema njegovoj novoj duljini!
-                                            setTimeout(prilagodiBrzinuTickera, 50); 
-                                        }
-                                    }
-
-                                    postaviSubmitZastitu();
-                                    if (typeof initAutoSave === 'function') initAutoSave();
-                                    if (typeof postaviEnterNavigacijuTabela === 'function') postaviEnterNavigacijuTabela();
-                                    if (typeof postaviEnterNavigacijuKreiranje === 'function') postaviEnterNavigacijuKreiranje();
-                                    if (typeof postaviGlasnuValidaciju === 'function') postaviGlasnuValidaciju();
-                                }
-                            }
-                        } catch(err) { console.log("Pozadinsko ažuriranje preskočeno."); }
+            var textareas = document.querySelectorAll('textarea.auto-expand');
+            for(var t=0; t<textareas.length; t++) {
+                if (textareas[t].value) autoProsiri(textareas[t]);
+            }
+            
+            pokreniSSE();
+            
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden && !isSubmitting) {
+                    izvrsiPozadinskoOsvjezavanje();
+                }
+            });
+            
+            // Sigurnosno slanje nespremljenih podataka pri zatvaranju taba / navigaciji
+            window.addEventListener('pagehide', function() {
+                var dirtyForms = document.querySelectorAll('.nav-forma');
+                for (var f = 0; f < dirtyForms.length; f++) {
+                    var formData = new FormData(dirtyForms[f]);
+                    if (window.location.pathname.indexOf('/laser') !== -1) formData.append('izvor', 'laser');
+                    else if (window.location.pathname.indexOf('/bravarija') !== -1) formData.append('izvor', 'bravarija');
+                    formData.append('client_id', fclClientId);
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon('/api/autosave_nalog', formData);
                     }
-                };
-                xhr.send();
-            }, 3000);
+                }
+            });
         }
         
-        function autoProsiri(el) { el.style.height = 'inherit'; var computed = el.scrollHeight; var novaVisina = computed + 24; if (novaVisina > 150) novaVisina = 150; el.style.height = novaVisina + 'px'; }
+        function autoProsiri(el) { 
+            el.style.height = 'auto'; 
+            var computed = el.scrollHeight; 
+            var novaVisina = Math.min(computed + 2, 150); 
+            el.style.height = novaVisina + 'px'; 
+        }
 
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Tab') {
                 var activeEl = document.activeElement;
-                if (activeEl && activeEl.tagName === 'INPUT' && activeEl.placeholder === '0' && activeEl.value === '') {
+                if (activeEl && activeEl.tagName === 'INPUT' && (activeEl.placeholder === '0' || activeEl.placeholder === 'h' || activeEl.placeholder === 'm') && activeEl.value === '') {
                     activeEl.value = '0';
-                    if ("createEvent" in document) { var evt = document.createEvent("HTMLEvents"); evt.initEvent("input", false, true); activeEl.dispatchEvent(evt); } 
-                    else { activeEl.fireEvent("oninput"); }
+                    var evt = new Event('input', { bubbles: true });
+                    activeEl.dispatchEvent(evt);
                 }
             }
         });
 
         function initAutoSave() {
-            var inputs = document.querySelectorAll('input[type="text"]:not(#traziArhivu), input[type="number"], textarea');
+            var inputs = document.querySelectorAll('input[type="text"]:not(#traziArhivu):not(#traziAktivne), input[type="number"], textarea');
             for (var i = 0; i < inputs.length; i++) {
                 (function(input) {
                     if (!input.name || input.type === 'file' || input.type === 'hidden') return;
@@ -466,35 +927,23 @@
                     key += input.name;
                     
                     var saved = localStorage.getItem(key);
-                    if (saved !== null) { input.value = saved; if(input.tagName.toLowerCase() === 'textarea') autoProsiri(input); }
+                    if (saved !== null && input.value === '') { 
+                        input.value = saved; 
+                        if(input.tagName.toLowerCase() === 'textarea') autoProsiri(input); 
+                    }
                     
                     if(!input.dataset.autoSaveActivan) {
                         input.dataset.autoSaveActivan = "da";
                         input.addEventListener('input', function() {
+                            input.dataset.dirty = "1";
                             localStorage.setItem(key, input.value);
+                            if (form && form.classList.contains('nav-forma')) {
+                                azurirajZiviZbrojForme(form);
+                                triggerDbAutoSave(form);
+                            }
                         });
                     }
                 })(inputs[i]);
-            }
-
-            var forms = document.querySelectorAll('form:not(#bulkDeleteForm)');
-            for (var j = 0; j < forms.length; j++) {
-                if(!forms[j].dataset.autoSaveBrisanje) {
-                    forms[j].dataset.autoSaveBrisanje = "da";
-                    forms[j].addEventListener('submit', function(e) {
-                        var formInputs = this.querySelectorAll('input, textarea');
-                        for (var k = 0; k < formInputs.length; k++) {
-                            var input = formInputs[k];
-                            if (!input.name) continue;
-                            var nalogIdInput = this.querySelector('input[name="id_naloga"]');
-                            var key = "fcl_" + window.location.pathname + "_";
-                            if (nalogIdInput) key += "nalog_" + nalogIdInput.value + "_";
-                            key += input.name;
-                            localStorage.removeItem(key);
-                        }
-                        localStorage.removeItem('fcl_kosarica'); kosaricaStavke = [];
-                    });
-                }
             }
         }
 
@@ -507,7 +956,19 @@
                         if(!input.dataset.enterNavTbl) {
                             input.dataset.enterNavTbl = "da";
                             input.addEventListener('keydown', function(e) {
-                                if (e.key === 'Enter') { e.preventDefault(); if (index < inputs.length - 1) { inputs[index + 1].focus(); } else { input.blur(); } }
+                                if (e.key === 'Enter') { 
+                                    e.preventDefault(); 
+                                    if (input.value === '' && (input.placeholder === '0' || input.placeholder === 'h' || input.placeholder === 'm')) {
+                                        input.value = '0';
+                                        var evt = new Event('input', { bubbles: true });
+                                        input.dispatchEvent(evt);
+                                    }
+                                    if (index < inputs.length - 1) { 
+                                        inputs[index + 1].focus(); 
+                                    } else { 
+                                        input.blur(); 
+                                    } 
+                                }
                             });
                         }
                     })(inputs[j], j);
@@ -535,19 +996,22 @@
         window.onload = pokreniZiveElemente;
     </script>
 </head>
-<body class="{% if prikazi_klijent_gumbe %}is-client{% else %}is-browser{% endif %} {% if is_mobile %}is-mobile-device{% else %}is-desktop-device{% endif %}">
+<body class="{% if prikazi_klijent_gumbe %}is-client{% else %}is-browser{% endif %}">
     {% if request.path not in ['/prijava_stanice', '/login', '/maintenance'] %}
-    <nav class="navbar {% if is_mobile %}navbar-expand-lg{% else %}navbar-expand{% endif %} navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="/"><img src="/logo.png" alt="FirstCutLaser"></a>
-            {% if is_mobile %}<button class="navbar-toggler border-0 shadow-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#fclNav"><i class="fa-solid fa-bars text-info fs-3"></i></button>{% endif %}
-            <div class="{% if is_mobile %}collapse navbar-collapse{% else %}d-flex flex-grow-1 align-items-center{% endif %}" id="fclNav">
+            <button class="navbar-toggler border-0 shadow-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#fclNav" aria-controls="fclNav" aria-expanded="false" aria-label="Navigacija"><i class="fa-solid fa-bars text-info fs-3"></i></button>
+            <div class="collapse navbar-collapse" id="fclNav">
                 <div class="d-flex gap-3 ms-auto align-items-center nav-mob-col">
                     <a href="/" class="btn btn-nav text-white-50"><i class="fa-solid fa-desktop me-2"></i> Monitor Pogona</a>
                     {% if z_stanica in ['uprava', 'laser1', 'laser2'] %}<a href="/laser" class="btn btn-nav text-danger"><i class="fa-solid fa-fire me-2"></i> Rezanje</a>{% endif %}
                     {% if z_stanica in ['uprava', 'bravarija'] %}<a href="/bravarija" class="btn btn-nav text-warning"><i class="fa-solid fa-hammer me-2"></i> Bravarija</a>{% endif %}
                     {% if z_stanica == 'uprava' %}<a href="/sefo_panel" class="btn btn-nav text-info border border-info border-opacity-25"><i class="fa-solid fa-user-gear me-2"></i> Upravljačka Ploča</a>{% endif %}
-                    <div class="clock-box" id="mreza-sat">00:00:00</div>
+                    <div class="clock-box" id="mreza-sat-box">
+                        <span id="sync-status-dot" class="sync-dot sync-live" title="Veza u stvarnom vremenu aktivna"></span>
+                        <span id="mreza-sat">00:00:00</span>
+                    </div>
                     {% if pogon_role in ['Admin', 'Developer'] and request.path in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
                         <a href="/arhiva" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Arhiva Naloga"><i class="fa-solid fa-box-archive me-1"></i> Arhiva</a>
                     {% endif %}
@@ -608,6 +1072,23 @@
       </div>
     </div>
     
+    <!-- POSITION DELETE MODAL -->
+    <div class="modal fade" id="obrisiPozicijuModal" data-morphdom-ignore="true" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #151822; border: 1px solid rgba(220, 53, 69, 0.4); border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+          <div class="modal-body text-center p-4">
+            <div class="mb-3"><div style="width: 65px; height: 65px; border-radius: 50%; background: rgba(220,53,69,0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto;"><i class="fa-solid fa-trash-can text-danger fs-2"></i></div></div>
+            <h5 class="text-white fw-bold mb-2">Brisanje pozicije</h5>
+            <p class="text-muted mb-4" style="font-size: 0.95rem;">Želite li ukloniti poziciju <b class="text-white" id="modalPozicijaNaziv">-</b> iz ovog naloga?</p>
+            <div class="d-flex justify-content-center gap-3">
+                <button type="button" class="btn btn-outline-secondary fw-bold px-3 py-2" data-bs-dismiss="modal" style="border-radius: 8px;">Odustani</button>
+                <a id="confirmDeletePozicijaBtn" href="#" class="btn btn-danger fw-bold px-3 py-2 shadow" style="border-radius: 8px;">Obriši Poziciju</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- BULK DELETE MODAL -->
     <div class="modal fade" id="masovnoDeleteModal" data-morphdom-ignore="true" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -635,15 +1116,36 @@
     </div>
     
     <script>
-        function potvrdiBrisanje(url) { document.getElementById('confirmDeleteBtn').href = url; new bootstrap.Modal(document.getElementById('premiumDeleteModal')).show(); }
-        function potvrdiMasovnoBrisanje() { document.getElementById('modalBulkCount').innerText = document.getElementById('bulkCount').innerText; new bootstrap.Modal(document.getElementById('masovnoDeleteModal')).show(); }
+        function potvrdiBrisanje(url) { 
+            document.getElementById('confirmDeleteBtn').href = url; 
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('premiumDeleteModal')).show(); 
+        }
+        function potvrdiBrisanjePozicije(url, naziv, formToFlush) {
+            document.getElementById('modalPozicijaNaziv').innerText = naziv || 'odabranu stavku';
+            var btn = document.getElementById('confirmDeletePozicijaBtn');
+            btn.onclick = function(e) {
+                e.preventDefault();
+                if (formToFlush) {
+                    flushDbAutoSaveNow(formToFlush).then(function() {
+                        window.location.href = url;
+                    });
+                } else {
+                    window.location.href = url;
+                }
+            };
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('obrisiPozicijuModal')).show();
+        }
+        function potvrdiMasovnoBrisanje() { 
+            document.getElementById('modalBulkCount').innerText = document.getElementById('bulkCount').innerText; 
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('masovnoDeleteModal')).show(); 
+        }
         function izvrsiMasovnoBrisanje() { document.getElementById('bulkDeleteForm').submit(); }
         
         function openPremiumFilesModal(nalogId) {
-            var template = document.getElementById('files-data-' + nalogId);
-            if (!template) return;
-            document.getElementById('premiumFilesContentTarget').innerHTML = template.innerHTML;
-            new bootstrap.Modal(document.getElementById('premiumFilesModal')).show();
+            var container = document.getElementById('files-data-' + nalogId);
+            if (!container) return;
+            document.getElementById('premiumFilesContentTarget').innerHTML = container.innerHTML;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('premiumFilesModal')).show();
         }
     </script>
     {% else %}
