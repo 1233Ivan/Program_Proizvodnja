@@ -1231,10 +1231,14 @@
         function azurirajZiviZbrojForme(form) {
             if (!form || !form.classList.contains('nav-forma')) return;
             var pids = form.querySelectorAll('input[name="pozicija_id"]');
-            var ukKom = 0, ukSkart = 0, ukPripMin = 0, ukObradaMin = 0;
+            var ukCilj = 0, ukKom = 0, ukSkart = 0, ukPripMin = 0, ukObradaMin = 0;
             var isLaser = (window.location.pathname.indexOf('/laser') !== -1) || (form.querySelector('input[name="izvor"]') && form.querySelector('input[name="izvor"]').value === 'laser');
             for (var i = 0; i < pids.length; i++) {
                 var pid = pids[i].value;
+                var rowEl = pids[i].closest('tr.pozicija-red');
+                if (rowEl && rowEl.dataset.cilj) {
+                    ukCilj += parseInt(rowEl.dataset.cilj) || 0;
+                }
                 var komEl = form.querySelector('input[name="komada_' + pid + '"]');
                 var skartEl = form.querySelector('input[name="skart_' + pid + '"]');
                 var psEl = form.querySelector('input[name="priprema_sati_' + pid + '"]');
@@ -1247,11 +1251,18 @@
                 ukObradaMin += ((parseInt(rsEl ? rsEl.value : 0) || 0) * 60) + (parseInt(rmEl ? rmEl.value : 0) || 0);
             }
             var ukMin = ukPripMin + ukObradaMin;
+            var summaryBar = form.querySelector('.poz-summary-bar');
+            if (summaryBar) {
+                if (pids.length > 0) summaryBar.classList.remove('d-none');
+                else summaryBar.classList.add('d-none');
+            }
+            var ciljBadge = form.querySelector('.zivi-cilj');
             var komBadge = form.querySelector('.zivi-komada');
             var skartBadge = form.querySelector('.zivi-skart');
             var pripBadge = form.querySelector('.zivi-priprema');
             var obradaBadge = form.querySelector('.zivi-obrada');
             var vrijBadge = form.querySelector('.zivi-vrijeme');
+            if (ciljBadge) ciljBadge.innerText = 'Cilj: ' + ukCilj + ' kom';
             if (komBadge) komBadge.innerText = 'Odrađeno: ' + ukKom + ' kom';
             if (skartBadge) skartBadge.innerText = 'Škart: ' + ukSkart;
             if (pripBadge) pripBadge.innerText = Math.floor(ukPripMin / 60) + 'h ' + (ukPripMin % 60) + 'm';
@@ -1270,7 +1281,7 @@
                 ? '<button type="button" class="poz-cilj-badge" onclick="kopirajCiljUOdredeno(this, ' + cilj + ')" title="Kliknite za prijenos u Odrađeno">' + cilj + ' kom <i class="fa-solid fa-check ms-1 opacity-75"></i></button>'
                 : '<span class="poz-cilj-empty" title="Pozicija dodana u pogonu / po nacrtu">Po nacrtu</span>';
 
-            return '<tr class="pozicija-red" data-poz-id="' + p.id + '">' +
+            return '<tr class="pozicija-red" data-poz-id="' + p.id + '" data-cilj="' + cilj + '">' +
                 '<td data-label="Pozicija">' +
                     '<input type="hidden" name="pozicija_id" value="' + p.id + '">' +
                     '<div class="poz-naziv-wrap">' +
@@ -1391,6 +1402,16 @@
                     var dirties = form.querySelectorAll('[data-dirty="1"]');
                     for (var d = 0; d < dirties.length; d++) {
                         delete dirties[d].dataset.dirty;
+                    }
+                    // Ukloni privremeni localStorage zapis za čipove jer je baza sada sinkronizirana
+                    var nalogIdInput = form.querySelector('input[name="id_naloga"]');
+                    var chipHiddens = form.querySelectorAll('.smart-chip-hidden');
+                    for (var ch = 0; ch < chipHiddens.length; ch++) {
+                        if (!chipHiddens[ch].name) continue;
+                        var chipKey = "fcl_" + window.location.pathname + "_";
+                        if (nalogIdInput) chipKey += "nalog_" + nalogIdInput.value + "_";
+                        chipKey += chipHiddens[ch].name;
+                        localStorage.removeItem(chipKey);
                     }
                 } else {
                     postaviAutoSaveStatus(form, 'error');
@@ -1586,17 +1607,96 @@
 
                     var items = [];
 
+                    var MATERIJAL_MAPA = {
+                        'celik': 'Čelik',
+                        'čelik': 'Čelik',
+                        'celici': 'Čelici',
+                        'čelici': 'Čelici',
+                        'crno': 'Crno',
+                        'crni': 'Crni',
+                        'inox': 'INOX',
+                        'prokrom': 'Prokrom',
+                        'prohrom': 'Prohrom',
+                        'hardox': 'Hardox',
+                        'strenx': 'Strenx',
+                        'domex': 'Domex',
+                        'weldox': 'Weldox',
+                        'aluminij': 'Aluminij',
+                        'alu': 'Alu',
+                        'pocincano': 'Pocinčano',
+                        'pocinčano': 'Pocinčano',
+                        'pocincani': 'Pocinčani',
+                        'pocinčani': 'Pocinčani',
+                        'bakar': 'Bakar',
+                        'mesing': 'Mesing',
+                        'bronca': 'Bronca',
+                        'corten': 'Corten',
+                        'kortan': 'Corten',
+                        'titan': 'Titan',
+                        'plastika': 'Plastika',
+                        'guma': 'Guma'
+                    };
+
+                    function formatirajStavkuChip(stavka, jeMat) {
+                        if (!stavka) return '';
+                        var s = String(stavka).trim();
+                        if (!s) return '';
+                        var dijeloviKosa = s.split('/');
+                        var obradeniKosa = [];
+                        for (var k = 0; k < dijeloviKosa.length; k++) {
+                            var dio = dijeloviKosa[k].trim();
+                            // Razdvoji ako je materijal zalijepljen uz dimenziju (npr. '3000x1500x5hardox' -> '3000x1500x5 hardox')
+                            dio = dio.replace(/(\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)*(?:mm|cm|m)?)([a-zčćžšđ]{3,})\b/gi, '$1 $2');
+                            var rijeci = dio.split(/\s+/);
+                            var noveRijeci = [];
+                            for (var rIdx = 0; rIdx < rijeci.length; rIdx++) {
+                                var rClean = rijeci[rIdx].trim();
+                                if (!rClean) continue;
+                                var rLow = rClean.toLowerCase();
+                                if (MATERIJAL_MAPA.hasOwnProperty(rLow)) {
+                                    noveRijeci.push(MATERIJAL_MAPA[rLow]);
+                                    continue;
+                                }
+                                var mSpojeno = rLow.match(/^([a-zčćžšđ]+)(\d+.*)$/);
+                                if (mSpojeno && MATERIJAL_MAPA.hasOwnProperty(mSpojeno[1])) {
+                                    noveRijeci.push(MATERIJAL_MAPA[mSpojeno[1]] + mSpojeno[2].toUpperCase());
+                                    continue;
+                                }
+                                if (/^(s\d{3}[a-z0-9]*|a\d{3}[a-z0-9]*|dd11|dc01|dc04)$/i.test(rLow)) {
+                                    noveRijeci.push(rClean.toUpperCase());
+                                    continue;
+                                }
+                                if (/^\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)+(?:mm|cm|m)?$/i.test(rLow) || /^\d+(?:[.,]\d+)?(?:mm|cm|m|kom)$/i.test(rLow)) {
+                                    noveRijeci.push(rClean.replace(/[X*]/g, 'x').replace(/MM/g, 'mm'));
+                                    continue;
+                                }
+                                var imaBroj = /\d/.test(rClean);
+                                if (jeMat || rIdx > 0 || !imaBroj) {
+                                    if (['mm', 'cm', 'm', 'kom', 'x', 'i', 'ili', 'za', 'na', 'po', 'od', 'do', 'u', 's', 'sa'].indexOf(rLow) === -1) {
+                                        noveRijeci.push(rClean.charAt(0).toUpperCase() + rClean.slice(1));
+                                    } else {
+                                        noveRijeci.push(rLow);
+                                    }
+                                } else {
+                                    noveRijeci.push(rClean);
+                                }
+                            }
+                            obradeniKosa.push(noveRijeci.join(' '));
+                        }
+                        return obradeniKosa.join(' / ');
+                    }
+
                     function ucitajPocetneStavke() {
                         var raw = '';
+                        var storageKey = null;
                         if (hiddenInput && form) {
                             var nalogIdInput = form.querySelector('input[name="id_naloga"]');
-                            var storageKey = "fcl_" + window.location.pathname + "_";
+                            storageKey = "fcl_" + window.location.pathname + "_";
                             if (nalogIdInput) storageKey += "nalog_" + nalogIdInput.value + "_";
                             storageKey += hiddenInput.name;
                             var izMemorije = localStorage.getItem(storageKey);
-                            if (izMemorije !== null && izMemorije !== undefined && izMemorije.trim() !== '') {
+                            if (izMemorije !== null && izMemorije !== undefined) {
                                 raw = izMemorije;
-                                hiddenInput.value = izMemorije;
                             } else {
                                 raw = hiddenInput.value || '';
                             }
@@ -1606,8 +1706,20 @@
                         items = [];
                         var dijelovi = raw.split(',');
                         for (var i = 0; i < dijelovi.length; i++) {
-                            var s = dijelovi[i].trim();
+                            var s = formatirajStavkuChip(dijelovi[i], isMaterijal);
                             if (s) items.push(s);
+                        }
+                        var normaliziraniString = items.join(', ');
+                        if (hiddenInput) {
+                            var dbValNorm = (hiddenInput.value || '').split(',').map(function(x) { return formatirajStavkuChip(x, isMaterijal); }).filter(Boolean).join(', ');
+                            hiddenInput.value = normaliziraniString;
+                            if (storageKey && localStorage.getItem(storageKey) !== null) {
+                                if (normaliziraniString === dbValNorm) {
+                                    localStorage.removeItem(storageKey);
+                                } else {
+                                    localStorage.setItem(storageKey, normaliziraniString);
+                                }
+                            }
                         }
                     }
 
@@ -1670,10 +1782,6 @@
                                 idxBadge.className = 'chip-idx ploca-chip-num';
                                 idxBadge.textContent = (idx + 1) + '.';
 
-                                var iconEl = document.createElement('i');
-                                iconEl.className = 'fa-solid ' + chipIcon + ' text-info opacity-75';
-                                iconEl.style.fontSize = '0.75rem';
-
                                 var textSpan = document.createElement('span');
                                 textSpan.className = 'smart-chip-text ploca-chip-text';
                                 textSpan.textContent = items[idx];
@@ -1701,7 +1809,6 @@
                                 };
 
                                 chip.appendChild(idxBadge);
-                                chip.appendChild(iconEl);
                                 chip.appendChild(textSpan);
                                 chip.appendChild(removeBtn);
                                 listEl.appendChild(chip);
@@ -1715,7 +1822,7 @@
                         var dijelovi = rawVal.split(',');
                         var dodano = false;
                         for (var i = 0; i < dijelovi.length; i++) {
-                            var cisto = dijelovi[i].trim();
+                            var cisto = formatirajStavkuChip(dijelovi[i], isMaterijal);
                             // Ignoriraj nepotpune dimenzije koje završavaju na 'x' ili '×' bez upisane debljine
                             if (cisto && cisto.slice(-1) !== 'x' && cisto.slice(-1) !== '×') {
                                 items.push(cisto);

@@ -157,7 +157,7 @@
                     <tbody>
                         {% for p in n.pozicije %}
                         {% set is_done = (p.bravarija_komada and p.bravarija_komada > 0) or (p.bravarija_priprema_sati and p.bravarija_priprema_sati > 0) or (p.bravarija_priprema_minute and p.bravarija_priprema_minute > 0) or (p.bravarija_piganje_sati and p.bravarija_piganje_sati > 0) or (p.bravarija_piganje_minute and p.bravarija_piganje_minute > 0) %}
-                        <tr class="pozicija-red {% if is_done %}poz-row-done{% endif %}" data-poz-id="{{ p.id }}">
+                        <tr class="pozicija-red {% if is_done %}poz-row-done{% endif %}" data-poz-id="{{ p.id }}" data-cilj="{{ p.ciljana_kolicina or 0 }}">
                             <td data-label="Pozicija">
                                 <input type="hidden" name="pozicija_id" value="{{ p.id }}">
                                 <div class="poz-naziv-wrap">
@@ -204,12 +204,11 @@
             </div>
         </div>
         
-        {% if n.pozicije %}
-        <div class="p-3 mb-3 rounded-3" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);">
+        <div class="p-3 mb-3 rounded-3 poz-summary-bar {% if not n.pozicije %}d-none{% endif %}" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div>
                     <span class="text-muted small text-uppercase fw-bold me-2"><i class="fa-solid fa-calculator text-warning me-1"></i> Ukupno Bravarija:</span>
-                    <span class="badge bg-info text-white fw-bold me-1">Cilj: {{ n.ukupno.cilj_ukupno }} kom</span>
+                    <span class="badge bg-info text-white fw-bold me-1 zivi-cilj">Cilj: {{ n.ukupno.cilj_ukupno }} kom</span>
                     <span class="badge bg-success text-white fw-bold me-1 zivi-komada">Odrađeno: {{ n.ukupno.bravarija_komada_ukupno }} kom</span>
                     <span class="badge bg-danger text-white fw-bold zivi-skart">Škart: {{ n.ukupno.bravarija_skart_ukupno }}</span>
                 </div>
@@ -220,7 +219,6 @@
                 </div>
             </div>
         </div>
-        {% endif %}
 
         <div class="row align-items-start g-2 mt-4 pt-3 border-top border-secondary border-opacity-25">
             <div class="col-md-5">

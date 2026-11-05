@@ -10,6 +10,7 @@ import hashlib
 import json
 import html
 import time
+import re
 import atexit
 import collections
 from datetime import datetime, timedelta
@@ -279,6 +280,91 @@ def izracunaj_ukupno_za_nalog(pozicije):
         'sveukupno_vrijeme_tekst': f"{sveuk_min // 60}h {sveuk_min % 60}m"
     }
 
+_MATERIJAL_MAPA = {
+    'celik': 'Čelik',
+    'čelik': 'Čelik',
+    'celici': 'Čelici',
+    'čelici': 'Čelici',
+    'crno': 'Crno',
+    'crni': 'Crni',
+    'inox': 'INOX',
+    'prokrom': 'Prokrom',
+    'prohrom': 'Prohrom',
+    'hardox': 'Hardox',
+    'strenx': 'Strenx',
+    'domex': 'Domex',
+    'weldox': 'Weldox',
+    'aluminij': 'Aluminij',
+    'alu': 'Alu',
+    'pocincano': 'Pocinčano',
+    'pocinčano': 'Pocinčano',
+    'pocincani': 'Pocinčani',
+    'pocinčani': 'Pocinčani',
+    'bakar': 'Bakar',
+    'mesing': 'Mesing',
+    'bronca': 'Bronca',
+    'corten': 'Corten',
+    'kortan': 'Corten',
+    'titan': 'Titan',
+    'plastika': 'Plastika',
+    'guma': 'Guma',
+}
+
+def normaliziraj_pojedinu_stavku_ploce_ili_materijala(stavka, je_materijal=False):
+    """Pretvara nazive materijala (npr. 'celik' -> 'Čelik', 'hardox' -> 'Hardox', 'inox' -> 'INOX') u uredan zapis."""
+    if not stavka:
+        return ''
+    s = str(stavka).strip()
+    if not s:
+        return ''
+    
+    dijelovi_kosa = [d.strip() for d in s.split('/')]
+    obradeni_dijelovi_kosa = []
+    for dio in dijelovi_kosa:
+        # Razdvoji ako je materijal zalijepljen direktno uz dimenziju (npr. '3000x1500x5hardox' -> '3000x1500x5 hardox')
+        dio_razdvojen = re.sub(r'(\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)*(?:mm|cm|m)?)([a-zčćžšđ]{3,})\b', r'\1 \2', dio, flags=re.IGNORECASE)
+        rijeci = dio_razdvojen.split()
+        nove_rijeci = []
+        for idx, r in enumerate(rijeci):
+            r_clean = r.strip()
+            r_low = r_clean.lower()
+            
+            if r_low in _MATERIJAL_MAPA:
+                nove_rijeci.append(_MATERIJAL_MAPA[r_low])
+                continue
+            
+            m_spojeno = re.match(r'^([a-zčćžšđ]+)(\d+.*)$', r_low)
+            if m_spojeno and m_spojeno.group(1) in _MATERIJAL_MAPA:
+                pref = _MATERIJAL_MAPA[m_spojeno.group(1)]
+                suf = m_spojeno.group(2).upper() if m_spojeno.group(2).isalnum() else m_spojeno.group(2)
+                nove_rijeci.append(f"{pref}{suf}")
+                continue
+            
+            if re.match(r'^(s\d{3}[a-z0-9]*|a\d{3}[a-z0-9]*|dd11|dc01|dc04)$', r_low):
+                nove_rijeci.append(r_clean.upper())
+                continue
+            
+            if re.match(r'^\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)+(?:mm|cm|m)?$', r_low) or re.match(r'^\d+(?:[.,]\d+)?(?:mm|cm|m|kom)$', r_low):
+                nove_rijeci.append(re.sub(r'[X*]', 'x', r_clean).replace('MM', 'mm'))
+                continue
+            
+            if je_materijal or idx > 0 or not any(ch.isdigit() for ch in r_clean):
+                if r_low not in ('mm', 'cm', 'm', 'kom', 'x', 'i', 'ili', 'za', 'na', 'po', 'od', 'do', 'u', 's', 'sa'):
+                    nove_rijeci.append(r_clean[0].upper() + r_clean[1:])
+                else:
+                    nove_rijeci.append(r_low)
+            else:
+                nove_rijeci.append(r_clean)
+        obradeni_dijelovi_kosa.append(' '.join(nove_rijeci))
+    return ' / '.join(obradeni_dijelovi_kosa)
+
+def normaliziraj_popis_ploca_ili_materijala(tekst, je_materijal=False):
+    if tekst is None:
+        return None
+    stavke = [normaliziraj_pojedinu_stavku_ploce_ili_materijala(x, je_materijal) for x in str(tekst).split(',')]
+    stavke = [x for x in stavke if x]
+    return ', '.join(stavke)
+
 def init_db():
     if os.path.exists(DB_FILE) and os.path.getsize(DB_FILE) > 0:
         napravi_sigurnosnu_kopiju_baze("startup")
@@ -349,6 +435,21 @@ def init_db():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_pozicije_nalog_id ON nalog_pozicije(nalog_id)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_obavijesti_vrijedi_do ON obavijesti(vrijedi_do)")
     except: pass
+
+    # Automatska normalizacija postojećih naziva ploča i materijala u bazi (npr. 'celik' -> 'Čelik', 'hardox' -> 'Hardox')
+    try:
+        rows_norm = conn.execute("SELECT id, debljina_ploce, dimenzije_ploce_laser, materijal_ploce_laser FROM radni_nalozi").fetchall()
+        for rn in rows_norm:
+            stari_deb = rn['debljina_ploce'] or ''
+            stari_dim = rn['dimenzije_ploce_laser'] or ''
+            stari_mat = rn['materijal_ploce_laser'] or ''
+            novi_deb = normaliziraj_popis_ploca_ili_materijala(stari_deb, False) if stari_deb else ''
+            novi_dim = normaliziraj_popis_ploca_ili_materijala(stari_dim, False) if stari_dim else ''
+            novi_mat = normaliziraj_popis_ploca_ili_materijala(stari_mat, True) if stari_mat else ''
+            if novi_deb != stari_deb or novi_dim != stari_dim or novi_mat != stari_mat:
+                conn.execute("UPDATE radni_nalozi SET debljina_ploce=?, dimenzije_ploce_laser=?, materijal_ploce_laser=? WHERE id=?", (novi_deb, novi_dim, novi_mat, rn['id']))
+    except Exception:
+        pass
     
     conn.commit()
     conn.close()
@@ -688,7 +789,7 @@ def index_master():
         naziv = request.form['naziv_naloga']
         projekt = request.form.get('naziv_projekta', '')
         kreirao = request.form.get('kreirao', '')
-        debljina_ploce = request.form.get('debljina_ploce', '')
+        debljina_ploce = normaliziraj_popis_ploca_ili_materijala(request.form.get('debljina_ploce', ''), False)
         opis = request.form.get('opis', '')
         rutiranje = request.form.get('rutiranje', 'Pogon')
         
@@ -771,7 +872,7 @@ def uredi_nalog(id):
         
     naziv = request.form.get('naziv_naloga', '').strip() or nalog['naziv_naloga']
     projekt = request.form.get('naziv_projekta', '').strip()
-    debljina_ploce = request.form.get('debljina_ploce', '').strip()
+    debljina_ploce = normaliziraj_popis_ploca_ili_materijala(request.form.get('debljina_ploce', '').strip(), False)
     rutiranje = request.form.get('rutiranje', nalog['rutiranje'])
     opis = request.form.get('opis', '').strip()
     
@@ -864,8 +965,12 @@ def api_autosave_nalog():
     izvor = request.form.get('izvor', '')
     sender_id = request.headers.get('X-Client-ID') or request.form.get('client_id')
     
-    dim_p = request.form.get('dimenzije_ploce') or request.form.get('dimenzije_ploce_laser')
-    mat_p = request.form.get('materijal_ploce') or request.form.get('materijal_ploce_laser')
+    dim_p = request.form.get('dimenzije_ploce') if 'dimenzije_ploce' in request.form else request.form.get('dimenzije_ploce_laser')
+    mat_p = request.form.get('materijal_ploce') if 'materijal_ploce' in request.form else request.form.get('materijal_ploce_laser')
+    if dim_p is not None:
+        dim_p = normaliziraj_popis_ploca_ili_materijala(dim_p, False)
+    if mat_p is not None:
+        mat_p = normaliziraj_popis_ploca_ili_materijala(mat_p, True)
     
     is_laser = (izvor == 'laser') or (dim_p is not None) or (mat_p is not None)
     
@@ -898,8 +1003,8 @@ def generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False):
     uk = izracunaj_ukupno_za_nalog(pozicije)
 
     logo_base64, logo_ext = get_cached_logo()
-    dim_lista = [x.strip() for x in (n.get('dimenzije_ploce_laser') or '').split(',') if x.strip()]
-    mat_lista = [x.strip() for x in (n.get('materijal_ploce_laser') or '').split(',') if x.strip()]
+    dim_lista = [normaliziraj_pojedinu_stavku_ploce_ili_materijala(x, False) for x in (n.get('dimenzije_ploce_laser') or '').split(',') if x.strip()]
+    mat_lista = [normaliziraj_pojedinu_stavku_ploce_ili_materijala(x, True) for x in (n.get('materijal_ploce_laser') or '').split(',') if x.strip()]
 
     glavni_laser_radnik = n.get('laser_radnik') or next((p.get('laser_radnik') for p in pozicije if p.get('laser_radnik')), None) or '-'
     glavni_bravarija_radnik = n.get('bravarija_radnik') or next((p.get('bravarija_radnik') for p in pozicije if p.get('bravarija_radnik')), None) or '-'
@@ -1161,8 +1266,8 @@ def sekcija_laser():
         id_naloga = request.form['id_naloga']
         radnik = request.form.get('radnik', '')
         radnik_napomena = request.form.get('radnik_napomena', '')
-        dimenzije_ploce = request.form.get('dimenzije_ploce', '')
-        materijal_ploce = request.form.get('materijal_ploce', '')
+        dimenzije_ploce = normaliziraj_popis_ploca_ili_materijala(request.form.get('dimenzije_ploce', ''), False)
+        materijal_ploce = normaliziraj_popis_ploca_ili_materijala(request.form.get('materijal_ploce', ''), True)
         akcija = request.form.get('akcija', 'zavrsi_odmah')
         
         parser_int = to_int if akcija == 'pauziraj' else to_int_or_zero
