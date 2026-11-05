@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proizvodni Izvještaj - Nalog #{{ n.id }} ({{ n.naziv_naloga }})</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-page: #0b0c10;
+            --bg-sheet: #12141c;
+            --bg-card: #171b26;
+            --bg-card-alt: #1a1f2e;
+            --border-color: #262c3d;
+            --text-main: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --accent-red: #ef4444;
+            --accent-cyan: #0dcaf0;
+            --accent-amber: #f59e0b;
+            --accent-emerald: #10b981;
+        }
+
+        /* Svijetla tema za PDF pregled / ispis */
+        body.light-mode {
+            --bg-page: #e2e8f0;
+            --bg-sheet: #ffffff;
+            --bg-card: #f8fafc;
+            --bg-card-alt: #f1f5f9;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-secondary: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px 16px 60px 16px;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.45;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        /* PLUTAJUĆA ALATNA TRAKA (Samo na ekranu) */
+        .report-toolbar {
+            max-width: 1020px;
+            margin: 0 auto 20px auto;
+            background: #171b26;
+            border: 1px solid #2d3446;
+            border-radius: 14px;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        }
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.92rem;
+        }
+        .toolbar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        .t-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 9px;
+            font-family: inherit;
+            font-size: 0.84rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .t-btn-pdf {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+        }
+        .t-btn-pdf:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+        }
+        .t-btn-zip {
+            background: rgba(16, 185, 129, 0.14);
+            border-color: rgba(16, 185, 129, 0.4);
+            color: #34d399;
+        }
+        .t-btn-zip:hover {
+            background: #10b981;
+            color: #0b0c10;
+        }
+        .t-btn-theme {
+            background: rgba(13, 202, 240, 0.12);
+            border-color: rgba(13, 202, 240, 0.35);
+            color: #38bdf8;
+        }
+        .t-btn-theme:hover {
+            background: rgba(13, 202, 240, 0.25);
+            color: #ffffff;
+        }
+
+        /* GLAVNI DOKUMENT (A4 PROPORCIJA) */
+        .report-sheet {
+            max-width: 1020px;
+            margin: 0 auto;
+            background-color: var(--bg-sheet);
+            border: 1px solid var(--border-color);
+            border-top: 5px solid var(--accent-red);
+            border-radius: 16px;
+            padding: 32px 36px;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.35);
+        }
+
+        /* ZAGLAVLJE IZVJEŠTAJA */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 22px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border-color);
+            gap: 20px;
+        }
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .logo-wrap {
+            background: #12141c;
+            border: 1px solid #2d3446;
+            padding: 8px 14px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .logo-img {
+            max-height: 46px;
+            width: auto;
+            display: block;
+        }
+        .brand-titles h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            color: var(--text-main);
+        }
+        .brand-titles p {
+            margin: 3px 0 0 0;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-cyan);
+        }
+        .order-meta-right {
+            text-align: right;
+        }
+        .order-id-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: var(--accent-red);
+            font-size: 1.1rem;
+            font-weight: 800;
+            padding: 5px 14px;
+            border-radius: 9px;
+            margin-bottom: 6px;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.14);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #10b981;
+            font-size: 0.74rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 5px 11px;
+            border-radius: 8px;
+            margin-left: 6px;
+            vertical-align: top;
+        }
+        .timestamps-row {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .timestamps-row b {
+            color: var(--text-secondary);
+        }
+
+        /* KPI SAŽETAK (4 KARTICE) */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-cyan);
+        }
+        .kpi-card.kpi-laser::before { background: var(--accent-red); }
+        .kpi-card.kpi-bravarija::before { background: var(--accent-amber); }
+        .kpi-card.kpi-total::before { background: var(--accent-emerald); }
+        .kpi-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .kpi-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+        .kpi-sub {
+            margin-top: 5px;
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .kpi-sub b {
+            color: var(--text-secondary);
+        }
+
+        /* SPECIFIKACIJA NALOGA I MATERIJALA (META GRID) */
+        .section-heading {
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--accent-cyan);
+            margin: 0 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .meta-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 11px 14px;
+        }
+        .meta-box.span-2 {
+            grid-column: span 2;
+        }
+        .meta-box-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .meta-box-val {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--text-main);
+            word-break: break-word;
+        }
+
+        /* MULTI-CHIP PRIKAZ PLOČA I MATERIJALA */
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 2px;
+        }
+        .report-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(13, 202, 240, 0.1);
+            border: 1px solid rgba(13, 202, 240, 0.35);
+            color: var(--text-main);
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 6px;
+        }
+        .report-chip-num {
+            background: rgba(13, 202, 240, 0.22);
+            color: #0284c7;
+            font-size: 0.68rem;
+            font-weight: 800;
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+        body:not(.light-mode) .report-chip-num {
+            color: #38bdf8;
+        }
+
+        /* UPUTE I NAPOMENE */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+            margin: 18px 0 24px 0;
+        }
+        .note-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-cyan);
+            border-radius: 10px;
+            padding: 12px 15px;
+        }
+        .note-card.note-laser { border-left-color: var(--accent-red); }
+        .note-card.note-bravarija { border-left-color: var(--accent-amber); }
+        .note-title {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .note-body {
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: pre-wrap;
+            margin: 0;
+        }
+
+        /* TABLICA POZICIJA U IZVJEŠTAJU */
+        .spec-table-wrap {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        table.spec-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.84rem;
+        }
+        table.spec-table thead th {
+            background: var(--bg-card-alt);
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 11px 12px;
+            border-bottom: 2px solid var(--border-color);
+            text-align: left;
+        }
+        table.spec-table thead th.col-phase {
+            border-left: 1px solid var(--border-color);
+            text-align: center;
+        }
+        table.spec-table tbody tr {
+            page-break-inside: avoid;
+            border-bottom: 1px solid var(--border-color);
+        }
+        table.spec-table tbody tr:nth-child(even) {
+            background: rgba(148, 163, 184, 0.03);
+        }
+        table.spec-table tbody td {
+            padding: 10px 12px;
+            vertical-align: middle;
+            color: var(--text-secondary);
+        }
+        table.spec-table tbody td.col-phase {
+            border-left: 1px solid var(--border-color);
+        }
+        .row-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: rgba(148, 163, 184, 0.12);
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+        }
+        .pos-name {
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+        .phase-metrics {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .metric-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            align-items: center;
+        }
+        .m-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .m-pill-done {
+            background: rgba(16, 185, 129, 0.14);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: #10b981;
+        }
+        body.light-mode .m-pill-done { color: #047857; background: #dcfce7; border-color: #86efac; }
+        .m-pill-skart {
+            background: rgba(239, 68, 68, 0.14);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #ef4444;
+        }
+        body.light-mode .m-pill-skart { color: #b91c1c; background: #fee2e2; border-color: #fca5a5; }
+        .m-pill-zero {
+            background: rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            color: var(--text-muted);
+        }
+        .phase-time-meta {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            text-align: right;
+            line-height: 1.35;
+        }
+        .phase-time-meta b {
+            color: var(--text-main);
+        }
+        table.spec-table tfoot td {
+            background: var(--bg-card-alt);
+            padding: 12px;
+            font-weight: 800;
+            border-top: 2px solid var(--border-color);
+        }
+
+        /* PRILOŽENE DATOTEKE I POTPIS */
+        .files-strip {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .signature-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            margin-top: 32px;
+            padding-top: 16px;
+            page-break-inside: avoid;
+        }
+        .sig-box {
+            border-top: 1px dashed var(--border-color);
+            padding-top: 8px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .sig-box b {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.82rem;
+            margin-bottom: 2px;
+        }
+        .report-footer {
+            margin-top: 26px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.74rem;
+            color: var(--text-muted);
+        }
+
+        /* PRAVILA ZA A4 PDF ISPIS */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 10mm;
+            }
+            body {
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+                padding: 0 !important;
+                --bg-page: #ffffff;
+                --bg-sheet: #ffffff;
+                --bg-card: #f8fafc;
+                --bg-card-alt: #f1f5f9;
+                --border-color: #cbd5e1;
+                --text-main: #0f172a;
+                --text-secondary: #1e293b;
+                --text-muted: #64748b;
+            }
+            .report-toolbar {
+                display: none !important;
+            }
+            .report-sheet {
+                max-width: 100% !important;
+                border: none !important;
+                border-top: 4px solid #ef4444 !important;
+                border-radius: 0 !important;
+                padding: 10px 0 0 0 !important;
+                box-shadow: none !important;
+            }
+            .m-pill-done { color: #047857 !important; background: #dcfce7 !important; border-color: #86efac !important; }
+            .m-pill-skart { color: #b91c1c !important; background: #fee2e2 !important; border-color: #fca5a5 !important; }
+            .report-chip-num { color: #0284c7 !important; }
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid, .meta-grid, .signature-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .report-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .order-meta-right {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ALATNA TRAKA (Skrivena na PDF ispisu) -->
+    <div class="report-toolbar">
+        <div class="toolbar-left">
+            <i class="fa-solid fa-file-invoice text-info fs-5"></i>
+            <span>Pregled Proizvodnog Izvještaja &bull; Nalog #{{ n.id }}</span>
+        </div>
+        <div class="toolbar-actions">
+            <button type="button" class="t-btn t-btn-theme" onclick="document.body.classList.toggle('light-mode')">
+                <i class="fa-solid fa-circle-half-stroke"></i> Prebaci prikaz (Tamni UI / Svijetli A4)
+            </button>
+            {% if online_pregled %}
+            <a href="/preuzmi_izvjestaj/{{ n.id }}" class="t-btn t-btn-zip">
+                <i class="fa-solid fa-file-zipper"></i> Preuzmi ZIP paket (Nacrti + Izvještaj)
+            </a>
+            {% endif %}
+            <button type="button" class="t-btn t-btn-pdf" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> Ispis / Spremi kao PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- GLAVNI DOKUMENT -->
+    <div class="report-sheet">
+        <!-- ZAGLAVLJE -->
+        <div class="report-header">
+            <div class="brand-box">
+                <div class="logo-wrap">
+                    {% if logo_base64 %}
+                        <img src="data:image/{{ logo_ext }};base64,{{ logo_base64 }}" class="logo-img" alt="FirstCutLaser">
+                    {% else %}
+                        <span style="color:#ef4444; font-weight:800; font-size:1.1rem;">FIRST CUT LASER</span>
+                    {% endif %}
+                </div>
+                <div class="brand-titles">
+                    <h1>PROIZVODNI IZVJEŠTAJ NALOGA</h1>
+                    <p><i class="fa-solid fa-industry me-1"></i> Sustav upravljanja proizvodnim pogonom</p>
+                </div>
+            </div>
+            <div class="order-meta-right">
+                <div>
+                    <span class="order-id-pill"><i class="fa-solid fa-hashtag"></i> NALOG #{{ n.id }}</span>
+                    <span class="status-pill"><i class="fa-solid fa-circle-check"></i> {{ 'ZAVRŠENO / ARHIVIRANO' if n.status == 'Arhivirano' else 'ZAVRŠENO (NA PREGLEDU)' if n.status == 'Na pregledu' else n.status }}</span>
+                </div>
+                <div class="timestamps-row">
+                    Kreirano: <b>{{ kreirano_prikaz }}</b> &nbsp;&bull;&nbsp; Završeno: <b>{{ zavrseno_prikaz }}</b>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI SAŽETAK -->
+        {% set ukupni_skart = (uk.laser_skart_ukupno or 0) + (uk.bravarija_skart_ukupno or 0) %}
+        {% set samo_rezanje = (n.rutiranje in ['Samo Laser', 'Samo Rezanje']) and (uk.bravarija_komada_ukupno == 0) and (uk.bravarija_ukupno_min == 0) %}
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label"><span>Ukupno Pozicija / Komada</span> <i class="fa-solid fa-cubes text-info"></i></div>
+                <div class="kpi-value">{{ uk.laser_komada_ukupno if uk.laser_komada_ukupno > 0 else uk.bravarija_komada_ukupno }} kom</div>
+                <div class="kpi-sub">
+                    Broj pozicija: <b>{{ pozicije|length }}</b> &bull;
+                    Cilj: <b>{{ (uk.cilj_ukupno ~ ' kom') if uk.cilj_ukupno > 0 else 'Po nacrtu' }}</b>
+                </div>
+            </div>
+            <div class="kpi-card kpi-laser">
+                <div class="kpi-label"><span>Faza 1: Rezanje (Laser)</span> <i class="fa-solid fa-fire text-danger"></i></div>
+                <div class="kpi-value">{{ uk.laser_ukupno_tekst }}</div>
+                <div class="kpi-sub">
+                    Operater: <b>{{ glavni_laser_radnik }}</b>
+                    {% if n.odabrani_laser %} &bull; <b>{{ n.odabrani_laser }}</b>{% endif %}
+                </div>
+            </div>
+            <div class="kpi-card kpi-bravarija">
+                <div class="kpi-label"><span>Faza 2: Bravarija</span> <i class="fa-solid fa-hammer text-warning"></i></div>
+                <div class="kpi-value">{{ 'Nije u ruti' if samo_rezanje else uk.bravarija_ukupno_tekst }}</div>
+                <div class="kpi-sub">
+                    {% if samo_rezanje %}
+                        Ruta: <b>Samo Rezanje</b>
+                    {% else %}
+                        Operater: <b>{{ glavni_bravarija_radnik }}</b> &bull; Odrađeno: <b>{{ uk.bravarija_komada_ukupno }} kom</b>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="kpi-card kpi-total">
+                <div class="kpi-label"><span>Sveukupno Vrijeme</span> <i class="fa-solid fa-stopwatch text-success"></i></div>
+                <div class="kpi-value" style="color: #10b981;">{{ uk.sveukupno_vrijeme_tekst }}</div>
+                <div class="kpi-sub">
+                    Ukupni škart: <b style="color: {{ '#ef4444' if ukupni_skart > 0 else 'inherit' }};">{{ ukupni_skart }} kom</b>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEHNIČKI PODACI NALOGA -->
+        <h3 class="section-heading"><i class="fa-solid fa-sliders"></i> Opći i Tehnički Podaci Naloga</h3>
+        <div class="meta-grid">
+            <div class="meta-box">
+                <div class="meta-box-label">Kupac / Partner</div>
+                <div class="meta-box-val">{{ n.naziv_naloga or '-' }}</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-box-label">Naziv Projekta</div>
+                <div class="meta-box-val">{{ n.naziv_projekta or '-' }}</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-box-label">Proizvodna Ruta</div>
+                <div class="meta-box-val">{{ n.rutiranje or '-' }}</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-box-label">Debljina Materijala (Zadano)</div>
+                <div class="meta-box-val">{{ n.debljina_ploce or '-' }}</div>
+            </div>
+            <div class="meta-box span-2">
+                <div class="meta-box-label"><i class="fa-solid fa-ruler-combined me-1"></i> Dimenzije Uloženih Ploča ({{ dim_lista|length }})</div>
+                <div class="meta-box-val">
+                    {% if dim_lista %}
+                    <div class="chip-container">
+                        {% for d in dim_lista %}
+                        <span class="report-chip"><span class="report-chip-num">{{ loop.index }}.</span> {{ d }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}-{% endif %}
+                </div>
+            </div>
+            <div class="meta-box span-2">
+                <div class="meta-box-label"><i class="fa-solid fa-layer-group me-1"></i> Materijal Ploča ({{ mat_lista|length }})</div>
+                <div class="meta-box-val">
+                    {% if mat_lista %}
+                    <div class="chip-container">
+                        {% for m in mat_lista %}
+                        <span class="report-chip"><span class="report-chip-num">{{ loop.index }}.</span> {{ m }}</span>
+                        {% endfor %}
+                    </div>
+                    {% else %}-{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- UPUTE I NAPOMENE (Ako postoje) -->
+        {% if n.opis or n.laser_napomena or n.bravarija_napomena %}
+        <div class="notes-grid">
+            {% if n.opis %}
+            <div class="note-card">
+                <div class="note-title"><i class="fa-solid fa-user-tie text-info"></i> Upute Poslovođe ({{ n.kreirao or 'Uprava' }})</div>
+                <p class="note-body">{{ n.opis }}</p>
+            </div>
+            {% endif %}
+            {% if n.laser_napomena %}
+            <div class="note-card note-laser">
+                <div class="note-title"><i class="fa-solid fa-fire text-danger"></i> Napomena s Lasera ({{ glavni_laser_radnik }})</div>
+                <p class="note-body">{{ n.laser_napomena }}</p>
+            </div>
+            {% endif %}
+            {% if n.bravarija_napomena %}
+            <div class="note-card note-bravarija">
+                <div class="note-title"><i class="fa-solid fa-hammer text-warning"></i> Napomena iz Bravarije ({{ glavni_bravarija_radnik }})</div>
+                <p class="note-body">{{ n.bravarija_napomena }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- TABLICA IZVRŠENIH POZICIJA -->
+        <h3 class="section-heading" style="margin-top: 22px;"><i class="fa-solid fa-table-list"></i> Specifikacija Izvršenih Pozicija ({{ pozicije|length }})</h3>
+        <div class="spec-table-wrap">
+            <table class="spec-table">
+                <thead>
+                    <tr>
+                        <th style="width: 42px;">#</th>
+                        <th>Naziv Pozicije s Nacrta</th>
+                        <th style="width: 110px;">Potrebno</th>
+                        <th class="col-phase" style="width: 34%;"><i class="fa-solid fa-fire text-danger me-1"></i> Faza 1: Rezanje (Laser)</th>
+                        {% if not samo_rezanje %}
+                        <th class="col-phase" style="width: 34%;"><i class="fa-solid fa-hammer text-warning me-1"></i> Faza 2: Bravarska Obrada</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if not pozicije %}
+                    <tr>
+                        <td colspan="{{ 4 if samo_rezanje else 5 }}" style="text-align: center; padding: 20px;">Nema evidentiranih pojedinačnih pozicija na ovom nalogu.</td>
+                    </tr>
+                    {% endif %}
+                    {% for p in pozicije %}
+                    {% set p_cilj = p.ciljana_kolicina or 0 %}
+                    {% set l_kom = p.laser_komada or 0 %}
+                    {% set l_skart = p.laser_skart or 0 %}
+                    {% set l_ps = p.laser_priprema_sati or 0 %}
+                    {% set l_pm = p.laser_priprema_minute or 0 %}
+                    {% set l_rs = p.laser_rezanje_sati or 0 %}
+                    {% set l_rm = p.laser_rezanje_minute or 0 %}
+                    {% set b_kom = p.bravarija_komada or 0 %}
+                    {% set b_skart = p.bravarija_skart or 0 %}
+                    {% set b_ps = p.bravarija_priprema_sati or 0 %}
+                    {% set b_pm = p.bravarija_priprema_minute or 0 %}
+                    {% set b_rs = p.bravarija_piganje_sati or 0 %}
+                    {% set b_rm = p.bravarija_piganje_minute or 0 %}
+                    <tr>
+                        <td><span class="row-num">{{ loop.index }}</span></td>
+                        <td><span class="pos-name">{{ p.naziv_pozicije }}</span></td>
+                        <td>
+                            {% if p_cilj > 0 %}
+                                <span class="m-pill m-pill-zero" style="font-weight:800;">{{ p_cilj }} kom</span>
+                            {% else %}
+                                <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600;">Po nacrtu</span>
+                            {% endif %}
+                        </td>
+                        <td class="col-phase">
+                            <div class="phase-metrics">
+                                <div class="metric-badges">
+                                    <span class="m-pill {{ 'm-pill-done' if l_kom > 0 else 'm-pill-zero' }}">Odrađeno: {{ l_kom }} kom</span>
+                                    {% if l_skart > 0 %}
+                                    <span class="m-pill m-pill-skart">Škart: {{ l_skart }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="phase-time-meta">
+                                    Priprema: <b>{{ l_ps }}h {{ l_pm }}m</b> &bull; Rezanje: <b>{{ l_rs }}h {{ l_rm }}m</b>
+                                </div>
+                            </div>
+                        </td>
+                        {% if not samo_rezanje %}
+                        <td class="col-phase">
+                            <div class="phase-metrics">
+                                <div class="metric-badges">
+                                    <span class="m-pill {{ 'm-pill-done' if b_kom > 0 else 'm-pill-zero' }}">Odrađeno: {{ b_kom }} kom</span>
+                                    {% if b_skart > 0 %}
+                                    <span class="m-pill m-pill-skart">Škart: {{ b_skart }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="phase-time-meta">
+                                    Priprema: <b>{{ b_ps }}h {{ b_pm }}m</b> &bull; Piganje: <b>{{ b_rs }}h {{ b_rm }}m</b>
+                                </div>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="2">UKUPNO ZA NALOG:</td>
+                        <td>{{ (uk.cilj_ukupno ~ ' kom') if uk.cilj_ukupno > 0 else 'Po nacrtu' }}</td>
+                        <td class="col-phase">
+                            <div class="phase-metrics">
+                                <div class="metric-badges">
+                                    <span class="m-pill m-pill-done">Ukupno: {{ uk.laser_komada_ukupno }} kom</span>
+                                    {% if uk.laser_skart_ukupno > 0 %}
+                                    <span class="m-pill m-pill-skart">Škart: {{ uk.laser_skart_ukupno }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="phase-time-meta">
+                                    Ukupno Laser: <b>{{ uk.laser_ukupno_tekst }}</b>
+                                </div>
+                            </div>
+                        </td>
+                        {% if not samo_rezanje %}
+                        <td class="col-phase">
+                            <div class="phase-metrics">
+                                <div class="metric-badges">
+                                    <span class="m-pill m-pill-done">Ukupno: {{ uk.bravarija_komada_ukupno }} kom</span>
+                                    {% if uk.bravarija_skart_ukupno > 0 %}
+                                    <span class="m-pill m-pill-skart">Škart: {{ uk.bravarija_skart_ukupno }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="phase-time-meta">
+                                    Ukupno Bravarija: <b>{{ uk.bravarija_ukupno_tekst }}</b>
+                                </div>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- POPIS PRILOŽENIH DATOTEKA (PDF / DXF) -->
+        {% if pdf_datoteke or lxdf_datoteke %}
+        <div class="files-strip">
+            <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">
+                <i class="fa-solid fa-folder-tree text-info me-1"></i> PRILOŽENA TEHNIČKA DOKUMENTACIJA ({{ (pdf_datoteke|length) + (lxdf_datoteke|length) }} datoteka):
+            </div>
+            <div class="chip-container">
+                {% for pdf in pdf_datoteke %}
+                <span class="report-chip"><i class="fa-solid fa-file-pdf text-danger"></i> {{ pdf.filename.split('_', 1)[-1] if '_' in pdf.filename else pdf.filename }}</span>
+                {% endfor %}
+                {% for lx in lxdf_datoteke %}
+                <span class="report-chip"><i class="fa-solid fa-file-code text-info"></i> {{ lx.filename.split('_', 1)[-1] if '_' in lx.filename else lx.filename }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- POTPISNA LINIJA ZA ISPIS -->
+        <div class="signature-row">
+            <div class="sig-box">
+                <b>{{ n.kreirao or '-' }}</b>
+                Nalog kreirao (Poslovođa)
+            </div>
+            <div class="sig-box">
+                <b>{{ glavni_laser_radnik }}{% if not samo_rezanje and glavni_bravarija_radnik != '-' %} / {{ glavni_bravarija_radnik }}{% endif %}</b>
+                Izvršitelji u pogonu
+            </div>
+            <div class="sig-box">
+                <b>&nbsp;</b>
+                Kontrola kvalitete / Odobrenje
+            </div>
+        </div>
+
+        <!-- PODNOŽJE -->
+        <div class="report-footer">
+            <span>Sustav <b>First Cut Laser d.o.o.</b> &bull; Službeni izvještaj radnog naloga #{{ n.id }}</span>
+            <span>Izvještaj generiran: <b>{{ generirano_u }}</b></span>
+        </div>
+    </div>
+
+    {% if auto_print %}
+    <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() { window.print(); }, 350);
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

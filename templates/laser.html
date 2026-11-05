@@ -117,16 +117,7 @@
     </div>
 
     {% if n.laser_zapoceto_u %}
-    <div class="p-3 mb-3 dodaj-kontejner">
-        <form action="/dodaj_poziciju/{{ n.id }}/laser" method="POST" class="row g-2 align-items-center" id="form-dodaj-poz-{{ n.id }}" onsubmit="event.preventDefault(); return dodajPozicijuSigurno(this, 'forma-nalog-{{ n.id }}');">
-            <div class="col-md-7 col-lg-8">
-                <input type="text" class="form-control" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); height: 38px; border-radius: 8px;" name="novi_naziv_pozicije" id="novi_naziv_pozicije_{{ n.id }}" placeholder="Upišite šifru pozicije s nacrta..." required onkeydown="if(event.key === 'Enter') { event.preventDefault(); dodajPozicijuSigurno(document.getElementById('form-dodaj-poz-{{ n.id }}'), 'forma-nalog-{{ n.id }}'); }">
-            </div>
-            <div class="col-md-5 col-lg-4">
-                <button type="submit" class="btn-dodaj-poz-laser w-100 d-inline-flex align-items-center justify-content-center gap-2" style="height: 38px;"><i class="fa-solid fa-plus"></i> Dodaj poziciju</button>
-            </div>
-        </form>
-    </div>
+    <form action="/dodaj_poziciju/{{ n.id }}/laser" method="POST" id="form-dodaj-poz-{{ n.id }}" onsubmit="event.preventDefault(); return dodajPozicijuSigurno(this, 'forma-nalog-{{ n.id }}');"></form>
     
     <form method="POST" class="nav-forma" id="forma-nalog-{{ n.id }}">
         <input type="hidden" name="id_naloga" value="{{ n.id }}">
@@ -196,37 +187,82 @@
             </div>
         </div>
         
-        <div class="table-responsive mb-3 p-2 tamni-kontejner">
-            <table class="table align-middle mob-kartica-pozicije">
-                <thead><tr><th>Naziv Pozicije</th><th style="width:100px;">Potrebno</th><th style="width:120px;">Odrađeno</th><th style="width:120px;">Škart</th><th style="width:140px;">Priprema (h:m)</th><th style="width:140px;">Rezanje (h:m)</th><th class="text-end">X</th></tr></thead>
-                <tbody>
-                    {% for p in n.pozicije %}
-                    <tr>
-                        <td data-label="Pozicija"><input type="hidden" name="pozicija_id" value="{{ p.id }}"><input type="text" class="form-control text-danger fw-bold navigabilno" name="naziv_{{ p.id }}" value="{{ p.naziv_pozicije }}" required></td>
-                        <td data-label="Potrebno"><div class="fs-6 fw-bold text-info">{{ p.ciljana_kolicina }} kom</div></td>
-                        <td data-label="Odrađeno"><input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white navigabilno" name="komada_{{ p.id }}" value="{{ p.laser_komada if p.laser_komada is not none else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
-                        <td data-label="Škart"><input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-danger navigabilno" name="skart_{{ p.id }}" value="{{ p.laser_skart if p.laser_skart is not none else '' }}" placeholder="0" required oninput="this.value=this.value.replace(/[^0-9]/g,'');"></td>
-                        <td data-label="Priprema (h:m)">
-                            <div class="d-flex align-items-center">
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white px-1 text-center navigabilno" name="priprema_sati_{{ p.id }}" value="{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                <span class="mx-1 text-muted">:</span>
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white px-1 text-center navigabilno" name="priprema_minute_{{ p.id }}" value="{{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                            </div>
-                        </td>
-                        <td data-label="Rezanje (h:m)">
-                            <div class="d-flex align-items-center">
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white px-1 text-center navigabilno" name="rezanje_sati_{{ p.id }}" value="{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '' }}" placeholder="h" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                                <span class="mx-1 text-muted">:</span>
-                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control text-white px-1 text-center navigabilno" name="rezanje_minute_{{ p.id }}" value="{{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '' }}" placeholder="m" required oninput="this.value=this.value.replace(/[^0-9]/g,'');">
-                            </div>
-                        </td>
-                        <td data-label="Ukloni" class="text-end">
-                            <button type="button" class="btn btn-sm btn-outline-danger" title="Ukloni poziciju" data-naziv="{{ p.naziv_pozicije }}" onclick="potvrdiBrisanjePozicije('/obrisi_poziciju/{{ p.id }}/laser', this.getAttribute('data-naziv'), document.getElementById('forma-nalog-{{ n.id }}'))"><i class="fa-solid fa-xmark"></i></button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="pozicije-sekcija-wrapper">
+            <div class="pozicije-header-bar">
+                <div class="pozicije-title-group">
+                    <i class="fa-solid fa-table-list text-danger fs-5"></i>
+                    <span class="fw-bold text-white" style="font-size: 0.95rem; letter-spacing: 0.3px;">Pozicije na nalogu</span>
+                    <span class="pozicije-count-badge">{{ n.pozicije|length }} pozicija</span>
+                </div>
+                <div class="pozicije-quick-add-form">
+                    <input type="text" form="form-dodaj-poz-{{ n.id }}" class="form-control pozicije-quick-input" name="novi_naziv_pozicije" id="novi_naziv_pozicije_{{ n.id }}" placeholder="Upišite naziv/šifru pozicije (npr. 5mm Hardox)..." autocomplete="off" onkeydown="if(event.key === 'Enter') { event.preventDefault(); dodajPozicijuSigurno(document.getElementById('form-dodaj-poz-{{ n.id }}'), 'forma-nalog-{{ n.id }}'); }">
+                    <input type="text" form="form-dodaj-poz-{{ n.id }}" inputmode="numeric" pattern="[0-9]*" class="form-control pozicije-quick-input pozicije-quick-qty" name="nova_ciljana_kolicina" placeholder="Cilj (kom)" title="Opcionalno: ciljani broj komada" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onkeydown="if(event.key === 'Enter') { event.preventDefault(); dodajPozicijuSigurno(document.getElementById('form-dodaj-poz-{{ n.id }}'), 'forma-nalog-{{ n.id }}'); }">
+                    <button type="submit" form="form-dodaj-poz-{{ n.id }}" class="btn-dodaj-poz-laser d-inline-flex align-items-center justify-content-center gap-2 flex-shrink-0" style="height: 36px;">
+                        <i class="fa-solid fa-plus"></i> Dodaj poziciju
+                    </button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mob-kartica-pozicije poz-table">
+                    <thead>
+                        <tr>
+                            <th>Naziv Pozicije</th>
+                            <th style="width: 125px;">Potrebno</th>
+                            <th style="width: 115px;">Odrađeno</th>
+                            <th style="width: 105px;">Škart</th>
+                            <th style="width: 145px;">Priprema (h:m)</th>
+                            <th style="width: 145px;">Rezanje (h:m)</th>
+                            <th class="text-end" style="width: 55px;">Ukloni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in n.pozicije %}
+                        {% set is_done = (p.laser_komada and p.laser_komada > 0) or (p.laser_priprema_sati and p.laser_priprema_sati > 0) or (p.laser_priprema_minute and p.laser_priprema_minute > 0) or (p.laser_rezanje_sati and p.laser_rezanje_sati > 0) or (p.laser_rezanje_minute and p.laser_rezanje_minute > 0) %}
+                        <tr class="pozicija-red {% if is_done %}poz-row-done{% endif %}" data-poz-id="{{ p.id }}">
+                            <td data-label="Pozicija">
+                                <input type="hidden" name="pozicija_id" value="{{ p.id }}">
+                                <div class="poz-naziv-wrap">
+                                    <span class="poz-index-badge">{{ loop.index }}</span>
+                                    <input type="text" class="form-control poz-naziv-input text-danger fw-bold navigabilno" name="naziv_{{ p.id }}" value="{{ p.naziv_pozicije }}" required>
+                                </div>
+                            </td>
+                            <td data-label="Potrebno">
+                                {% if p.ciljana_kolicina and p.ciljana_kolicina > 0 %}
+                                    <button type="button" class="poz-cilj-badge" onclick="kopirajCiljUOdredeno(this, {{ p.ciljana_kolicina }})" title="Kliknite za prijenos u Odrađeno">
+                                        {{ p.ciljana_kolicina }} kom <i class="fa-solid fa-check ms-1 opacity-75"></i>
+                                    </button>
+                                {% else %}
+                                    <span class="poz-cilj-empty" title="Pozicija dodana u pogonu / po nacrtu">Po nacrtu</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Odrađeno">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-num-input input-odradeno {% if p.laser_komada and p.laser_komada > 0 %}has-val{% endif %} navigabilno" name="komada_{{ p.id }}" value="{{ p.laser_komada if p.laser_komada is not none else '' }}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                            </td>
+                            <td data-label="Škart">
+                                <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-num-input input-skart {% if p.laser_skart and p.laser_skart > 0 %}has-skart{% endif %} navigabilno" name="skart_{{ p.id }}" value="{{ p.laser_skart if p.laser_skart is not none else '' }}" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                            </td>
+                            <td data-label="Priprema (h:m)">
+                                <div class="poz-time-group {% if (p.laser_priprema_sati and p.laser_priprema_sati > 0) or (p.laser_priprema_minute and p.laser_priprema_minute > 0) %}has-time{% endif %}">
+                                    <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-time-input navigabilno" name="priprema_sati_{{ p.id }}" value="{{ p.laser_priprema_sati if p.laser_priprema_sati is not none else '' }}" placeholder="0h" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                                    <span class="poz-time-sep">:</span>
+                                    <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-time-input navigabilno" name="priprema_minute_{{ p.id }}" value="{{ p.laser_priprema_minute if p.laser_priprema_minute is not none else '' }}" placeholder="0m" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onblur="normalizirajMinutePolje(this)">
+                                </div>
+                            </td>
+                            <td data-label="Rezanje (h:m)">
+                                <div class="poz-time-group {% if (p.laser_rezanje_sati and p.laser_rezanje_sati > 0) or (p.laser_rezanje_minute and p.laser_rezanje_minute > 0) %}has-time{% endif %}">
+                                    <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-time-input navigabilno" name="rezanje_sati_{{ p.id }}" value="{{ p.laser_rezanje_sati if p.laser_rezanje_sati is not none else '' }}" placeholder="0h" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                                    <span class="poz-time-sep">:</span>
+                                    <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-time-input navigabilno" name="rezanje_minute_{{ p.id }}" value="{{ p.laser_rezanje_minute if p.laser_rezanje_minute is not none else '' }}" placeholder="0m" oninput="this.value=this.value.replace(/[^0-9]/g,'');" onblur="normalizirajMinutePolje(this)">
+                                </div>
+                            </td>
+                            <td data-label="Ukloni" class="text-end">
+                                <button type="button" class="poz-del-btn" title="Ukloni poziciju" data-naziv="{{ p.naziv_pozicije }}" onclick="potvrdiBrisanjePozicije('/obrisi_poziciju/{{ p.id }}/laser', this.getAttribute('data-naziv'), document.getElementById('forma-nalog-{{ n.id }}'), {{ p.id }})"><i class="fa-solid fa-xmark"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
         
         {% if n.pozicije %}

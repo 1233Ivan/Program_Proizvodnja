@@ -370,6 +370,10 @@ def to_int(val):
     try: return int(val)
     except: return None
 
+def to_int_or_zero(val):
+    res = to_int(val)
+    return 0 if res is None else res
+
 def parsiraj_listu_datoteka(raw_data):
     if not raw_data: return []
     try:
@@ -884,6 +888,52 @@ def api_autosave_nalog():
     objavi_promjenu("autosave", sender_id=sender_id)
     return {"ok": True}
 
+def generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False):
+    n_row = conn.execute("SELECT * FROM radni_nalozi WHERE id=?", (id,)).fetchone()
+    if not n_row:
+        return None, None, None, None
+    n = dict(n_row)
+    pozicije_rows = conn.execute("SELECT * FROM nalog_pozicije WHERE nalog_id=?", (id,)).fetchall()
+    pozicije = [dict(p) for p in pozicije_rows]
+    uk = izracunaj_ukupno_za_nalog(pozicije)
+
+    logo_base64, logo_ext = get_cached_logo()
+    dim_lista = [x.strip() for x in (n.get('dimenzije_ploce_laser') or '').split(',') if x.strip()]
+    mat_lista = [x.strip() for x in (n.get('materijal_ploce_laser') or '').split(',') if x.strip()]
+
+    glavni_laser_radnik = n.get('laser_radnik') or next((p.get('laser_radnik') for p in pozicije if p.get('laser_radnik')), None) or '-'
+    glavni_bravarija_radnik = n.get('bravarija_radnik') or next((p.get('bravarija_radnik') for p in pozicije if p.get('bravarija_radnik')), None) or '-'
+
+    html_izvjestaj = render_template(
+        'izvjestaj_naloga.html',
+        n=n,
+        pozicije=pozicije,
+        uk=uk,
+        logo_base64=logo_base64,
+        logo_ext=logo_ext,
+        dim_lista=dim_lista,
+        mat_lista=mat_lista,
+        glavni_laser_radnik=glavni_laser_radnik,
+        glavni_bravarija_radnik=glavni_bravarija_radnik,
+        kreirano_prikaz=formatiraj_datum(n.get('kreirano_u')),
+        zavrseno_prikaz=formatiraj_datum(n.get('zavrseno_u')),
+        pdf_datoteke=parsiraj_listu_datoteka(n.get('pdf_datoteka')),
+        lxdf_datoteke=parsiraj_listu_datoteka(n.get('lxdf_datoteka')),
+        generirano_u=dobij_zg_vrijeme().strftime('%d.%m.%Y. u %H:%M'),
+        online_pregled=online_pregled,
+        auto_print=auto_print
+    )
+    return n, pozicije, uk, html_izvjestaj
+
+@app.route('/izvjestaj_pdf/<int:id>')
+def izvjestaj_pdf(id):
+    conn = get_db_connection()
+    auto_print = request.args.get('print') == '1'
+    n, pozicije, uk, html_izvjestaj = generiraj_html_izvjestaja(conn, id, online_pregled=True, auto_print=auto_print)
+    if not n:
+        return redirect(url_for('index_master'))
+    return html_izvjestaj
+
 # --- SPREMI ZIP (Glavni proizvodni izvještaj sa HTML-om) ---
 @app.route('/preuzmi_izvjestaj/<int:id>')
 def preuzmi_izvjestaj(id):
@@ -934,51 +984,13 @@ def preuzmi_izvjestaj(id):
                 if os.path.exists(fpath): 
                     dodaj_u_zip(zf, fpath, "DXF_Datoteke", lx['filename'])
             
-            logo_base64, logo_ext = get_cached_logo()
-                    
-            dim_ploce_html = ""
-            if n['dimenzije_ploce_laser']:
-                d_list = [html.escape(x.strip()) for x in n['dimenzije_ploce_laser'].split(',') if x.strip()]
-                dim_ploce_html = " ".join([f"<span class='badge badge-info' style='margin-bottom:3px;'>{d}</span>" for d in d_list]) if d_list else "-"
-            else:
-                dim_ploce_html = "-"
-
-            mat_ploce_html = ""
-            if n['materijal_ploce_laser']:
-                m_list = [html.escape(x.strip()) for x in n['materijal_ploce_laser'].split(',') if x.strip()]
-                mat_ploce_html = " ".join([f"<span class='badge badge-info' style='margin-bottom:3px;'>{m}</span>" for m in m_list]) if m_list else "-"
-            else:
-                mat_ploce_html = "-"
-
-            report_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Proizvodni Izvještaj - Nalog #{id}</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"><style>body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; color: #1a202c; margin: 0; padding: 30px; }} .wrapper {{ max-width: 900px; background: #ffffff; margin: 0 auto; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border-top: 8px solid #dc3545; }} .logo-container {{ background-color: #ffffff; padding: 10px; border-radius: 8px; display: inline-flex; align-items: center; }} .logo-img {{ filter: brightness(1.35) saturate(1.25) contrast(1.1); max-height: 55px; width: auto; }} .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 25px; }} .meta-title {{ font-size: 14px; text-transform: uppercase; color: #64748b; text-align: right; font-weight: bold; letter-spacing: 1px; line-height: 1.4; }} .info-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }} .info-card {{ background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0dcaf0; padding: 14px 18px; border-radius: 8px; }} .info-card h3 {{ margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }} .info-card p {{ margin: 0; font-size: 15px; font-weight: 600; color: #0f172a; }} .napomena-kontejner {{ margin-bottom: 30px; }} .napomena-card {{ padding: 15px 18px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #dc3545; background: #fffafb; border: 1px solid #fecdd3; border-right: 1px solid #fecdd3; border-bottom: 1px solid #fecdd3; }} .napomena-card.bravarija {{ border-left-color: #ea580c; background: #fffdfa; border-color: #ffedd5; }} .napomena-card.poslovođa {{ border-left-color: #0dcaf0; background: #f0fdfa; border-color: #ccfbf1; }} .napomena-card h4 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; color: #475569; }} .napomena-card p {{ margin: 0; font-size: 14px; font-weight: 500; color: #1e293b; white-space: pre-wrap; }} .table-section {{ margin-top: 30px; }} .table-section h2 {{ font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 15px; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; }} table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }} th {{ background: #f1f5f9; color: #475569; text-align: left; padding: 12px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #cbd5e1; }} td {{ padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-size: 14px; vertical-align: middle; color: #334155; }} tr:nth-child(even) td {{ background: #f8fafc; }} .badge {{ display: inline-block; padding: 4px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; text-transform: uppercase; margin-right: 4px; }} .badge-info {{ background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }} .badge-success {{ background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }} .badge-danger {{ background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }} .radnik-info {{ font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.4; }} .footer {{ text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; }} @media print {{ @page {{ margin: 1cm; size: A4 portrait; }} body {{ background-color: #ffffff !important; padding: 0; color: #000; }} .wrapper {{ box-shadow: none; padding: 0; border-top: none; max-width: 100%; }} .btn, .navbar {{ display: none !important; }} * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }} }}</style></head><body><div class="wrapper"><div class="header"><div class="logo-container">{"<img src='data:image/" + logo_ext + ";base64," + logo_base64 + "' class='logo-img' alt='FirstCutLaser'>" if logo_base64 else "<h1 style='color:#dc3545; margin:0;'>FIRST CUT LASER</h1>"}</div><div class="meta-title">Arhivski Izvještaj Pogona<br><span style="color:#0f172a; font-size:16px;">Nalog #{id}</span></div></div><div class="info-grid"><div class="info-card"><h3>Kupac / Partner</h3><p>{html.escape(str(n['naziv_naloga'] or '-'))}</p></div><div class="info-card"><h3>Naziv Projekta</h3><p>{html.escape(str(n['naziv_projekta'] or '-'))}</p></div><div class="info-card"><h3>Kreator Naloga</h3><p>{html.escape(str(n['kreirao'] or '-'))}</p></div><div class="info-card"><h3>Proizvodna Ruta</h3><p>{html.escape(str(n['rutiranje'] or '-'))}</p></div><div class="info-card"><h3>Debljina Materijala</h3><p>{html.escape(str(n['debljina_ploce'] or '-'))}</p></div><div class="info-card"><h3>Dimenzije uložene ploče</h3><p>{dim_ploce_html}</p></div><div class="info-card"><h3>Materijal ploče</h3><p>{mat_ploce_html}</p></div></div><div class="napomena-kontejner">{"<div class='napomena-card poslovođa'><h4><i class='fa-solid fa-user-tie'></i> Upute Poslovođe</h4><p>" + html.escape(str(n['opis'])) + "</p></div>" if n['opis'] else ""}{"<div class='napomena-card'><h4><i class='fa-solid fa-fire'></i> Napomena s Lasera</h4><p>" + html.escape(str(n['laser_napomena'])) + "</p></div>" if n['laser_napomena'] else ""}{"<div class='napomena-card bravarija'><h4><i class='fa-solid fa-hammer'></i> Napomena iz Bravarije</h4><p>" + html.escape(str(n['bravarija_napomena'])) + "</p></div>" if n['bravarija_napomena'] else ""}</div><div class="table-section"><h2>Specifikacija Izvršenih Pozicija</h2><table><thead><tr><th>Naziv Pozicije s Nacrta</th><th>Faza 1: Rezanje (Laser)</th><th>Faza 2: Bravarska Obrada</th></tr></thead><tbody>"""
-            for p in pozicije:
-                p_cilj = p['ciljana_kolicina'] if p['ciljana_kolicina'] is not None else 0
-                l_kom = p['laser_komada'] if p['laser_komada'] is not None else 0
-                l_skart = p['laser_skart'] if p['laser_skart'] is not None else 0
-                l_psati = p['laser_priprema_sati'] if p['laser_priprema_sati'] is not None else 0
-                l_pmin = p['laser_priprema_minute'] if p['laser_priprema_minute'] is not None else 0
-                l_rsati = p['laser_rezanje_sati'] if p['laser_rezanje_sati'] is not None else 0
-                l_rmin = p['laser_rezanje_minute'] if p['laser_rezanje_minute'] is not None else 0
-                
-                b_kom = p['bravarija_komada'] if p['bravarija_komada'] is not None else 0
-                b_skart = p['bravarija_skart'] if p['bravarija_skart'] is not None else 0
-                b_psati = p['bravarija_priprema_sati'] if p['bravarija_priprema_sati'] is not None else 0
-                b_pmin = p['bravarija_priprema_minute'] if p['bravarija_priprema_minute'] is not None else 0
-                b_rsati = p['bravarija_piganje_sati'] if p['bravarija_piganje_sati'] is not None else 0
-                b_rmin = p['bravarija_piganje_minute'] if p['bravarija_piganje_minute'] is not None else 0
-                
-                l_radnik = html.escape(str(p['laser_radnik'] or n['laser_radnik'] or '-'))
-                b_radnik = html.escape(str(p['bravarija_radnik'] or n['bravarija_radnik'] or '-'))
-                
-                vrijeme_laser = f"Priprema: {l_psati}h {l_pmin}m<br>Rezanje: {l_rsati}h {l_rmin}m"
-                vrijeme_bravarija = f"Priprema: {b_psati}h {b_pmin}m<br>Piganje: {b_rsati}h {b_rmin}m"
-                
-                report_html += f"""<tr><td style="font-weight: 700; color: #0f172a; font-size: 15px;">{html.escape(str(p['naziv_pozicije']))}</td><td><div><span class="badge badge-info">POTREBNO: {p_cilj} KOM</span><br><span class="badge badge-success" style="margin-top:4px;">ODRAĐENO: {l_kom} KOM</span><span class="badge badge-danger">{l_skart} ŠKART</span></div><div class="radnik-info">{vrijeme_laser}<br>Radnik: {l_radnik}</div></td><td><div><span class="badge badge-info">POTREBNO: {p_cilj} KOM</span><br><span class="badge badge-success" style="margin-top:4px;">ODRAĐENO: {b_kom} KOM</span><span class="badge badge-danger">{b_skart} ŠKART</span></div><div class="radnik-info">{vrijeme_bravarija}<br>Radnik: {b_radnik}</div></td></tr>"""
-            report_html += f"""</tbody><tfoot style="background: #f1f5f9; font-weight: bold; border-top: 2px solid #cbd5e1;"><tr><td style="padding: 12px 14px; font-weight: 700;">UKUPNO ZBROJ:</td><td style="padding: 12px 14px;"><div><span class="badge badge-info">CILJ: {uk['cilj_ukupno']} KOM</span><br><span class="badge badge-success" style="margin-top:4px;">ODRAĐENO: {uk['laser_komada_ukupno']} KOM</span><span class="badge badge-danger">{uk['laser_skart_ukupno']} ŠKART</span></div><div class="radnik-info">Ukupno laser: {uk['laser_ukupno_tekst']}</div></td><td style="padding: 12px 14px;"><div><span class="badge badge-info">CILJ: {uk['cilj_ukupno']} KOM</span><br><span class="badge badge-success" style="margin-top:4px;">ODRAĐENO: {uk['bravarija_komada_ukupno']} KOM</span><span class="badge badge-danger">{uk['bravarija_skart_ukupno']} ŠKART</span></div><div class="radnik-info">Ukupno bravarija: {uk['bravarija_ukupno_tekst']}</div></td></tr><tr style="background: #e2e8f0; font-size: 13px;"><td colspan="3" style="padding: 10px 14px; text-align: right; color: #0f172a;"><strong>SVEUKUPNO UTROŠENO VRIJEME NA NALOGU: {uk['sveukupno_vrijeme_tekst']}</strong></td></tr></tfoot></table></div><div class="footer">Sustav First Cut Laser d.o.o. &bull; Izvještaj generiran: {dobij_zg_vrijeme().strftime('%d.%m.%Y. u %H:%M')}</div></div></body></html>"""
-            zf.writestr(f"{glavni_folder}/Pregled_Naloga_{id}.html", report_html.encode('utf-8'))
+            _, _, _, report_html = generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False)
+            if report_html:
+                zf.writestr(f"{glavni_folder}/Pregled_Naloga_{id}.html", report_html.encode('utf-8'))
     except Exception as e: pass
     
     memory_file.seek(0)
+    return send_file(memory_file, download_name=predlozeno_ime_zipa, as_attachment=True)
     return send_file(memory_file, download_name=predlozeno_ime_zipa, as_attachment=True)
 
 # --- PREUZMI ZIP DATOTEKA (Samo PDF i DXF datoteke) ---
@@ -1153,10 +1165,11 @@ def sekcija_laser():
         materijal_ploce = request.form.get('materijal_ploce', '')
         akcija = request.form.get('akcija', 'zavrsi_odmah')
         
+        parser_int = to_int if akcija == 'pauziraj' else to_int_or_zero
         for pid in request.form.getlist('pozicija_id'):
             naziv_poz = request.form.get(f'naziv_{pid}')
             conn.execute('UPDATE nalog_pozicije SET naziv_pozicije=COALESCE(NULLIF(?, ""), naziv_pozicije), laser_komada=?, laser_skart=?, laser_priprema_sati=?, laser_priprema_minute=?, laser_rezanje_sati=?, laser_rezanje_minute=?, laser_radnik=? WHERE id=?', 
-                         (naziv_poz, to_int(request.form.get(f'komada_{pid}')), to_int(request.form.get(f'skart_{pid}')), to_int(request.form.get(f'priprema_sati_{pid}')), to_int(request.form.get(f'priprema_minute_{pid}')), to_int(request.form.get(f'rezanje_sati_{pid}')), to_int(request.form.get(f'rezanje_minute_{pid}')), radnik, pid))
+                         (naziv_poz, parser_int(request.form.get(f'komada_{pid}')), parser_int(request.form.get(f'skart_{pid}')), parser_int(request.form.get(f'priprema_sati_{pid}')), parser_int(request.form.get(f'priprema_minute_{pid}')), parser_int(request.form.get(f'rezanje_sati_{pid}')), parser_int(request.form.get(f'rezanje_minute_{pid}')), radnik, pid))
         
         if akcija == 'pauziraj':
             conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Laser', laser_zapoceto_u=NULL, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=?, laser_radnik=? WHERE id=?", (radnik_napomena, dimenzije_ploce, materijal_ploce, radnik, id_naloga))
@@ -1211,10 +1224,11 @@ def sekcija_bravarija():
         radnik_napomena = request.form.get('radnik_napomena', '')
         akcija = request.form.get('akcija', 'zavrsi_odmah')
         
+        parser_int = to_int if akcija == 'pauziraj' else to_int_or_zero
         for pid in request.form.getlist('pozicija_id'):
             naziv_poz = request.form.get(f'naziv_{pid}')
             conn.execute('UPDATE nalog_pozicije SET naziv_pozicije=COALESCE(NULLIF(?, ""), naziv_pozicije), bravarija_komada=?, bravarija_skart=?, bravarija_priprema_sati=?, bravarija_priprema_minute=?, bravarija_piganje_sati=?, bravarija_piganje_minute=?, bravarija_radnik=? WHERE id=?', 
-                         (naziv_poz, to_int(request.form.get(f'komada_{pid}')), to_int(request.form.get(f'skart_{pid}')), to_int(request.form.get(f'priprema_sati_{pid}')), to_int(request.form.get(f'priprema_minute_{pid}')), to_int(request.form.get(f'piganje_sati_{pid}')), to_int(request.form.get(f'piganje_minute_{pid}')), radnik, pid))
+                         (naziv_poz, parser_int(request.form.get(f'komada_{pid}')), parser_int(request.form.get(f'skart_{pid}')), parser_int(request.form.get(f'priprema_sati_{pid}')), parser_int(request.form.get(f'priprema_minute_{pid}')), parser_int(request.form.get(f'piganje_sati_{pid}')), parser_int(request.form.get(f'piganje_minute_{pid}')), radnik, pid))
         
         if akcija == 'pauziraj':
             conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Bravarija', bravarija_zapoceto_u=NULL, bravarija_napomena=?, bravarija_radnik=? WHERE id=?", (radnik_napomena, radnik, id_naloga))
@@ -1247,22 +1261,45 @@ def sekcija_bravarija():
 @app.route('/dodaj_poziciju/<int:nalog_id>/<string:izvor>', methods=['POST'])
 def dodaj_poziciju(nalog_id, izvor):
     naziv = request.form.get('novi_naziv_pozicije', '').strip()
-    if not naziv: naziv = f"Pozicija-{dobij_zg_vrijeme().strftime('%H%M%S')}"
+    if not naziv:
+        naziv = f"Pozicija-{dobij_zg_vrijeme().strftime('%H%M%S')}"
+    ciljana_kol = to_int(request.form.get('nova_ciljana_kolicina')) or 0
+    sender_id = request.headers.get('X-Client-ID') or request.form.get('client_id')
+
     conn = get_db_connection()
     nalog = conn.execute("SELECT laser_radnik, bravarija_radnik FROM radni_nalozi WHERE id=?", (nalog_id,)).fetchone()
     l_radnik = nalog['laser_radnik'] if nalog and nalog['laser_radnik'] else ''
     b_radnik = nalog['bravarija_radnik'] if nalog and nalog['bravarija_radnik'] else ''
-    conn.execute('INSERT INTO nalog_pozicije (nalog_id, naziv_pozicije, ciljana_kolicina, laser_komada, laser_skart, bravarija_komada, bravarija_skart, laser_priprema_sati, laser_priprema_minute, laser_rezanje_sati, laser_rezanje_minute, bravarija_priprema_sati, bravarija_priprema_minute, bravarija_piganje_sati, bravarija_piganje_minute, laser_radnik, bravarija_radnik) VALUES (?, ?, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?)', (nalog_id, naziv, l_radnik, b_radnik))
+    cur = conn.execute(
+        'INSERT INTO nalog_pozicije (nalog_id, naziv_pozicije, ciljana_kolicina, laser_komada, laser_skart, bravarija_komada, bravarija_skart, laser_priprema_sati, laser_priprema_minute, laser_rezanje_sati, laser_rezanje_minute, bravarija_priprema_sati, bravarija_priprema_minute, bravarija_piganje_sati, bravarija_piganje_minute, laser_radnik, bravarija_radnik) VALUES (?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?)',
+        (nalog_id, naziv, ciljana_kol, l_radnik, b_radnik)
+    )
+    novi_id = cur.lastrowid
     conn.commit()
-    objavi_promjenu("dodana_pozicija")
+    objavi_promjenu("dodana_pozicija", sender_id=sender_id)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            'ok': True,
+            'pozicija': {
+                'id': novi_id,
+                'nalog_id': nalog_id,
+                'naziv_pozicije': naziv,
+                'ciljana_kolicina': ciljana_kol
+            }
+        })
     return redirect(url_for(f'sekcija_{izvor}'))
 
-@app.route('/obrisi_poziciju/<int:poz_id>/<string:izvor>')
+@app.route('/obrisi_poziciju/<int:poz_id>/<string:izvor>', methods=['GET', 'POST'])
 def obrisi_poziciju(poz_id, izvor):
+    sender_id = request.headers.get('X-Client-ID') or request.form.get('client_id')
     conn = get_db_connection()
     conn.execute('DELETE FROM nalog_pozicije WHERE id=?', (poz_id,))
     conn.commit()
-    objavi_promjenu("obrisana_pozicija")
+    objavi_promjenu("obrisana_pozicija", sender_id=sender_id)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'ok': True, 'obrisan_id': poz_id})
     return redirect(url_for(f'sekcija_{izvor}'))
 
 if __name__ == '__main__':

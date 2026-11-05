@@ -369,6 +369,267 @@
             margin: 1px 2px;
         }
 
+        /* ========================================================
+           REKONSTRUIRANA TABLICA POZICIJA ("NAZIV POZICIJE")
+           ======================================================== */
+        .pozicije-sekcija-wrapper {
+            background: #12141c;
+            border: 1px solid #222736;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        }
+        .pozicije-header-bar {
+            background: #171b26;
+            padding: 12px 16px;
+            border-bottom: 1px solid #222736;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .pozicije-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .pozicije-count-badge {
+            background: rgba(13, 202, 240, 0.14);
+            border: 1px solid rgba(13, 202, 240, 0.35);
+            color: #38bdf8;
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 3px 9px;
+            border-radius: 20px;
+        }
+        .pozicije-quick-add-form {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1 1 420px;
+            max-width: 620px;
+            margin: 0;
+        }
+        .pozicije-quick-input {
+            background: rgba(0, 0, 0, 0.35) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            color: #ffffff !important;
+            height: 36px !important;
+            font-size: 0.88rem !important;
+            padding: 4px 12px !important;
+            border-radius: 8px !important;
+        }
+        .pozicije-quick-input:focus {
+            border-color: #0dcaf0 !important;
+            box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.15) !important;
+        }
+        .pozicije-quick-qty {
+            width: 110px !important;
+            flex-shrink: 0;
+            text-align: center;
+        }
+        .poz-table {
+            margin-bottom: 0;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .poz-table thead th {
+            background: #141822;
+            color: #94a3b8 !important;
+            font-size: 0.73rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 10px 12px;
+            border-bottom: 1px solid #222736;
+            white-space: nowrap;
+        }
+        .poz-table tbody tr.pozicija-red {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background-color 0.15s ease;
+        }
+        .poz-table tbody tr.pozicija-red:hover {
+            background-color: rgba(255, 255, 255, 0.025);
+        }
+        .poz-table tbody tr.pozicija-red > td {
+            padding: 9px 10px;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(34, 39, 54, 0.8);
+        }
+        .poz-table tbody tr.pozicija-red > td:first-child {
+            border-left: 3px solid transparent;
+            padding-left: 12px;
+        }
+        /* Vizualni status retka kad je pozicija odrađena */
+        .poz-table tbody tr.pozicija-red.poz-row-done {
+            background-color: rgba(16, 185, 129, 0.03);
+        }
+        .poz-table tbody tr.pozicija-red.poz-row-done > td:first-child {
+            border-left-color: #10b981;
+        }
+        .poz-index-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 26px;
+            height: 26px;
+            padding: 0 6px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #94a3b8;
+            font-size: 0.74rem;
+            font-weight: 800;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .poz-row-done .poz-index-badge {
+            background: rgba(16, 185, 129, 0.18);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+        .poz-naziv-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .poz-naziv-input {
+            background: #171b26 !important;
+            border: 1px solid #283044 !important;
+            height: 36px !important;
+            padding: 6px 11px !important;
+            font-size: 0.9rem !important;
+            font-weight: 700 !important;
+            border-radius: 7px !important;
+        }
+        .poz-naziv-input:focus {
+            background: #1e2433 !important;
+            border-color: #0dcaf0 !important;
+        }
+        .poz-cilj-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            background: rgba(13, 202, 240, 0.12);
+            border: 1px solid rgba(13, 202, 240, 0.35);
+            color: #38bdf8;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 5px 10px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+        .poz-cilj-badge:hover {
+            background: #0dcaf0;
+            color: #0b0c10;
+            transform: translateY(-1px);
+        }
+        .poz-cilj-empty {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(148, 163, 184, 0.08);
+            border: 1px dashed rgba(148, 163, 184, 0.25);
+            color: #94a3b8;
+            font-size: 0.74rem;
+            font-weight: 600;
+            padding: 4px 9px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+        .poz-num-input {
+            background: #171b26 !important;
+            border: 1px solid #283044 !important;
+            height: 36px !important;
+            text-align: center !important;
+            font-weight: 700 !important;
+            font-size: 0.92rem !important;
+            border-radius: 7px !important;
+            padding: 4px 8px !important;
+        }
+        .poz-num-input.input-odradeno {
+            color: #ffffff !important;
+        }
+        .poz-num-input.input-odradeno.has-val {
+            border-color: rgba(16, 185, 129, 0.5) !important;
+            color: #34d399 !important;
+            background: rgba(16, 185, 129, 0.06) !important;
+        }
+        .poz-num-input.input-skart {
+            color: #94a3b8 !important;
+        }
+        .poz-num-input.input-skart.has-skart {
+            border-color: rgba(239, 68, 68, 0.55) !important;
+            color: #f87171 !important;
+            background: rgba(239, 68, 68, 0.08) !important;
+        }
+        /* Jedinstvena kapsula za vrijeme [ h : m ] */
+        .poz-time-group {
+            display: inline-flex;
+            align-items: center;
+            background: #171b26;
+            border: 1px solid #283044;
+            border-radius: 7px;
+            height: 36px;
+            padding: 0 4px;
+            width: 100%;
+            max-width: 135px;
+            transition: all 0.15s ease;
+        }
+        .poz-time-group:focus-within {
+            border-color: #0dcaf0;
+            box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.15);
+            background: #1e2433;
+        }
+        .poz-time-group.has-time {
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+        .poz-time-input {
+            background: transparent !important;
+            border: none !important;
+            color: #ffffff !important;
+            text-align: center !important;
+            font-weight: 700 !important;
+            font-size: 0.88rem !important;
+            width: 44% !important;
+            height: 32px !important;
+            padding: 0 2px !important;
+            box-shadow: none !important;
+        }
+        .poz-time-input:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        .poz-time-sep {
+            color: #64748b;
+            font-weight: 800;
+            font-size: 0.85rem;
+            user-select: none;
+            padding: 0 1px;
+        }
+        .poz-del-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 7px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            padding: 0;
+        }
+        .poz-del-btn:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: #ffffff;
+        }
+
         /* CSS ZA TICKER (INLINE-BLOCK + TRANSLATE3D) */
         .ticker-wrap {
             width: 100%;
@@ -528,6 +789,20 @@
                 justify-content: flex-end; 
             }
             .mob-kartica-pozicije td:last-child::before { display: none; }
+            .pozicije-quick-add-form {
+                flex-wrap: wrap;
+                max-width: 100%;
+            }
+            .pozicije-quick-qty {
+                width: 90px !important;
+            }
+            .mob-kartica-pozicije td .poz-time-group {
+                max-width: 180px;
+                margin-left: auto;
+            }
+            .mob-kartica-pozicije td:first-child .poz-naziv-wrap {
+                width: 100%;
+            }
         }
         @media (max-width: 480px) {
             .login-box { padding: 28px 18px; }
@@ -799,6 +1074,90 @@
             }
         }
 
+        function osvjeziStanjeRedovaPozicija(form) {
+            if (!form) return;
+            var rows = form.querySelectorAll('tr.pozicija-red');
+            for (var r = 0; r < rows.length; r++) {
+                var row = rows[r];
+                var idxBadge = row.querySelector('.poz-index-badge');
+                if (idxBadge) idxBadge.textContent = (r + 1);
+
+                var pidInput = row.querySelector('input[name="pozicija_id"]');
+                if (!pidInput) continue;
+                var pid = pidInput.value;
+
+                var nazivEl = row.querySelector('input[name="naziv_' + pid + '"]');
+                var delBtn = row.querySelector('.poz-del-btn');
+                if (nazivEl && delBtn) {
+                    delBtn.setAttribute('data-naziv', nazivEl.value);
+                }
+
+                var komEl = row.querySelector('input[name="komada_' + pid + '"]');
+                var skartEl = row.querySelector('input[name="skart_' + pid + '"]');
+                var timeInputs = row.querySelectorAll('.poz-time-input');
+
+                var komVal = parseInt(komEl ? komEl.value : 0) || 0;
+                var skartVal = parseInt(skartEl ? skartEl.value : 0) || 0;
+                if (komEl) komEl.classList.toggle('has-val', komVal > 0);
+                if (skartEl) skartEl.classList.toggle('has-skart', skartVal > 0);
+
+                var rowMin = 0;
+                for (var t = 0; t < timeInputs.length; t++) {
+                    rowMin += parseInt(timeInputs[t].value) || 0;
+                }
+                var timeGroups = row.querySelectorAll('.poz-time-group');
+                for (var g = 0; g < timeGroups.length; g++) {
+                    var gInputs = timeGroups[g].querySelectorAll('.poz-time-input');
+                    var gSum = 0;
+                    for (var gi = 0; gi < gInputs.length; gi++) gSum += parseInt(gInputs[gi].value) || 0;
+                    timeGroups[g].classList.toggle('has-time', gSum > 0);
+                }
+
+                var isDone = (komVal > 0) || (rowMin > 0);
+                row.classList.toggle('poz-row-done', isDone);
+            }
+            var card = form.closest('.card');
+            var countBadge = card ? card.querySelector('.pozicije-count-badge') : null;
+            if (countBadge) {
+                countBadge.textContent = rows.length + (rows.length === 1 ? ' pozicija' : ' pozicija');
+            }
+        }
+
+        function normalizirajMinutePolje(minInput) {
+            if (!minInput || !minInput.name) return;
+            var m = parseInt(minInput.value) || 0;
+            if (m >= 60) {
+                var extraH = Math.floor(m / 60);
+                var remM = m % 60;
+                var satiName = minInput.name.replace('_minute_', '_sati_');
+                var form = minInput.closest('form');
+                var satiInput = form ? form.querySelector('input[name="' + satiName + '"]') : null;
+                if (satiInput) {
+                    var curH = parseInt(satiInput.value) || 0;
+                    satiInput.value = curH + extraH;
+                    satiInput.dataset.dirty = '1';
+                }
+                minInput.value = remM;
+                minInput.dataset.dirty = '1';
+                if (form) {
+                    azurirajZiviZbrojForme(form);
+                    triggerDbAutoSave(form);
+                }
+            }
+        }
+
+        function kopirajCiljUOdredeno(btnEl, ciljanaKolicina) {
+            var row = btnEl ? btnEl.closest('tr.pozicija-red') : null;
+            if (!row) return;
+            var komInput = row.querySelector('.input-odradeno');
+            if (komInput) {
+                komInput.value = ciljanaKolicina;
+                var evt = new Event('input', { bubbles: true });
+                komInput.dispatchEvent(evt);
+                komInput.focus();
+            }
+        }
+
         function azurirajZiviZbrojForme(form) {
             if (!form || !form.classList.contains('nav-forma')) return;
             var pids = form.querySelectorAll('input[name="pozicija_id"]');
@@ -823,25 +1182,116 @@
             if (komBadge) komBadge.innerText = 'Odrađeno: ' + ukKom + ' kom';
             if (skartBadge) skartBadge.innerText = 'Škart: ' + ukSkart;
             if (vrijBadge) vrijBadge.innerText = Math.floor(ukMin / 60) + 'h ' + (ukMin % 60) + 'm';
+            osvjeziStanjeRedovaPozicija(form);
+        }
+
+        function kreirajHtmlRetkaPozicije(p, index, izvor, nalogId) {
+            var isLaser = (izvor === 'laser');
+            var bojaKlasa = isLaser ? 'text-danger' : 'text-warning';
+            var fazaPrefix = isLaser ? 'rezanje' : 'piganje';
+            var fazaLabel = isLaser ? 'Rezanje (h:m)' : 'Piganje (h:m)';
+            var cilj = parseInt(p.ciljana_kolicina) || 0;
+            var potrebnoHtml = cilj > 0
+                ? '<button type="button" class="poz-cilj-badge" onclick="kopirajCiljUOdredeno(this, ' + cilj + ')" title="Kliknite za prijenos u Odrađeno">' + cilj + ' kom <i class="fa-solid fa-check ms-1 opacity-75"></i></button>'
+                : '<span class="poz-cilj-empty" title="Pozicija dodana u pogonu / po nacrtu">Po nacrtu</span>';
+
+            return '<tr class="pozicija-red" data-poz-id="' + p.id + '">' +
+                '<td data-label="Pozicija">' +
+                    '<input type="hidden" name="pozicija_id" value="' + p.id + '">' +
+                    '<div class="poz-naziv-wrap">' +
+                        '<span class="poz-index-badge">' + index + '</span>' +
+                        '<input type="text" class="form-control poz-naziv-input ' + bojaKlasa + ' fw-bold navigabilno" name="naziv_' + p.id + '" value="' + escapeHtml(p.naziv_pozicije) + '" required>' +
+                    '</div>' +
+                '</td>' +
+                '<td data-label="Potrebno">' + potrebnoHtml + '</td>' +
+                '<td data-label="Odrađeno">' +
+                    '<input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-num-input input-odradeno navigabilno" name="komada_' + p.id + '" value="" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,\'\');">' +
+                '</td>' +
+                '<td data-label="Škart">' +
+                    '<input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-num-input input-skart navigabilno" name="skart_' + p.id + '" value="" placeholder="0" oninput="this.value=this.value.replace(/[^0-9]/g,\'\');">' +
+                '</td>' +
+                '<td data-label="Priprema (h:m)">' +
+                    '<div class="poz-time-group">' +
+                        '<input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-time-input navigabilno" name="priprema_sati_' + p.id + '" value="" placeholder="0h" oninput="this.value=this.value.replace(/[^0-9]/g,\'\');">' +
+                        '<span class="poz-time-sep">:</span>' +
+                        '<input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-time-input navigabilno" name="priprema_minute_' + p.id + '" value="" placeholder="0m" oninput="this.value=this.value.replace(/[^0-9]/g,\'\');" onblur="normalizirajMinutePolje(this)">' +
+                    '</div>' +
+                '</td>' +
+                '<td data-label="' + fazaLabel + '">' +
+                    '<div class="poz-time-group">' +
+                        '<input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-time-input navigabilno" name="' + fazaPrefix + '_sati_' + p.id + '" value="" placeholder="0h" oninput="this.value=this.value.replace(/[^0-9]/g,\'\');">' +
+                        '<span class="poz-time-sep">:</span>' +
+                        '<input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control poz-time-input navigabilno" name="' + fazaPrefix + '_minute_' + p.id + '" value="" placeholder="0m" oninput="this.value=this.value.replace(/[^0-9]/g,\'\');" onblur="normalizirajMinutePolje(this)">' +
+                    '</div>' +
+                '</td>' +
+                '<td data-label="Ukloni" class="text-end">' +
+                    '<button type="button" class="poz-del-btn" title="Ukloni poziciju" data-naziv="' + escapeHtml(p.naziv_pozicije) + '" onclick="potvrdiBrisanjePozicije(\'/obrisi_poziciju/' + p.id + '/' + izvor + '\', this.getAttribute(\'data-naziv\'), document.getElementById(\'forma-nalog-' + nalogId + '\'), ' + p.id + ')"><i class="fa-solid fa-xmark"></i></button>' +
+                '</td>' +
+            '</tr>';
         }
 
         function dodajPozicijuSigurno(addForm, mainFormId) {
-            if (isSubmitting) return false;
+            if (!addForm || addForm.dataset.adding === '1') return false;
             var input = addForm.querySelector('input[name="novi_naziv_pozicije"]');
+            var qtyInput = addForm.querySelector('input[name="nova_ciljana_kolicina"]');
             if (input && !input.value.trim()) {
                 prikaziGresku("Upišite naziv pozicije!");
                 input.focus();
                 return false;
             }
-            isSubmitting = true;
+            addForm.dataset.adding = '1';
             var btn = addForm.querySelector('button[type="submit"]');
+            var origBtnHtml = btn ? btn.innerHTML : '';
             if (btn) {
                 btn.style.pointerEvents = 'none';
                 btn.style.opacity = '0.6';
-                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-1"></i> Dodajem...';
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
             }
             var mainF = document.getElementById(mainFormId);
+            var formData = new FormData(addForm);
+            formData.append('client_id', fclClientId);
+
             flushDbAutoSaveNow(mainF).then(function() {
+                return fetch(addForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-Client-ID': fclClientId
+                    },
+                    body: formData
+                });
+            }).then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            }).then(function(data) {
+                delete addForm.dataset.adding;
+                if (btn) {
+                    btn.style.pointerEvents = '';
+                    btn.style.opacity = '1';
+                    btn.innerHTML = origBtnHtml;
+                }
+                if (data && data.ok && data.pozicija && mainF) {
+                    var tbody = mainF.querySelector('table.poz-table tbody');
+                    if (tbody) {
+                        var emptyRow = tbody.querySelector('.poz-empty-row');
+                        if (emptyRow) emptyRow.remove();
+                        var izvor = (mainF.querySelector('input[name="izvor"]') ? mainF.querySelector('input[name="izvor"]').value : 'laser');
+                        var nalogId = (mainF.querySelector('input[name="id_naloga"]') ? mainF.querySelector('input[name="id_naloga"]').value : '');
+                        var noviIndex = tbody.querySelectorAll('tr.pozicija-red').length + 1;
+                        tbody.insertAdjacentHTML('beforeend', kreirajHtmlRetkaPozicije(data.pozicija, noviIndex, izvor, nalogId));
+                        osvjeziSveHandlereStranice();
+                        azurirajZiviZbrojForme(mainF);
+                    }
+                    if (input) {
+                        input.value = '';
+                        input.focus();
+                    }
+                    if (qtyInput) qtyInput.value = '';
+                } else {
+                    window.location.reload();
+                }
+            }).catch(function() {
+                delete addForm.dataset.adding;
                 HTMLFormElement.prototype.submit.call(addForm);
             });
             return false;
@@ -1238,6 +1688,10 @@
             var textareas = document.querySelectorAll('textarea.auto-expand');
             for (var t = 0; t < textareas.length; t++) {
                 if (textareas[t].value) autoProsiri(textareas[t]);
+            }
+            var navForme = document.querySelectorAll('.nav-forma');
+            for (var nf = 0; nf < navForme.length; nf++) {
+                azurirajZiviZbrojForme(navForme[nf]);
             }
         }
 
@@ -1809,18 +2263,37 @@
             document.getElementById('confirmDeleteBtn').href = url; 
             bootstrap.Modal.getOrCreateInstance(document.getElementById('premiumDeleteModal')).show(); 
         }
-        function potvrdiBrisanjePozicije(url, naziv, formToFlush) {
+        function potvrdiBrisanjePozicije(url, naziv, formToFlush, pozId) {
             document.getElementById('modalPozicijaNaziv').innerText = naziv || 'odabranu stavku';
             var btn = document.getElementById('confirmDeletePozicijaBtn');
             btn.onclick = function(e) {
                 e.preventDefault();
-                if (formToFlush) {
-                    flushDbAutoSaveNow(formToFlush).then(function() {
-                        window.location.href = url;
+                var modalEl = document.getElementById('obrisiPozicijuModal');
+                var modalInst = bootstrap.Modal.getInstance(modalEl);
+                flushDbAutoSaveNow(formToFlush).then(function() {
+                    return fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-Client-ID': fclClientId
+                        }
                     });
-                } else {
+                }).then(function(res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+                }).then(function(data) {
+                    if (modalInst) modalInst.hide();
+                    if (data && data.ok && formToFlush) {
+                        var row = formToFlush.querySelector('tr.pozicija-red[data-poz-id="' + (pozId || data.obrisan_id) + '"]');
+                        if (row) row.remove();
+                        azurirajZiviZbrojForme(formToFlush);
+                        prikaziUspjeh("Pozicija je uklonjena.");
+                    } else {
+                        window.location.reload();
+                    }
+                }).catch(function() {
                     window.location.href = url;
-                }
+                });
             };
             bootstrap.Modal.getOrCreateInstance(document.getElementById('obrisiPozicijuModal')).show();
         }

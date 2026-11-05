@@ -140,6 +140,7 @@
                                 {% endif %}
                             </td>
                             <td class="pe-4">
+                                <a href="/izvjestaj_pdf/{{ n.id }}" target="_blank" class="btn btn-outline-info btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;"><i class="fa-solid fa-file-pdf me-1"></i> PDF Izvještaj</a>
                                 <a href="/preuzmi_izvjestaj/{{ n.id }}" class="btn btn-outline-success btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;"><i class="fa-solid fa-download me-1"></i> Spremi (ZIP)</a>
                                 <a href="/vrati_u_rad/{{ n.id }}/pregled" class="btn btn-outline-warning btn-sm w-100 mb-2 fw-bold mob-full-btn" style="border-radius: 8px;"><i class="fa-solid fa-rotate-left me-1"></i> Vrati na pregled</a>
                                 <a href="#" class="btn btn-outline-danger btn-sm w-100 mob-full-btn border-0" style="border-radius: 8px; background: rgba(220,53,69,0.1);" title="Trajno obriši" onclick="event.preventDefault(); potvrdiBrisanje('/obrisi/{{ n.id }}');"><i class="fa-solid fa-trash text-danger"></i> <span class="text-danger">Obriši</span></a>
@@ -159,7 +160,7 @@
                                                     <td class="ps-4 py-3 align-middle fw-bold text-light fs-6" style="background:transparent; border-left:none;">{{ p.naziv_pozicije }}</td>
                                                     <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent;">
                                                         <div class="mb-2">
-                                                            <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
+                                                            {% if p.ciljana_kolicina and p.ciljana_kolicina > 0 %}<span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>{% else %}<span class="badge bg-secondary text-light fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem; background: rgba(148,163,184,0.15) !important;">Po nacrtu</span>{% endif %}
                                                             <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.laser_komada if p.laser_komada is not none else '0' }} kom</span>
                                                             <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.laser_skart if p.laser_skart is not none else '0' }}</span>
                                                         </div>
@@ -172,7 +173,7 @@
                                                     </td>
                                                     <td class="text-center py-3 align-middle border-start border-secondary border-opacity-25" style="background:transparent; border-right:none;">
                                                         <div class="mb-2">
-                                                            <span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>
+                                                            {% if p.ciljana_kolicina and p.ciljana_kolicina > 0 %}<span class="badge bg-info text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Potrebno: {{ p.ciljana_kolicina }} kom</span>{% else %}<span class="badge bg-secondary text-light fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem; background: rgba(148,163,184,0.15) !important;">Po nacrtu</span>{% endif %}
                                                             <span class="badge bg-success text-white fw-bold shadow-sm me-1 px-2 py-1" style="font-size: 0.85rem;">Odrađeno: {{ p.bravarija_komada if p.bravarija_komada is not none else '0' }} kom</span>
                                                             <span class="badge bg-danger text-white fw-bold shadow-sm px-2 py-1" style="font-size: 0.85rem;">Škart: {{ p.bravarija_skart if p.bravarija_skart is not none else '0' }}</span>
                                                         </div>
