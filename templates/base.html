@@ -201,6 +201,174 @@
             box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
         }
 
+        /* ========================================================
+           SMART MULTI-CHIP SUSTAV ZA PLOČE I MATERIJALE
+           ======================================================== */
+        .smart-chip-card {
+            background: rgba(18, 20, 28, 0.75);
+            border: 1px solid rgba(13, 202, 240, 0.28);
+            border-radius: 12px;
+            padding: 12px 14px;
+            transition: all 0.2s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .smart-chip-card:focus-within {
+            border-color: #0dcaf0;
+            box-shadow: 0 0 0 3px rgba(13, 202, 240, 0.12);
+            background: rgba(18, 20, 28, 0.95);
+        }
+        .smart-chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+            min-height: 34px;
+            align-items: center;
+        }
+        .smart-chip-empty {
+            color: #64748b;
+            font-size: 0.82rem;
+            font-style: italic;
+            padding: 4px 2px;
+        }
+        .ploca-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: linear-gradient(135deg, rgba(13, 202, 240, 0.14), rgba(13, 202, 240, 0.05));
+            border: 1px solid rgba(13, 202, 240, 0.4);
+            color: #f8fafc;
+            font-size: 0.84rem;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.15s ease;
+            max-width: 100%;
+        }
+        .ploca-chip.chip-materijal {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.14), rgba(14, 165, 233, 0.05));
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+        .ploca-chip:hover {
+            border-color: #0dcaf0;
+            transform: translateY(-1px);
+        }
+        .ploca-chip-num {
+            background: rgba(13, 202, 240, 0.22);
+            color: #38bdf8;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 5px;
+            line-height: 1;
+        }
+        .ploca-chip-text {
+            cursor: pointer;
+            word-break: break-word;
+        }
+        .ploca-chip-text:hover {
+            color: #38bdf8;
+            text-decoration: underline;
+        }
+        .ploca-chip-remove {
+            background: rgba(239, 68, 68, 0.15);
+            border: none;
+            color: #f87171;
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 0;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+        .ploca-chip-remove:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+        .smart-chip-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .smart-chip-input {
+            background: rgba(0, 0, 0, 0.35) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            color: #ffffff !important;
+            border-radius: 8px !important;
+            height: 36px !important;
+            font-size: 0.88rem !important;
+            padding: 4px 12px !important;
+        }
+        .smart-chip-input:focus {
+            border-color: #0dcaf0 !important;
+            box-shadow: none !important;
+        }
+        .smart-chip-add-btn {
+            background: rgba(13, 202, 240, 0.15);
+            border: 1px solid rgba(13, 202, 240, 0.4);
+            color: #38bdf8;
+            height: 36px;
+            padding: 0 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .smart-chip-add-btn:hover {
+            background: #0dcaf0;
+            color: #0b0c10;
+            border-color: #0dcaf0;
+        }
+        .preset-chip-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        .preset-chip-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #94a3b8;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .preset-chip-btn:hover {
+            background: rgba(13, 202, 240, 0.15);
+            border-color: rgba(13, 202, 240, 0.4);
+            color: #ffffff;
+        }
+        /* Kompaktni prikaz ploča na Šefo Panelu i u Arhivi */
+        .mini-ploca-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(13, 202, 240, 0.1);
+            border: 1px solid rgba(13, 202, 240, 0.3);
+            color: #7dd3fc;
+            font-size: 0.73rem;
+            font-weight: 600;
+            padding: 1px 7px;
+            border-radius: 5px;
+            margin: 1px 2px;
+        }
+
         /* CSS ZA TICKER (INLINE-BLOCK + TRANSLATE3D) */
         .ticker-wrap {
             width: 100%;
@@ -862,12 +1030,206 @@
             isPolling = false;
         }
 
+        function inicijalizirajPametnePloce() {
+            var widgets = document.querySelectorAll('.smart-chip-widget');
+            for (var w = 0; w < widgets.length; w++) {
+                (function(widget) {
+                    if (widget.dataset.chipInit === '1') return;
+                    widget.dataset.chipInit = '1';
+
+                    var hiddenInput = widget.querySelector('.smart-chip-hidden');
+                    var listEl = widget.querySelector('.smart-chip-list');
+                    var textInput = widget.querySelector('.smart-chip-input');
+                    var addBtn = widget.querySelector('.smart-chip-add-btn');
+                    var countBadge = widget.querySelector('.smart-chip-count');
+                    var isMaterijal = widget.dataset.chipType === 'materijal';
+                    var form = widget.closest('form');
+
+                    // Provjeri localStorage (ako postoji nespremljena vrijednost) i inicijalno stanje iz baze
+                    var storageKey = '';
+                    if (form && hiddenInput) {
+                        var nalogIdInput = form.querySelector('input[name="id_naloga"]');
+                        storageKey = 'fcl_' + window.location.pathname + '_' + (nalogIdInput ? 'nalog_' + nalogIdInput.value + '_' : '') + hiddenInput.name;
+                        var savedVal = localStorage.getItem(storageKey);
+                        if (savedVal !== null && hiddenInput.value === '') {
+                            hiddenInput.value = savedVal;
+                        }
+                    }
+
+                    var items = [];
+                    if (hiddenInput && hiddenInput.value) {
+                        var rawParts = hiddenInput.value.split(',');
+                        for (var i = 0; i < rawParts.length; i++) {
+                            var clean = rawParts[i].trim();
+                            if (clean) items.push(clean);
+                        }
+                    }
+
+                    function sinkronizirajVrijednost(okiniAutoSave) {
+                        var trenutniTekst = textInput ? textInput.value.trim().replace(/,+$/, '').trim() : '';
+                        var sveStavke = items.slice();
+                        if (trenutniTekst) sveStavke.push(trenutniTekst);
+                        var spojeno = sveStavke.join(', ');
+                        if (hiddenInput) {
+                            hiddenInput.value = spojeno;
+                            if (okiniAutoSave) {
+                                hiddenInput.dataset.dirty = '1';
+                                if (storageKey) localStorage.setItem(storageKey, spojeno);
+                                if (form && form.classList.contains('nav-forma')) {
+                                    triggerDbAutoSave(form);
+                                }
+                            }
+                        }
+                        if (countBadge) {
+                            countBadge.textContent = items.length;
+                            countBadge.style.display = items.length > 0 ? 'inline-block' : 'none';
+                        }
+                    }
+
+                    function iscrtajChipove() {
+                        if (!listEl) return;
+                        listEl.innerHTML = '';
+                        if (items.length === 0) {
+                            var emptySpan = document.createElement('span');
+                            emptySpan.className = 'smart-chip-empty';
+                            emptySpan.textContent = isMaterijal ? 'Nema dodanih materijala — upišite ili odaberite ispod' : 'Nema dodanih ploča — upišite dimenziju ispod';
+                            listEl.appendChild(emptySpan);
+                        } else {
+                            for (var idx = 0; idx < items.length; idx++) {
+                                (function(index) {
+                                    var chip = document.createElement('span');
+                                    chip.className = 'ploca-chip' + (isMaterijal ? ' chip-materijal' : '');
+
+                                    var num = document.createElement('span');
+                                    num.className = 'ploca-chip-num';
+                                    num.textContent = (index + 1) + '.';
+
+                                    var txt = document.createElement('span');
+                                    txt.className = 'ploca-chip-text';
+                                    txt.title = 'Kliknite za uređivanje ove stavke';
+                                    txt.textContent = items[index];
+                                    txt.addEventListener('click', function() {
+                                        var zaUrediti = items[index];
+                                        items.splice(index, 1);
+                                        if (textInput) {
+                                            textInput.value = zaUrediti;
+                                            textInput.focus();
+                                        }
+                                        iscrtajChipove();
+                                        sinkronizirajVrijednost(true);
+                                    });
+
+                                    var delBtn = document.createElement('button');
+                                    delBtn.type = 'button';
+                                    delBtn.className = 'ploca-chip-remove';
+                                    delBtn.title = 'Ukloni stavku';
+                                    delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                                    delBtn.addEventListener('click', function() {
+                                        items.splice(index, 1);
+                                        iscrtajChipove();
+                                        sinkronizirajVrijednost(true);
+                                    });
+
+                                    chip.appendChild(num);
+                                    chip.appendChild(txt);
+                                    chip.appendChild(delBtn);
+                                    listEl.appendChild(chip);
+                                })(idx);
+                            }
+                        }
+                        sinkronizirajVrijednost(false);
+                    }
+
+                    function dodajIzPolja(vrijednostZaDodati) {
+                        var raw = (vrijednostZaDodati !== undefined ? vrijednostZaDodati : (textInput ? textInput.value : '')).trim();
+                        if (!raw) return;
+                        var dijelovi = raw.split(',');
+                        var dodano = false;
+                        for (var d = 0; d < dijelovi.length; d++) {
+                            var st = dijelovi[d].trim();
+                            if (st) {
+                                items.push(st);
+                                dodano = true;
+                            }
+                        }
+                        if (vrijednostZaDodati === undefined && textInput) {
+                            textInput.value = '';
+                        }
+                        if (dodano) {
+                            iscrtajChipove();
+                            sinkronizirajVrijednost(true);
+                        }
+                    }
+
+                    if (addBtn) {
+                        addBtn.addEventListener('click', function() {
+                            dodajIzPolja();
+                            if (textInput) textInput.focus();
+                        });
+                    }
+
+                    if (textInput) {
+                        textInput.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter' || e.key === ',') {
+                                if (textInput.value.trim() !== '') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    dodajIzPolja();
+                                }
+                            } else if (e.key === 'Backspace' && textInput.value === '' && items.length > 0) {
+                                // Brzo vraćanje zadnje kartice na Backspace ako je polje prazno
+                                var zadnja = items.pop();
+                                textInput.value = zadnja;
+                                e.preventDefault();
+                                iscrtajChipove();
+                                sinkronizirajVrijednost(true);
+                            }
+                        });
+                        textInput.addEventListener('input', function() {
+                            if (textInput.value.indexOf(',') !== -1) {
+                                dodajIzPolja();
+                            } else {
+                                sinkronizirajVrijednost(true);
+                            }
+                        });
+                        textInput.addEventListener('blur', function() {
+                            if (textInput.value.trim() !== '') {
+                                dodajIzPolja();
+                            }
+                        });
+                    }
+
+                    var presetBtns = widget.querySelectorAll('.preset-chip-btn');
+                    for (var p = 0; p < presetBtns.length; p++) {
+                        (function(btn) {
+                            btn.addEventListener('click', function() {
+                                var val = btn.getAttribute('data-preset');
+                                if (!val) return;
+                                if (val.slice(-1) === 'x' || val.slice(-1) === '×') {
+                                    if (textInput) {
+                                        textInput.value = val;
+                                        textInput.focus();
+                                    }
+                                } else {
+                                    dodajIzPolja(val);
+                                    if (textInput) textInput.focus();
+                                }
+                            });
+                        })(presetBtns[p]);
+                    }
+
+                    iscrtajChipove();
+                })(widgets[w]);
+            }
+        }
+
         function osvjeziSveHandlereStranice() {
             if (typeof filtrirajArhivu === 'function') filtrirajArhivu();
             if (typeof filtrirajSefoPanel === 'function') filtrirajSefoPanel();
             if (typeof updateBulkBar === 'function') updateBulkBar();
             postaviSubmitZastitu();
             if (typeof initAutoSave === 'function') initAutoSave();
+            if (typeof inicijalizirajPametnePloce === 'function') inicijalizirajPametnePloce();
             if (typeof inicijalizirajKosaricu === 'function') inicijalizirajKosaricu();
             if (typeof postaviEnterNavigacijuTabela === 'function') postaviEnterNavigacijuTabela();
             if (typeof postaviEnterNavigacijuKreiranje === 'function') postaviEnterNavigacijuKreiranje();
@@ -925,6 +1287,11 @@
                                         }
                                         if (fromEl.id === 'sliderText' || fromEl.id === 'bulkActionBar' || fromEl.id === 'traziAktivne' || fromEl.id === 'traziArhivu') {
                                             return false;
+                                        }
+                                        if (fromEl.classList && fromEl.classList.contains('smart-chip-widget')) {
+                                            if (fromEl.contains(document.activeElement) || fromEl.querySelector('[data-dirty="1"]')) {
+                                                return false;
+                                            }
                                         }
 
                                         // Zaštita polja koja korisnik trenutno uređuje (ili ima dirty oznaku)
@@ -1272,7 +1639,7 @@
         function postaviEnterNavigacijuTabela() {
             var forms = document.querySelectorAll('.nav-forma');
             for (var i = 0; i < forms.length; i++) {
-                var inputs = forms[i].querySelectorAll('.navigabilno');
+                var inputs = forms[i].querySelectorAll('.navigabilno:not(.smart-chip-input)');
                 for (var j = 0; j < inputs.length; j++) {
                     (function(input, index) {
                         if(!input.dataset.enterNavTbl) {

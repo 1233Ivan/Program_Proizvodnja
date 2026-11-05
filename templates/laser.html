@@ -132,9 +132,67 @@
         <input type="hidden" name="id_naloga" value="{{ n.id }}">
         <input type="hidden" name="izvor" value="laser">
         <div class="p-3 mb-4 rounded-3 border border-info border-opacity-25" style="background-color: rgba(13, 202, 240, 0.03);">
-            <div class="row align-items-center g-3">
-                <div class="col-md-6"><label class="form-label text-info fw-bold mb-1"><i class="fa-solid fa-ruler-combined me-1"></i> Dimenzije uložene ploče</label><input type="text" class="form-control text-white border-info bg-dark navigabilno" name="dimenzije_ploce" placeholder="npr. 2000x1000x5" value="{{ n.dimenzije_ploce_laser }}"></div>
-                <div class="col-md-6"><label class="form-label text-info fw-bold mb-1"><i class="fa-solid fa-layer-group me-1"></i> Materijal ploče</label><input type="text" class="form-control text-white border-info bg-dark navigabilno" name="materijal_ploce" placeholder="npr. Inox, Alumunij, Čelik..." value="{{ n.materijal_ploce_laser }}"></div>
+            <div class="row align-items-stretch g-3">
+                <!-- LIJEVO: DIMENZIJE ULOŽENIH PLOČA -->
+                <div class="col-md-6">
+                    <div class="smart-chip-card smart-chip-widget" data-chip-type="dimenzije">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label text-info fw-bold mb-0">
+                                    <i class="fa-solid fa-ruler-combined me-1"></i> Dimenzije uloženih ploča
+                                </label>
+                                <span class="badge bg-info text-dark fw-bold rounded-pill smart-chip-count" style="font-size: 0.72rem; display: none;">0</span>
+                            </div>
+                            <input type="hidden" name="dimenzije_ploce" class="smart-chip-hidden" value="{{ n.dimenzije_ploce_laser }}">
+                            <div class="smart-chip-list"></div>
+                        </div>
+                        <div>
+                            <div class="smart-chip-input-row">
+                                <input type="text" class="form-control smart-chip-input navigabilno" placeholder="Upišite dimenziju (npr. 3000x1500x5) pa Enter ili +" autocomplete="off">
+                                <button type="button" class="smart-chip-add-btn" title="Dodaj ploču u listu">
+                                    <i class="fa-solid fa-plus"></i> Dodaj
+                                </button>
+                            </div>
+                            <div class="preset-chip-bar">
+                                <button type="button" class="preset-chip-btn" data-preset="3000x1500x">+ 3000×1500</button>
+                                <button type="button" class="preset-chip-btn" data-preset="2500x1250x">+ 2500×1250</button>
+                                <button type="button" class="preset-chip-btn" data-preset="2000x1000x">+ 2000×1000</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DESNO: MATERIJAL PLOČA -->
+                <div class="col-md-6">
+                    <div class="smart-chip-card smart-chip-widget" data-chip-type="materijal">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label text-info fw-bold mb-0">
+                                    <i class="fa-solid fa-layer-group me-1"></i> Materijal ploča
+                                </label>
+                                <span class="badge bg-info text-dark fw-bold rounded-pill smart-chip-count" style="font-size: 0.72rem; display: none;">0</span>
+                            </div>
+                            <input type="hidden" name="materijal_ploce" class="smart-chip-hidden" value="{{ n.materijal_ploce_laser }}">
+                            <div class="smart-chip-list"></div>
+                        </div>
+                        <div>
+                            <div class="smart-chip-input-row">
+                                <input type="text" class="form-control smart-chip-input navigabilno" placeholder="Upišite materijal (npr. Hardox, Inox...) pa Enter ili +" autocomplete="off">
+                                <button type="button" class="smart-chip-add-btn" title="Dodaj materijal u listu">
+                                    <i class="fa-solid fa-plus"></i> Dodaj
+                                </button>
+                            </div>
+                            <div class="preset-chip-bar">
+                                <button type="button" class="preset-chip-btn" data-preset="Čelik / Crno">+ Čelik / Crno</button>
+                                <button type="button" class="preset-chip-btn" data-preset="INOX">+ INOX</button>
+                                <button type="button" class="preset-chip-btn" data-preset="Hardox">+ Hardox</button>
+                                <button type="button" class="preset-chip-btn" data-preset="Strenx">+ Strenx</button>
+                                <button type="button" class="preset-chip-btn" data-preset="Aluminij">+ Aluminij</button>
+                                <button type="button" class="preset-chip-btn" data-preset="Pocinčano">+ Pocinčano</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
