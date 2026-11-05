@@ -5,17 +5,40 @@
 
 {% for n in nalozi %}
 <div class="card p-4" style="border-top: 4px solid {% if n.status == 'Pauzirano - Laser' %}#ffc107{% else %}#ff0000{% endif %} !important;">
-    <div class="d-flex justify-content-between align-items-center mb-2 flex-mob-col">
-        <div>
-            <h4 class="fw-bold text-white mb-0">{{ n.naziv_naloga }}</h4>
-            <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %} | Debljina: <b class="text-info">D: {{ n.debljina_ploce }}</b>{% endif %} | Nalog #{{ n.id }} | Ruta: {{ 'Samo Rezanje' if n.rutiranje == 'Samo Laser' else n.rutiranje }}</small>
+    <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-mob-col">
+        <div style="min-width: 0; flex: 1 1 auto;">
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h4 class="fw-bold text-white mb-0">{{ n.naziv_naloga }}</h4>
+                <span class="badge bg-dark border border-secondary text-light px-2 py-1" style="font-size: 0.72rem; letter-spacing: 0.5px; border-radius: 6px;">#{{ n.id }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap text-muted small">
+                <span><i class="fa-solid fa-briefcase text-info me-1 opacity-75"></i>{{ n.naziv_projekta }}</span>
+                {% if n.debljina_ploce %}
+                    <span class="text-secondary">&bull;</span>
+                    <span><i class="fa-solid fa-ruler-combined text-info me-1 opacity-75"></i>Debljina: <b class="text-info">D: {{ n.debljina_ploce }}</b></span>
+                {% endif %}
+                <span class="text-secondary">&bull;</span>
+                <span><i class="fa-solid fa-route text-warning me-1 opacity-75"></i>Ruta: <b class="text-light">{{ 'Samo Rezanje' if n.rutiranje == 'Samo Laser' else n.rutiranje }}</b></span>
+            </div>
         </div>
-        <div class="text-end">
-            {% if not n.laser_zapoceto_u %}<a href="/zapocni_fazu/{{ n.id }}/laser" class="btn {% if n.status == 'Pauzirano - Laser' %}btn-warning text-dark{% else %}btn-success{% endif %} fw-bold px-4">{% if n.status == 'Pauzirano - Laser' %}NASTAVI NALOG{% else %}ZAPOČNI NALOG{% endif %}</a>
+        <div class="d-flex align-items-center justify-content-md-end justify-content-start gap-2 flex-wrap flex-md-nowrap flex-shrink-0">
+            {% if not n.laser_zapoceto_u %}
+                <a href="/zapocni_fazu/{{ n.id }}/laser" class="btn {% if n.status == 'Pauzirano - Laser' %}btn-warning text-dark{% else %}btn-success{% endif %} fw-bold px-4 py-2 rounded-3 shadow-sm d-inline-flex align-items-center gap-2">
+                    <i class="fa-solid {% if n.status == 'Pauzirano - Laser' %}fa-play{% else %}fa-bolt{% endif %}"></i>
+                    <span>{% if n.status == 'Pauzirano - Laser' %}NASTAVI NALOG{% else %}ZAPOČNI NALOG{% endif %}</span>
+                </a>
             {% else %}
-                {% if n.odabrani_laser %}<span class="badge bg-dark border border-danger text-danger px-2 py-1 mb-1 shadow-sm" style="border-radius: 6px; font-size: 0.7rem; letter-spacing: 0.5px;"><i class="fa-solid fa-crosshairs me-1"></i>OBRADA NA: {{ n.odabrani_laser|upper }}</span><br>{% endif %}
-                <span class="badge bg-dark border border-info text-info p-2 fs-6 me-1"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>
-                <span class="auto-save-badge saved"><i class="fa-solid fa-check me-1"></i>Spremljeno</span>
+                {% if n.odabrani_laser %}
+                    <span class="status-chip status-chip-machine" title="Radna stanica">
+                        <i class="fa-solid fa-crosshairs text-danger"></i><span>OBRADA NA: {{ n.odabrani_laser|upper }}</span>
+                    </span>
+                {% endif %}
+                <span class="status-chip status-chip-active">
+                    <i class="fa-solid fa-gear fa-spin text-info"></i><span>U OBRADI</span>
+                </span>
+                <span class="auto-save-badge saved">
+                    <i class="fa-solid fa-circle-check text-success"></i><span>Spremljeno</span>
+                </span>
             {% endif %}
         </div>
     </div>
@@ -33,8 +56,10 @@
     <div class="mt-2 mb-4">
         {% set ukupno_datoteka = (n.pdf_datoteke|length) + (n.lxdf_datoteke|length) %}
         {% if ukupno_datoteka > 0 %}
-            <button type="button" class="btn btn-outline-info premium-nacrti-btn mob-full-btn rounded-3 fw-bold shadow-sm" style="border-width: 2px;" onclick="openPremiumFilesModal({{ n.id }})">
-                <i class="fa-solid fa-folder-open me-2 fs-5 align-middle"></i> Pregled Datoteka ({{ ukupno_datoteka }})
+            <button type="button" class="premium-nacrti-btn mob-full-btn" onclick="openPremiumFilesModal({{ n.id }})">
+                <i class="fa-solid fa-folder-open fs-5"></i>
+                <span>Pregled Datoteka</span>
+                <span class="file-count-badge">{{ ukupno_datoteka }}</span>
             </button>
             <div id="files-data-{{ n.id }}" class="d-none">
                 <div class="modal-header border-0 bg-dark bg-opacity-50 pt-4 pb-3 px-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">
@@ -94,11 +119,11 @@
     {% if n.laser_zapoceto_u %}
     <div class="p-3 mb-3 dodaj-kontejner">
         <form action="/dodaj_poziciju/{{ n.id }}/laser" method="POST" class="row g-2 align-items-center" id="form-dodaj-poz-{{ n.id }}" onsubmit="event.preventDefault(); return dodajPozicijuSigurno(this, 'forma-nalog-{{ n.id }}');">
-            <div class="col-md-6">
-                <input type="text" class="form-control form-control-sm" name="novi_naziv_pozicije" id="novi_naziv_pozicije_{{ n.id }}" placeholder="Upišite šifru pozicije s nacrta..." required onkeydown="if(event.key === 'Enter') { event.preventDefault(); dodajPozicijuSigurno(document.getElementById('form-dodaj-poz-{{ n.id }}'), 'forma-nalog-{{ n.id }}'); }">
+            <div class="col-md-7 col-lg-8">
+                <input type="text" class="form-control" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); height: 38px; border-radius: 8px;" name="novi_naziv_pozicije" id="novi_naziv_pozicije_{{ n.id }}" placeholder="Upišite šifru pozicije s nacrta..." required onkeydown="if(event.key === 'Enter') { event.preventDefault(); dodajPozicijuSigurno(document.getElementById('form-dodaj-poz-{{ n.id }}'), 'forma-nalog-{{ n.id }}'); }">
             </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-sm btn-outline-danger w-100"><i class="fa-solid fa-plus"></i> Dodaj poziciju</button>
+            <div class="col-md-5 col-lg-4">
+                <button type="submit" class="btn-dodaj-poz-laser w-100 d-inline-flex align-items-center justify-content-center gap-2" style="height: 38px;"><i class="fa-solid fa-plus"></i> Dodaj poziciju</button>
             </div>
         </form>
     </div>

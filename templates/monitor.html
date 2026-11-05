@@ -14,14 +14,16 @@
                 {% if not trenutno_na_laseru %}<p class="text-center my-4 vidljiv-tekst">Trenutno nema aktivnih naloga u procesu rezanja.</p>
                 {% else %}
                     {% for n in trenutno_na_laseru %}
-                    <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col border {% if n.status == 'Pauzirano - Laser' %}border-warning border-opacity-50{% else %}border-info border-opacity-25{% endif %}">
-                        <div>
-                            <b class="text-white fs-5">{{ n.naziv_naloga }}</b>
-                            {% if n.odabrani_laser %} <span class="badge bg-dark border border-danger text-danger ms-2 shadow-sm" style="border-radius: 6px; font-size: 0.7rem;"><i class="fa-solid fa-crosshairs me-1"></i>{{ n.odabrani_laser|upper }}</span>{% endif %}<br>
+                    <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center gap-3 flex-mob-col border {% if n.status == 'Pauzirano - Laser' %}border-warning border-opacity-50{% else %}border-info border-opacity-25{% endif %}">
+                        <div style="min-width: 0; flex: 1 1 auto;">
+                            <b class="text-white fs-5">{{ n.naziv_naloga }}</b><br>
                             <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %}[D: {{ n.debljina_ploce }}]{% endif %} | Nalog #{{ n.id }}</small>
                         </div>
-                        {% if n.status == 'Pauzirano - Laser' %}<span class="badge bg-warning text-dark p-2 fs-6 mt-2 fw-bold"><i class="fa-solid fa-pause me-1"></i> PAUZIRANO</span>
-                        {% else %}<span class="badge bg-dark border border-info text-info p-2 fs-6 mt-2"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>{% endif %}
+                        <div class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap flex-shrink-0">
+                            {% if n.odabrani_laser %}<span class="status-chip status-chip-machine"><i class="fa-solid fa-crosshairs text-danger"></i><span>{{ n.odabrani_laser|upper }}</span></span>{% endif %}
+                            {% if n.status == 'Pauzirano - Laser' %}<span class="status-chip status-chip-paused"><i class="fa-solid fa-pause text-warning"></i><span>PAUZIRANO</span></span>
+                            {% else %}<span class="status-chip status-chip-active"><i class="fa-solid fa-gear fa-spin text-info"></i><span>U OBRADI</span></span>{% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 {% endif %}
@@ -37,13 +39,15 @@
                 {% if not trenutno_u_bravariji %}<p class="text-center my-4 vidljiv-tekst">Trenutno nema aktivnih naloga u bravarskoj obradi.</p>
                 {% else %}
                     {% for n in trenutno_u_bravariji %}
-                    <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center flex-mob-col border {% if n.status == 'Pauzirano - Bravarija' %}border-warning border-opacity-50{% else %}border-info border-opacity-25{% endif %}">
-                        <div>
+                    <div class="p-3 rounded bg-dark bg-opacity-25 mb-2 d-flex justify-content-between align-items-center gap-3 flex-mob-col border {% if n.status == 'Pauzirano - Bravarija' %}border-warning border-opacity-50{% else %}border-info border-opacity-25{% endif %}">
+                        <div style="min-width: 0; flex: 1 1 auto;">
                             <b class="text-white fs-5">{{ n.naziv_naloga }}</b><br>
                             <small class="text-muted">Projekt: {{ n.naziv_projekta }} {% if n.debljina_ploce %}[D: {{ n.debljina_ploce }}]{% endif %} | Nalog #{{ n.id }}</small>
                         </div>
-                        {% if n.status == 'Pauzirano - Bravarija' %}<span class="badge bg-warning text-dark p-2 fs-6 mt-2 fw-bold"><i class="fa-solid fa-pause me-1"></i> PAUZIRANO</span>
-                        {% else %}<span class="badge bg-dark border border-warning text-warning p-2 fs-6 mt-2"><i class="fa-solid fa-gears fa-spin me-2"></i> U OBRADI</span>{% endif %}
+                        <div class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap flex-shrink-0">
+                            {% if n.status == 'Pauzirano - Bravarija' %}<span class="status-chip status-chip-paused"><i class="fa-solid fa-pause text-warning"></i><span>PAUZIRANO</span></span>
+                            {% else %}<span class="status-chip status-chip-bravarija"><i class="fa-solid fa-gear fa-spin text-warning"></i><span>U OBRADI</span></span>{% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 {% endif %}

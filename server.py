@@ -378,54 +378,44 @@ def parsiraj_listu_datoteka(raw_data):
     except: pass
     return [{"filename": raw_data, "ext": raw_data.split('.')[-1].upper()}]
 
-# --- SERVER-SENT EVENTS (SSE) STREAMING ROUTE ---
+# --- ULTRA-BRZA PROVJERA VERZIJE STANJA U RAM-U (0ms BLOKIRANJA KONEKCIJA) ---
+@app.route('/api/state_version')
+def api_state_version():
+    close_connection(None)
+    provjeri_vanjske_promjene_datoteka()
+    with _SSE_CONDITION:
+        v = _STATE_VERSION
+        s = _STATE_SENDER
+        r = _STATE_REASON
+    resp = jsonify({
+        'version': v,
+        'sender_id': s,
+        'reason': r
+    })
+    resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return resp
+
 @app.route('/api/stream')
 def api_stream():
-    close_connection(None) # Ne zadržavaj otvorenu SQLite vezu u generatoru!
-    
-    def event_generator():
-        lokalna_verzija = _STATE_VERSION
-        zadnji_ping = time.time()
-        
-        yield f"event: connected\ndata: {json.dumps({'version': lokalna_verzija})}\n\n"
-        
-        while True:
-            with _SSE_CONDITION:
-                if lokalna_verzija == _STATE_VERSION:
-                    _SSE_CONDITION.wait(timeout=15.0)
-                trenutna_verzija = _STATE_VERSION
-                trenutni_sender = _STATE_SENDER
-                trenutni_uzrok = _STATE_REASON
-            
-            sada = time.time()
-            provjeri_vanjske_promjene_datoteka()
-            with _SSE_CONDITION:
-                trenutna_verzija = _STATE_VERSION
-                trenutni_sender = _STATE_SENDER
-                trenutni_uzrok = _STATE_REASON
-            
-            if trenutna_verzija != lokalna_verzija:
-                lokalna_verzija = trenutna_verzija
-                podaci = json.dumps({
-                    'version': lokalna_verzija,
-                    'timestamp': sada,
-                    'sender_id': trenutni_sender,
-                    'reason': trenutni_uzrok
-                })
-                yield f"event: change\ndata: {podaci}\n\n"
-            elif sada - zadnji_ping >= 15.0:
-                zadnji_ping = sada
-                yield f": keepalive {int(sada)}\n\n"
-
-    return Response(event_generator(), mimetype='text/event-stream', headers={
+    close_connection(None)
+    provjeri_vanjske_promjene_datoteka()
+    with _SSE_CONDITION:
+        v = _STATE_VERSION
+        s = _STATE_SENDER
+        r = _STATE_REASON
+    podaci = json.dumps({
+        'version': v,
+        'sender_id': s,
+        'reason': r
+    })
+    return Response(f"retry: 1500\nevent: connected\ndata: {podaci}\n\n", mimetype='text/event-stream', headers={
         'Cache-Control': 'no-cache, no-transform',
-        'X-Accel-Buffering': 'no',
-        'Connection': 'keep-alive'
+        'X-Accel-Buffering': 'no'
     })
 
 @app.before_request
 def provjera_pristupa():
-    dozvoljeno_svima = ['/prijava_stanice', '/logo.png', '/favicon.png', '/favicon.ico', '/postavi_stanicu', '/odjava_stanice', '/login', '/logout', '/maintenance', '/skriveni_dev_login', '/api/stream']
+    dozvoljeno_svima = ['/prijava_stanice', '/logo.png', '/favicon.png', '/favicon.ico', '/postavi_stanicu', '/odjava_stanice', '/login', '/logout', '/maintenance', '/skriveni_dev_login', '/api/stream', '/api/state_version']
     if any(request.path.startswith(d) for d in dozvoljeno_svima): return
     
     conn = get_db_connection()
@@ -1262,4 +1252,9 @@ def obrisi_poziciju(poz_id, izvor):
     return redirect(url_for(f'sekcija_{izvor}'))
 
 if __name__ == '__main__':
+    try:
+        from werkzeug.serving import WSGIRequestHandler
+        WSGIRequestHandler.protocol_version = "HTTP/1.1"
+    except Exception:
+        pass
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False, threaded=True)

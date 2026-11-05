@@ -70,8 +70,10 @@
                             <td>
                                 {% set ukupno_datoteka = (n.pdf_datoteke|length) + (n.lxdf_datoteke|length) %}
                                 {% if ukupno_datoteka > 0 %}
-                                    <button type="button" class="btn btn-outline-info premium-nacrti-btn mob-full-btn rounded-3 fw-bold shadow-sm" style="border-width: 2px;" onclick="openPremiumFilesModal({{ n.id }})">
-                                        <i class="fa-solid fa-folder-open me-2 fs-5 align-middle"></i> Pregled Datoteka ({{ ukupno_datoteka }})
+                                    <button type="button" class="premium-nacrti-btn mob-full-btn" onclick="openPremiumFilesModal({{ n.id }})">
+                                        <i class="fa-solid fa-folder-open fs-5"></i>
+                                        <span>Pregled Datoteka</span>
+                                        <span class="file-count-badge">{{ ukupno_datoteka }}</span>
                                     </button>
                                     <div id="files-data-{{ n.id }}" class="d-none">
                                         <div class="modal-header border-0 bg-dark bg-opacity-50 pt-4 pb-3 px-4" style="border-top-left-radius: 24px; border-top-right-radius: 24px;">

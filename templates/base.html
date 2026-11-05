@@ -92,10 +92,114 @@
         .sync-recon { background-color: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.8); }
         .sync-offline { background-color: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8); }
 
-        /* Auto-Save Status Značka */
-        .auto-save-badge { font-size: 0.75rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; transition: all 0.3s ease; }
-        .auto-save-badge.saved { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .auto-save-badge.saving { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+        /* UNIFICIRANE STATUS ZNAČKE (MODERN HUD CHIPS) */
+        .status-chip, .auto-save-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 34px;
+            padding: 0 13px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            border-radius: 8px;
+            white-space: nowrap;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+            line-height: 1;
+            box-sizing: border-box;
+            vertical-align: middle;
+        }
+
+        /* OBRADA NA: LASER */
+        .status-chip-machine {
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+        .status-chip-machine:hover {
+            background: rgba(239, 68, 68, 0.22);
+            border-color: rgba(239, 68, 68, 0.6);
+            color: #ffffff;
+        }
+
+        /* STANICA: BRAVARIJA */
+        .status-chip-bravarija {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+        .status-chip-bravarija:hover {
+            background: rgba(245, 158, 11, 0.22);
+            border-color: rgba(245, 158, 11, 0.6);
+            color: #ffffff;
+        }
+
+        /* U OBRADI (Aktivno) */
+        .status-chip-active {
+            background: rgba(13, 202, 240, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(13, 202, 240, 0.45);
+            box-shadow: 0 0 10px rgba(13, 202, 240, 0.15);
+        }
+
+        /* PAUZIRANO */
+        .status-chip-paused {
+            background: rgba(245, 158, 11, 0.12);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.45);
+        }
+
+        /* AUTO-SAVE STATUS STANJA */
+        .auto-save-badge.saved {
+            background: rgba(16, 185, 129, 0.12);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+        .auto-save-badge.saving {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.45);
+        }
+        .auto-save-badge.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+
+        /* DUGME DODAJ POZICIJU I KONTEJNER */
+        .btn-dodaj-poz-laser {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            color: #f87171;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 6px 14px;
+            transition: all 0.2s ease;
+        }
+        .btn-dodaj-poz-laser:hover {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        .btn-dodaj-poz-bravarija {
+            background: rgba(250, 204, 21, 0.1);
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            color: #facc15;
+            font-weight: 700;
+            border-radius: 8px;
+            padding: 6px 14px;
+            transition: all 0.2s ease;
+        }
+        .btn-dodaj-poz-bravarija:hover {
+            background: #facc15;
+            border-color: #facc15;
+            color: #0b0c10;
+            box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
+        }
 
         /* CSS ZA TICKER (INLINE-BLOCK + TRANSLATE3D) */
         .ticker-wrap {
@@ -140,9 +244,44 @@
             100% { transform: translate3d(-50%, 0, 0); } 
         }
         
-        /* PREMIUM FILES MODAL CSS */
-        .premium-nacrti-btn { background: rgba(13, 202, 240, 0.05); transition: all 0.3s ease; border-color: rgba(13, 202, 240, 0.4); }
-        .premium-nacrti-btn:hover { background: rgba(13, 202, 240, 0.15); border-color: #0dcaf0; transform: translateY(-2px); box-shadow: 0 8px 15px rgba(13,202,240,0.15) !important; }
+        /* PREMIUM FILES MODAL CSS & DUGMAD */
+        .premium-nacrti-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, rgba(13, 202, 240, 0.1), rgba(13, 202, 240, 0.03));
+            border: 1px solid rgba(13, 202, 240, 0.35);
+            color: #38bdf8;
+            font-size: 0.88rem;
+            font-weight: 700;
+            padding: 7px 16px;
+            border-radius: 10px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .premium-nacrti-btn:hover {
+            background: linear-gradient(135deg, rgba(13, 202, 240, 0.22), rgba(13, 202, 240, 0.08));
+            border-color: #0dcaf0;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(13, 202, 240, 0.25) !important;
+        }
+        .premium-nacrti-btn .file-count-badge {
+            background: rgba(13, 202, 240, 0.25);
+            color: #38bdf8;
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid rgba(13, 202, 240, 0.4);
+            transition: all 0.2s ease;
+        }
+        .premium-nacrti-btn:hover .file-count-badge {
+            background: #0dcaf0;
+            color: #0b0c10;
+        }
         .file-row { transition: all 0.2s ease; }
         .file-row:hover { background: rgba(255,255,255,0.06) !important; transform: scale(1.01); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         
@@ -265,12 +404,18 @@
 
         var kosaricaStavke = [];
         var isSubmitting = false;
+        var isNavigating = false;
         var pozadinskiSkener = null; 
         var toastTimeout = null;
         var zadnjiETag = null;
         var isPolling = false;
         var autoSaveTimer = null;
         var sseSource = null;
+        var trenutniPollXhr = null;
+        var versionAbortController = null;
+        var navAbortController = null;
+        var lokalnaVerzijaStanja = null;
+        var versionTimer = null;
 
         function prilagodiBrzinuTickera() {
             var track = document.querySelector('.ticker-track');
@@ -476,13 +621,13 @@
             if (!badge) return;
             if (status === 'saving') {
                 badge.className = 'auto-save-badge saving';
-                badge.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i>Spremanje...';
+                badge.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin text-warning"></i><span>Spremanje...</span>';
             } else if (status === 'saved') {
                 badge.className = 'auto-save-badge saved';
-                badge.innerHTML = '<i class="fa-solid fa-check me-1"></i>Spremljeno';
+                badge.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i><span>Spremljeno</span>';
             } else if (status === 'error') {
-                badge.className = 'auto-save-badge bg-danger text-white border-0';
-                badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>Greška spremanja';
+                badge.className = 'auto-save-badge error';
+                badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger"></i><span>Greška spremanja</span>';
             }
         }
 
@@ -701,19 +846,55 @@
             }
         }
 
+        function prekinSvePozadinskeZahtjeve() {
+            if (trenutniPollXhr) {
+                try { trenutniPollXhr.abort(); } catch(e) {}
+                trenutniPollXhr = null;
+            }
+            if (versionAbortController) {
+                try { versionAbortController.abort(); } catch(e) {}
+                versionAbortController = null;
+            }
+            if (sseSource) {
+                try { sseSource.close(); } catch(e) {}
+                sseSource = null;
+            }
+            isPolling = false;
+        }
+
+        function osvjeziSveHandlereStranice() {
+            if (typeof filtrirajArhivu === 'function') filtrirajArhivu();
+            if (typeof filtrirajSefoPanel === 'function') filtrirajSefoPanel();
+            if (typeof updateBulkBar === 'function') updateBulkBar();
+            postaviSubmitZastitu();
+            if (typeof initAutoSave === 'function') initAutoSave();
+            if (typeof inicijalizirajKosaricu === 'function') inicijalizirajKosaricu();
+            if (typeof postaviEnterNavigacijuTabela === 'function') postaviEnterNavigacijuTabela();
+            if (typeof postaviEnterNavigacijuKreiranje === 'function') postaviEnterNavigacijuKreiranje();
+            if (typeof postaviGlasnuValidaciju === 'function') postaviGlasnuValidaciju();
+            prilagodiBrzinuTickera();
+            var textareas = document.querySelectorAll('textarea.auto-expand');
+            for (var t = 0; t < textareas.length; t++) {
+                if (textareas[t].value) autoProsiri(textareas[t]);
+            }
+        }
+
         function izvrsiPozadinskoOsvjezavanje() {
-            if (isPolling || isSubmitting || window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
+            if (isPolling || isSubmitting || isNavigating || window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
             if (document.hidden) return;
 
             isPolling = true;
             var xhr = new XMLHttpRequest();
+            trenutniPollXhr = xhr;
             xhr.open('GET', window.location.href, true);
             if (zadnjiETag) {
                 xhr.setRequestHeader('If-None-Match', zadnjiETag);
             }
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
+                    if (trenutniPollXhr === xhr) trenutniPollXhr = null;
                     isPolling = false;
+                    if (isNavigating) return;
                     if (xhr.status === 304) {
                         return;
                     }
@@ -792,14 +973,7 @@
                                     }
                                 }
 
-                                if (typeof filtrirajArhivu === 'function') filtrirajArhivu();
-                                if (typeof filtrirajSefoPanel === 'function') filtrirajSefoPanel();
-                                if (typeof updateBulkBar === 'function') updateBulkBar();
-                                postaviSubmitZastitu();
-                                if (typeof initAutoSave === 'function') initAutoSave();
-                                if (typeof postaviEnterNavigacijuTabela === 'function') postaviEnterNavigacijuTabela();
-                                if (typeof postaviEnterNavigacijuKreiranje === 'function') postaviEnterNavigacijuKreiranje();
-                                if (typeof postaviGlasnuValidaciju === 'function') postaviGlasnuValidaciju();
+                                osvjeziSveHandlereStranice();
                             }
                         } catch(err) { }
                     }
@@ -808,7 +982,7 @@
             xhr.send();
         }
 
-        // --- SERVER-SENT EVENTS (SSE) KLIJENTSKA SINKRONIZACIJA ---
+        // --- NEBLOKIRAJUĆA SINKRONIZACIJA STANJA U STVARNOM VREMENU (0 ZAUZETIH KONEKCIJA) ---
         function postaviSyncDot(stanje) {
             var dot = document.getElementById('sync-status-dot');
             if (!dot) return;
@@ -816,41 +990,162 @@
             dot.title = stanje === 'live' ? 'Trenutna veza s pogonom aktivna' : stanje === 'recon' ? 'Ponovno povezivanje...' : 'Veza prekinuta';
         }
 
-        function pokreniSSE() {
-            if (window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
-            if (typeof EventSource === 'undefined') {
-                // Fallback na 3-sekundno ispitivanje ako preglednik ne podržava SSE
-                setInterval(izvrsiPozadinskoOsvjezavanje, 3000);
+        function provjeriVerzijuStanja() {
+            if (isSubmitting || isNavigating || document.hidden || window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') {
                 return;
             }
-            
-            if (sseSource) {
-                try { sseSource.close(); } catch(e) {}
+            if (versionAbortController) {
+                try { versionAbortController.abort(); } catch(e) {}
             }
-            
-            postaviSyncDot('recon');
-            sseSource = new EventSource('/api/stream?client_id=' + encodeURIComponent(fclClientId));
-            
-            sseSource.addEventListener('connected', function(e) {
-                postaviSyncDot('live');
-            });
-            
-            sseSource.addEventListener('change', function(e) {
-                postaviSyncDot('live');
-                try {
-                    var data = JSON.parse(e.data);
-                    // Ako je ovaj klijent poslao izmjenu (npr. auto-save), ne osvježavamo vlastiti DOM dok tipkamo!
-                    if (data.sender_id && data.sender_id === fclClientId) {
+            versionAbortController = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+            var fetchOpts = {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' }
+            };
+            if (versionAbortController) fetchOpts.signal = versionAbortController.signal;
+
+            fetch('/api/state_version', fetchOpts)
+                .then(function(res) {
+                    if (!res.ok) throw new Error('Status ' + res.status);
+                    return res.json();
+                })
+                .then(function(data) {
+                    versionAbortController = null;
+                    postaviSyncDot('live');
+                    if (lokalnaVerzijaStanja === null) {
+                        lokalnaVerzijaStanja = data.version;
                         return;
                     }
-                } catch(err) {}
-                izvrsiPozadinskoOsvjezavanje();
-            });
-            
-            sseSource.onerror = function() {
-                postaviSyncDot('recon');
-                // EventSource ima ugrađeni automatski reconnect
-            };
+                    if (data.version !== lokalnaVerzijaStanja) {
+                        lokalnaVerzijaStanja = data.version;
+                        if (data.sender_id && data.sender_id === fclClientId) {
+                            return;
+                        }
+                        izvrsiPozadinskoOsvjezavanje();
+                    }
+                })
+                .catch(function(err) {
+                    versionAbortController = null;
+                    if (err && err.name === 'AbortError') return;
+                    postaviSyncDot('recon');
+                });
+        }
+
+        function pokreniSSE() {
+            if (window.location.pathname === '/login' || window.location.pathname === '/prijava_stanice') return;
+            if (versionTimer) clearInterval(versionTimer);
+            provjeriVerzijuStanja();
+            versionTimer = setInterval(provjeriVerzijuStanja, 1200);
+        }
+
+        // --- GLATKA (TURBO) NAVIGACIJA IZMEĐU SEKTORA BEZ RELOADA STRANICE ---
+        function jeTurboPutanja(pathname) {
+            var dozvoljene = ['/', '/laser', '/bravarija', '/sefo_panel', '/arhiva', '/dev_panel'];
+            return dozvoljene.indexOf(pathname) !== -1;
+        }
+
+        function navigirajGlatko(targetUrl, pushHistory) {
+            try {
+                var parsedUrl = new URL(targetUrl, window.location.origin);
+                if (parsedUrl.origin !== window.location.origin || !jeTurboPutanja(parsedUrl.pathname)) {
+                    window.location.href = targetUrl;
+                    return;
+                }
+
+                // Ako ima nespremljenih izmjena u aktivnoj formi, pošalji ih u pozadini
+                var dirtyForms = document.querySelectorAll('.nav-forma');
+                for (var f = 0; f < dirtyForms.length; f++) {
+                    if (dirtyForms[f].querySelector('[data-dirty="1"]')) {
+                        flushDbAutoSaveNow(dirtyForms[f]);
+                    }
+                }
+
+                // Odmah prekini sve pozadinske provjere i eventualnu prethodnu navigaciju
+                prekinSvePozadinskeZahtjeve();
+                if (navAbortController) {
+                    try { navAbortController.abort(); } catch(e) {}
+                }
+                navAbortController = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+                isNavigating = true;
+
+                var fetchOpts = {
+                    method: 'GET',
+                    headers: { 'X-Turbo-Nav': '1', 'Cache-Control': 'no-cache' }
+                };
+                if (navAbortController) fetchOpts.signal = navAbortController.signal;
+
+                fetch(parsedUrl.href, fetchOpts)
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                        var noviEtag = res.headers.get('ETag');
+                        if (noviEtag) zadnjiETag = noviEtag;
+                        var finalUrl = res.url || parsedUrl.href;
+                        return res.text().then(function(html) {
+                            return { html: html, finalUrl: finalUrl };
+                        });
+                    })
+                    .then(function(result) {
+                        navAbortController = null;
+                        isNavigating = false;
+
+                        var parser = new DOMParser();
+                        var newDoc = parser.parseFromString(result.html, 'text/html');
+
+                        var newMain = newDoc.getElementById('glavni-dinamicni-dio');
+                        var currentMain = document.getElementById('glavni-dinamicni-dio');
+                        if (!newMain || !currentMain) {
+                            window.location.href = result.finalUrl;
+                            return;
+                        }
+
+                        if (pushHistory !== false) {
+                            window.history.pushState({ turbo: true }, '', result.finalUrl);
+                        }
+
+                        // Ažuriraj navigacijsku traku
+                        var currentNav = document.querySelector('nav.navbar');
+                        var newNav = newDoc.querySelector('nav.navbar');
+                        if (currentNav && newNav) {
+                            var clockText = document.getElementById('mreza-sat') ? document.getElementById('mreza-sat').innerText : '';
+                            currentNav.innerHTML = newNav.innerHTML;
+                            if (clockText && document.getElementById('mreza-sat')) {
+                                document.getElementById('mreza-sat').innerText = clockText;
+                            }
+                        }
+
+                        // Ažuriraj glavni prostor (ticker + glavni sadržaj)
+                        var currentProstor = document.querySelector('.glavni-prostor');
+                        var newProstor = newDoc.querySelector('.glavni-prostor');
+                        if (currentProstor && newProstor) {
+                            currentProstor.innerHTML = newProstor.innerHTML;
+                        } else {
+                            currentMain.innerHTML = newMain.innerHTML;
+                        }
+
+                        // Izvrši inline skripte unutar novog glavnog dijela (npr. otvoriUrediNalogModal, bulk brisanje, dev slider)
+                        var aktivniMain = document.getElementById('glavni-dinamicni-dio');
+                        if (aktivniMain) {
+                            var skripte = aktivniMain.querySelectorAll('script');
+                            for (var s = 0; s < skripte.length; s++) {
+                                var novaSkripta = document.createElement('script');
+                                novaSkripta.text = skripte[s].textContent;
+                                document.body.appendChild(novaSkripta);
+                                document.body.removeChild(novaSkripta);
+                            }
+                        }
+
+                        osvjeziSveHandlereStranice();
+                    })
+                    .catch(function(err) {
+                        if (err && err.name === 'AbortError') return;
+                        navAbortController = null;
+                        isNavigating = false;
+                        window.location.href = targetUrl;
+                    });
+            } catch(e) {
+                isNavigating = false;
+                window.location.href = targetUrl;
+            }
         }
 
         function pokreniZiveElemente() {
@@ -865,26 +1160,53 @@
             osvjeziSat(); setInterval(osvjeziSat, 1000);
             updateDevTimer(); setInterval(updateDevTimer, 1000);
             
-            postaviEnterNavigacijuTabela(); postaviEnterNavigacijuKreiranje(); initAutoSave(); inicijalizirajKosaricu(); postaviGlasnuValidaciju(); postaviSubmitZastitu();
-            prilagodiBrzinuTickera();
-            
-            var textareas = document.querySelectorAll('textarea.auto-expand');
-            for(var t=0; t<textareas.length; t++) {
-                if (textareas[t].value) autoProsiri(textareas[t]);
-            }
-            
+            osvjeziSveHandlereStranice();
             pokreniSSE();
             
+            // Presretanje klikova na navigacijske linkove za trenutni (0ms) prijelaz između sektora
+            document.addEventListener('click', function(e) {
+                var link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!link) return;
+                if (link.target === '_blank' || link.hasAttribute('download') || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+                var href = link.getAttribute('href');
+                if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
+
+                try {
+                    var urlObj = new URL(href, window.location.origin);
+                    if (urlObj.origin === window.location.origin && jeTurboPutanja(urlObj.pathname) && !urlObj.search) {
+                        e.preventDefault();
+                        navigirajGlatko(urlObj.href, true);
+                    } else {
+                        // Kod običnih linkova (npr. odjava ili započni fazu) odmah oslobodi pozadinske konekcije
+                        prekinSvePozadinskeZahtjeve();
+                    }
+                } catch(err) {}
+            });
+
+            window.addEventListener('popstate', function() {
+                if (jeTurboPutanja(window.location.pathname)) {
+                    navigirajGlatko(window.location.href, false);
+                }
+            });
+
             document.addEventListener('visibilitychange', function() {
-                if (!document.hidden && !isSubmitting) {
-                    izvrsiPozadinskoOsvjezavanje();
+                if (!document.hidden && !isSubmitting && !isNavigating) {
+                    provjeriVerzijuStanja();
                 }
             });
             
-            // Sigurnosno slanje nespremljenih podataka pri zatvaranju taba / navigaciji
+            window.addEventListener('beforeunload', function() {
+                isNavigating = true;
+                prekinSvePozadinskeZahtjeve();
+            });
+
+            // Sigurnosno slanje SAMO stvarno izmijenjenih (dirty) podataka pri zatvaranju taba
             window.addEventListener('pagehide', function() {
+                isNavigating = true;
+                prekinSvePozadinskeZahtjeve();
                 var dirtyForms = document.querySelectorAll('.nav-forma');
                 for (var f = 0; f < dirtyForms.length; f++) {
+                    if (!dirtyForms[f].querySelector('[data-dirty="1"]')) continue;
                     var formData = new FormData(dirtyForms[f]);
                     if (window.location.pathname.indexOf('/laser') !== -1) formData.append('izvor', 'laser');
                     else if (window.location.pathname.indexOf('/bravarija') !== -1) formData.append('izvor', 'bravarija');
