@@ -355,6 +355,30 @@
             border-color: rgba(13, 202, 240, 0.4);
             color: #ffffff;
         }
+        .preset-chip-btn:active {
+            transform: translateY(0);
+        }
+        @keyframes smartInputStagePulse {
+            0% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.55); border-color: #0dcaf0; background: rgba(13, 202, 240, 0.12); }
+            100% { box-shadow: 0 0 0 4px rgba(13, 202, 240, 0.12); border-color: #0dcaf0; background: rgba(0, 0, 0, 0.45); }
+        }
+        .smart-chip-input.staged-pulse {
+            animation: smartInputStagePulse 0.45s ease-out forwards;
+        }
+        .poz-time-summary-group {
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 9px;
+            padding: 3px 6px;
+        }
+        body.light-mode .poz-time-summary-group {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
         /* Kompaktni prikaz ploča na Šefo Panelu i u Arhivi */
         .mini-ploca-badge {
             display: inline-flex;
@@ -1161,7 +1185,7 @@
         function azurirajZiviZbrojForme(form) {
             if (!form || !form.classList.contains('nav-forma')) return;
             var pids = form.querySelectorAll('input[name="pozicija_id"]');
-            var ukKom = 0, ukSkart = 0, ukMin = 0;
+            var ukKom = 0, ukSkart = 0, ukPripMin = 0, ukObradaMin = 0;
             var isLaser = (window.location.pathname.indexOf('/laser') !== -1) || (form.querySelector('input[name="izvor"]') && form.querySelector('input[name="izvor"]').value === 'laser');
             for (var i = 0; i < pids.length; i++) {
                 var pid = pids[i].value;
@@ -1173,14 +1197,19 @@
                 var rmEl = form.querySelector('input[name="' + (isLaser ? 'rezanje_minute_' : 'piganje_minute_') + pid + '"]');
                 ukKom += parseInt(komEl ? komEl.value : 0) || 0;
                 ukSkart += parseInt(skartEl ? skartEl.value : 0) || 0;
-                ukMin += ((parseInt(psEl ? psEl.value : 0) || 0) * 60) + (parseInt(pmEl ? pmEl.value : 0) || 0);
-                ukMin += ((parseInt(rsEl ? rsEl.value : 0) || 0) * 60) + (parseInt(rmEl ? rmEl.value : 0) || 0);
+                ukPripMin += ((parseInt(psEl ? psEl.value : 0) || 0) * 60) + (parseInt(pmEl ? pmEl.value : 0) || 0);
+                ukObradaMin += ((parseInt(rsEl ? rsEl.value : 0) || 0) * 60) + (parseInt(rmEl ? rmEl.value : 0) || 0);
             }
+            var ukMin = ukPripMin + ukObradaMin;
             var komBadge = form.querySelector('.zivi-komada');
             var skartBadge = form.querySelector('.zivi-skart');
+            var pripBadge = form.querySelector('.zivi-priprema');
+            var obradaBadge = form.querySelector('.zivi-obrada');
             var vrijBadge = form.querySelector('.zivi-vrijeme');
             if (komBadge) komBadge.innerText = 'Odrađeno: ' + ukKom + ' kom';
             if (skartBadge) skartBadge.innerText = 'Škart: ' + ukSkart;
+            if (pripBadge) pripBadge.innerText = Math.floor(ukPripMin / 60) + 'h ' + (ukPripMin % 60) + 'm';
+            if (obradaBadge) obradaBadge.innerText = Math.floor(ukObradaMin / 60) + 'h ' + (ukObradaMin % 60) + 'm';
             if (vrijBadge) vrijBadge.innerText = Math.floor(ukMin / 60) + 'h ' + (ukMin % 60) + 'm';
             osvjeziStanjeRedovaPozicija(form);
         }
@@ -1338,6 +1367,14 @@
         function posaljiFormuSigurno(form, submitter, pokusaj) {
             pokusaj = pokusaj || 1;
             var maxPokusaja = 5;
+
+            // Ako radnik ima upisan tekst u polju za ploče/materijal pri završnom slanju naloga, potvrdi ga
+            var chipWidgets = form.querySelectorAll('.smart-chip-widget');
+            for (var cw = 0; cw < chipWidgets.length; cw++) {
+                if (typeof chipWidgets[cw]._commitPendingInput === 'function') {
+                    chipWidgets[cw]._commitPendingInput();
+                }
+            }
             
             // Osiguraj jedinstveni request_uuid token
             var uuidInput = form.querySelector('input[name="request_uuid"]');
@@ -1484,191 +1521,243 @@
             var widgets = document.querySelectorAll('.smart-chip-widget');
             for (var w = 0; w < widgets.length; w++) {
                 (function(widget) {
-                    if (widget.dataset.chipInit === '1') return;
+                    if (widget._chipInitialized || widget.dataset.chipInit === '1') return;
+                    widget._chipInitialized = true;
                     widget.dataset.chipInit = '1';
+                    widget.setAttribute('data-morphdom-ignore', 'true');
 
                     var hiddenInput = widget.querySelector('.smart-chip-hidden');
                     var listEl = widget.querySelector('.smart-chip-list');
                     var textInput = widget.querySelector('.smart-chip-input');
                     var addBtn = widget.querySelector('.smart-chip-add-btn');
                     var countBadge = widget.querySelector('.smart-chip-count');
-                    var isMaterijal = widget.dataset.chipType === 'materijal';
+                    var clearBtn = widget.querySelector('.smart-chip-clear-btn');
+                    var presetBtns = widget.querySelectorAll('.preset-chip-btn');
                     var form = widget.closest('form');
-
-                    // Provjeri localStorage (ako postoji nespremljena vrijednost) i inicijalno stanje iz baze
-                    var storageKey = '';
-                    if (form && hiddenInput) {
-                        var nalogIdInput = form.querySelector('input[name="id_naloga"]');
-                        storageKey = 'fcl_' + window.location.pathname + '_' + (nalogIdInput ? 'nalog_' + nalogIdInput.value + '_' : '') + hiddenInput.name;
-                        var savedVal = localStorage.getItem(storageKey);
-                        if (savedVal !== null && hiddenInput.value === '') {
-                            hiddenInput.value = savedVal;
-                        }
-                    }
+                    var emptyText = widget.getAttribute('data-empty-text') || 'Nema dodanih stavki';
+                    var chipIcon = widget.getAttribute('data-chip-icon') || 'fa-layer-group';
 
                     var items = [];
-                    if (hiddenInput && hiddenInput.value) {
-                        var rawParts = hiddenInput.value.split(',');
-                        for (var i = 0; i < rawParts.length; i++) {
-                            var clean = rawParts[i].trim();
-                            if (clean) items.push(clean);
+
+                    function ucitajPocetneStavke() {
+                        var raw = '';
+                        if (hiddenInput && form) {
+                            var nalogIdInput = form.querySelector('input[name="id_naloga"]');
+                            var storageKey = "fcl_" + window.location.pathname + "_";
+                            if (nalogIdInput) storageKey += "nalog_" + nalogIdInput.value + "_";
+                            storageKey += hiddenInput.name;
+                            var izMemorije = localStorage.getItem(storageKey);
+                            if (izMemorije !== null && izMemorije !== undefined && izMemorije.trim() !== '') {
+                                raw = izMemorije;
+                                hiddenInput.value = izMemorije;
+                            } else {
+                                raw = hiddenInput.value || '';
+                            }
+                        } else if (hiddenInput) {
+                            raw = hiddenInput.value || '';
+                        }
+                        items = [];
+                        var dijelovi = raw.split(',');
+                        for (var i = 0; i < dijelovi.length; i++) {
+                            var s = dijelovi[i].trim();
+                            if (s) items.push(s);
                         }
                     }
 
-                    function sinkronizirajVrijednost(okiniAutoSave) {
-                        var trenutniTekst = textInput ? textInput.value.trim().replace(/,+$/, '').trim() : '';
-                        var sveStavke = items.slice();
-                        if (trenutniTekst) sveStavke.push(trenutniTekst);
-                        var spojeno = sveStavke.join(', ');
+                    function sinkronizirajVrijednost(preskociAutoSave) {
+                        var konacniString = items.join(', ');
                         if (hiddenInput) {
-                            hiddenInput.value = spojeno;
-                            if (okiniAutoSave) {
-                                hiddenInput.dataset.dirty = '1';
-                                if (storageKey) localStorage.setItem(storageKey, spojeno);
-                                if (form && form.classList.contains('nav-forma')) {
-                                    triggerDbAutoSave(form);
-                                }
+                            hiddenInput.value = konacniString;
+                            if (!preskociAutoSave && form) {
+                                hiddenInput.dataset.dirty = "1";
+                                var nalogIdInput = form.querySelector('input[name="id_naloga"]');
+                                var storageKey = "fcl_" + window.location.pathname + "_";
+                                if (nalogIdInput) storageKey += "nalog_" + nalogIdInput.value + "_";
+                                storageKey += hiddenInput.name;
+                                localStorage.setItem(storageKey, konacniString);
+                                triggerDbAutoSave(form);
                             }
                         }
-                        if (countBadge) {
-                            countBadge.textContent = items.length;
-                            countBadge.style.display = items.length > 0 ? 'inline-block' : 'none';
-                        }
                     }
 
-                    function iscrtajChipove() {
+                    function fokusirajPoljeNaKraj(vrijednostZaPostaviti) {
+                        if (!textInput) return;
+                        if (typeof vrijednostZaPostaviti === 'string') {
+                            textInput.value = vrijednostZaPostaviti;
+                        }
+                        textInput.classList.remove('staged-pulse');
+                        void textInput.offsetWidth;
+                        textInput.classList.add('staged-pulse');
+                        textInput.focus();
+                        try {
+                            var len = textInput.value.length;
+                            textInput.setSelectionRange(len, len);
+                        } catch (e) {}
+                    }
+
+                    function renderirajCipove() {
                         if (!listEl) return;
                         listEl.innerHTML = '';
+                        if (countBadge) countBadge.textContent = items.length;
+                        if (clearBtn) {
+                            if (items.length > 1) clearBtn.classList.remove('d-none');
+                            else clearBtn.classList.add('d-none');
+                        }
                         if (items.length === 0) {
                             var emptySpan = document.createElement('span');
                             emptySpan.className = 'smart-chip-empty';
-                            emptySpan.textContent = isMaterijal ? 'Nema dodanih materijala — upišite ili odaberite ispod' : 'Nema dodanih ploča — upišite dimenziju ispod';
+                            emptySpan.innerHTML = '<i class="fa-solid fa-circle-info me-1 opacity-50"></i>' + emptyText;
                             listEl.appendChild(emptySpan);
-                        } else {
-                            for (var idx = 0; idx < items.length; idx++) {
-                                (function(index) {
-                                    var chip = document.createElement('span');
-                                    chip.className = 'ploca-chip' + (isMaterijal ? ' chip-materijal' : '');
-
-                                    var num = document.createElement('span');
-                                    num.className = 'ploca-chip-num';
-                                    num.textContent = (index + 1) + '.';
-
-                                    var txt = document.createElement('span');
-                                    txt.className = 'ploca-chip-text';
-                                    txt.title = 'Kliknite za uređivanje ove stavke';
-                                    txt.textContent = items[index];
-                                    txt.addEventListener('click', function() {
-                                        var zaUrediti = items[index];
-                                        items.splice(index, 1);
-                                        if (textInput) {
-                                            textInput.value = zaUrediti;
-                                            textInput.focus();
-                                        }
-                                        iscrtajChipove();
-                                        sinkronizirajVrijednost(true);
-                                    });
-
-                                    var delBtn = document.createElement('button');
-                                    delBtn.type = 'button';
-                                    delBtn.className = 'ploca-chip-remove';
-                                    delBtn.title = 'Ukloni stavku';
-                                    delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-                                    delBtn.addEventListener('click', function() {
-                                        items.splice(index, 1);
-                                        iscrtajChipove();
-                                        sinkronizirajVrijednost(true);
-                                    });
-
-                                    chip.appendChild(num);
-                                    chip.appendChild(txt);
-                                    chip.appendChild(delBtn);
-                                    listEl.appendChild(chip);
-                                })(idx);
-                            }
+                            return;
                         }
-                        sinkronizirajVrijednost(false);
+                        for (var i = 0; i < items.length; i++) {
+                            (function(idx) {
+                                var chip = document.createElement('span');
+                                chip.className = 'smart-chip-item';
+                                chip.title = 'Kliknite na tekst za uređivanje ili X za uklanjanje';
+
+                                var idxBadge = document.createElement('span');
+                                idxBadge.className = 'chip-idx';
+                                idxBadge.textContent = (idx + 1) + '.';
+
+                                var iconEl = document.createElement('i');
+                                iconEl.className = 'fa-solid ' + chipIcon + ' text-info opacity-75';
+                                iconEl.style.fontSize = '0.75rem';
+
+                                var textSpan = document.createElement('span');
+                                textSpan.textContent = items[idx];
+                                textSpan.style.cursor = 'pointer';
+                                textSpan.onclick = function(ev) {
+                                    ev.stopPropagation();
+                                    var valZaUrediti = items[idx];
+                                    items.splice(idx, 1);
+                                    renderirajCipove();
+                                    sinkronizirajVrijednost(false);
+                                    fokusirajPoljeNaKraj(valZaUrediti);
+                                };
+
+                                var removeBtn = document.createElement('button');
+                                removeBtn.type = 'button';
+                                removeBtn.className = 'smart-chip-remove';
+                                removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                                removeBtn.title = 'Ukloni stavku';
+                                removeBtn.onclick = function(ev) {
+                                    ev.stopPropagation();
+                                    items.splice(idx, 1);
+                                    renderirajCipove();
+                                    sinkronizirajVrijednost(false);
+                                };
+
+                                chip.appendChild(idxBadge);
+                                chip.appendChild(iconEl);
+                                chip.appendChild(textSpan);
+                                chip.appendChild(removeBtn);
+                                listEl.appendChild(chip);
+                            })(i);
+                        }
                     }
 
-                    function dodajIzPolja(vrijednostZaDodati) {
-                        var raw = (vrijednostZaDodati !== undefined ? vrijednostZaDodati : (textInput ? textInput.value : '')).trim();
-                        if (!raw) return;
-                        var dijelovi = raw.split(',');
+                    function dodajIzPolja(vrijednostIzvana) {
+                        var rawVal = (typeof vrijednostIzvana === 'string') ? vrijednostIzvana : (textInput ? textInput.value : '');
+                        if (!rawVal) return false;
+                        var dijelovi = rawVal.split(',');
                         var dodano = false;
-                        for (var d = 0; d < dijelovi.length; d++) {
-                            var st = dijelovi[d].trim();
-                            if (st) {
-                                items.push(st);
+                        for (var i = 0; i < dijelovi.length; i++) {
+                            var cisto = dijelovi[i].trim();
+                            // Ignoriraj nepotpune dimenzije koje završavaju na 'x' ili '×' bez upisane debljine
+                            if (cisto && cisto.slice(-1) !== 'x' && cisto.slice(-1) !== '×') {
+                                items.push(cisto);
                                 dodano = true;
                             }
                         }
-                        if (vrijednostZaDodati === undefined && textInput) {
-                            textInput.value = '';
-                        }
                         if (dodano) {
-                            iscrtajChipove();
-                            sinkronizirajVrijednost(true);
+                            if (typeof vrijednostIzvana !== 'string' && textInput) {
+                                textInput.value = '';
+                                textInput.classList.remove('staged-pulse');
+                            }
+                            renderirajCipove();
+                            sinkronizirajVrijednost(false);
+                        } else if (textInput && rawVal.trim() !== '') {
+                            // Ako je radnik kliknuo '+ Dodaj' dok dimenzija još završava na 'x' (npr. '3000x1500x'), fokusiraj polje da dopiše debljinu
+                            fokusirajPoljeNaKraj();
                         }
+                        return dodano;
                     }
 
-                    if (addBtn) {
-                        addBtn.addEventListener('click', function() {
+                    // Metoda koju posaljiFormuSigurno poziva isključivo pri završnom slanju naloga
+                    widget._commitPendingInput = function() {
+                        if (textInput && textInput.value.trim() !== '') {
+                            var t = textInput.value.trim();
+                            if (t.slice(-1) !== 'x' && t.slice(-1) !== '×') {
+                                dodajIzPolja();
+                            }
+                        }
+                    };
+
+                    if (textInput && !textInput._chipInputBound) {
+                        textInput._chipInputBound = true;
+                        textInput.addEventListener('keydown', function(e) {
+                            if (e.key === 'Enter' || e.key === ',') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                dodajIzPolja();
+                            } else if (e.key === 'Backspace' && textInput.value === '' && items.length > 0) {
+                                var zadnja = items.pop();
+                                renderirajCipove();
+                                sinkronizirajVrijednost(false);
+                                fokusirajPoljeNaKraj(zadnja);
+                                e.preventDefault();
+                            }
+                        });
+                    }
+
+                    if (addBtn && !addBtn._chipAddBound) {
+                        addBtn._chipAddBound = true;
+                        addBtn.addEventListener('mousedown', function(e) {
+                            e.preventDefault();
+                        });
+                        addBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
                             dodajIzPolja();
                             if (textInput) textInput.focus();
                         });
                     }
 
-                    if (textInput) {
-                        textInput.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter' || e.key === ',') {
-                                if (textInput.value.trim() !== '') {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    dodajIzPolja();
-                                }
-                            } else if (e.key === 'Backspace' && textInput.value === '' && items.length > 0) {
-                                // Brzo vraćanje zadnje kartice na Backspace ako je polje prazno
-                                var zadnja = items.pop();
-                                textInput.value = zadnja;
-                                e.preventDefault();
-                                iscrtajChipove();
-                                sinkronizirajVrijednost(true);
+                    if (clearBtn && !clearBtn._chipClearBound) {
+                        clearBtn._chipClearBound = true;
+                        clearBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            items = [];
+                            if (textInput) {
+                                textInput.value = '';
+                                textInput.classList.remove('staged-pulse');
                             }
-                        });
-                        textInput.addEventListener('input', function() {
-                            if (textInput.value.indexOf(',') !== -1) {
-                                dodajIzPolja();
-                            } else {
-                                sinkronizirajVrijednost(true);
-                            }
-                        });
-                        textInput.addEventListener('blur', function() {
-                            if (textInput.value.trim() !== '') {
-                                dodajIzPolja();
-                            }
+                            renderirajCipove();
+                            sinkronizirajVrijednost(false);
                         });
                     }
 
-                    var presetBtns = widget.querySelectorAll('.preset-chip-btn');
                     for (var p = 0; p < presetBtns.length; p++) {
                         (function(btn) {
-                            btn.addEventListener('click', function() {
-                                var val = btn.getAttribute('data-preset');
-                                if (!val) return;
-                                if (val.slice(-1) === 'x' || val.slice(-1) === '×') {
-                                    if (textInput) {
-                                        textInput.value = val;
-                                        textInput.focus();
-                                    }
-                                } else {
-                                    dodajIzPolja(val);
-                                    if (textInput) textInput.focus();
-                                }
+                            if (btn._presetBound) return;
+                            btn._presetBound = true;
+                            btn.addEventListener('mousedown', function(e) {
+                                // Sprječava gubitak fokusa i neželjene skokove na ekranu osjetljivom na dodir
+                                e.preventDefault();
+                            });
+                            btn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                var val = btn.getAttribute('data-preset') || '';
+                                if (!val || !textInput) return;
+                                // SVI prijedlozi (i Dimenzije i Materijal) UVIJEK prvo ulaze u polje za pisanje/dodavanje!
+                                fokusirajPoljeNaKraj(val);
                             });
                         })(presetBtns[p]);
                     }
 
-                    iscrtajChipove();
+                    ucitajPocetneStavke();
+                    renderirajCipove();
                 })(widgets[w]);
             }
         }
@@ -1743,7 +1832,7 @@
                                             return false;
                                         }
                                         if (fromEl.classList && fromEl.classList.contains('smart-chip-widget')) {
-                                            if (fromEl.contains(document.activeElement) || fromEl.querySelector('[data-dirty="1"]')) {
+                                            if (fromEl._chipInitialized || fromEl.dataset.chipInit === '1') {
                                                 return false;
                                             }
                                         }

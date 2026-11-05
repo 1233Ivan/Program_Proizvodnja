@@ -213,9 +213,10 @@
                     <span class="badge bg-success text-white fw-bold me-1 zivi-komada">Odrađeno: {{ n.ukupno.bravarija_komada_ukupno }} kom</span>
                     <span class="badge bg-danger text-white fw-bold zivi-skart">Škart: {{ n.ukupno.bravarija_skart_ukupno }}</span>
                 </div>
-                <div class="text-end">
-                    <span class="text-muted small me-2">Vrijeme (Priprema + Piganje):</span>
-                    <span class="badge bg-dark border border-warning text-warning fs-6 fw-bold zivi-vrijeme">{{ n.ukupno.bravarija_ukupno_tekst }}</span>
+                <div class="poz-time-summary-group">
+                    <span class="badge bg-dark text-secondary border border-secondary border-opacity-50 px-2 py-1"><i class="fa-solid fa-screwdriver-wrench me-1 text-info"></i>Priprema: <b class="text-white zivi-priprema">{{ n.ukupno.bravarija_priprema_tekst }}</b></span>
+                    <span class="badge bg-dark text-secondary border border-secondary border-opacity-50 px-2 py-1"><i class="fa-solid fa-hammer me-1 text-warning"></i>Piganje: <b class="text-white zivi-obrada">{{ n.ukupno.bravarija_piganje_tekst }}</b></span>
+                    <span class="badge bg-warning bg-opacity-15 text-warning border border-warning px-2 py-1"><i class="fa-regular fa-clock me-1"></i>Ukupno: <b class="zivi-vrijeme">{{ n.ukupno.bravarija_ukupno_tekst }}</b></span>
                 </div>
             </div>
         </div>

@@ -126,7 +126,7 @@
             <div class="row align-items-stretch g-3">
                 <!-- LIJEVO: DIMENZIJE ULOŽENIH PLOČA -->
                 <div class="col-md-6">
-                    <div class="smart-chip-card smart-chip-widget" data-chip-type="dimenzije">
+                    <div class="smart-chip-card smart-chip-widget" data-morphdom-ignore="true" data-empty-text="Nema upisanih ploča — dodajte dimenziju ispod" data-chip-icon="fa-ruler-combined">
                         <div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <label class="form-label text-info fw-bold mb-0">
@@ -155,7 +155,7 @@
 
                 <!-- DESNO: MATERIJAL PLOČA -->
                 <div class="col-md-6">
-                    <div class="smart-chip-card smart-chip-widget" data-chip-type="materijal">
+                    <div class="smart-chip-card smart-chip-widget" data-morphdom-ignore="true" data-empty-text="Nema upisanog materijala — odaberite ili upišite ispod" data-chip-icon="fa-cube">
                         <div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <label class="form-label text-info fw-bold mb-0">
@@ -274,9 +274,10 @@
                     <span class="badge bg-success text-white fw-bold me-1 zivi-komada">Odrađeno: {{ n.ukupno.laser_komada_ukupno }} kom</span>
                     <span class="badge bg-danger text-white fw-bold zivi-skart">Škart: {{ n.ukupno.laser_skart_ukupno }}</span>
                 </div>
-                <div class="text-end">
-                    <span class="text-muted small me-2">Vrijeme (Priprema + Rezanje):</span>
-                    <span class="badge bg-dark border border-danger text-danger fs-6 fw-bold zivi-vrijeme">{{ n.ukupno.laser_ukupno_tekst }}</span>
+                <div class="poz-time-summary-group">
+                    <span class="badge bg-dark text-secondary border border-secondary border-opacity-50 px-2 py-1"><i class="fa-solid fa-screwdriver-wrench me-1 text-info"></i>Priprema: <b class="text-white zivi-priprema">{{ n.ukupno.laser_priprema_tekst }}</b></span>
+                    <span class="badge bg-dark text-secondary border border-secondary border-opacity-50 px-2 py-1"><i class="fa-solid fa-fire me-1 text-danger"></i>Rezanje: <b class="text-white zivi-obrada">{{ n.ukupno.laser_rezanje_tekst }}</b></span>
+                    <span class="badge bg-info bg-opacity-15 text-info border border-info px-2 py-1"><i class="fa-regular fa-clock me-1"></i>Ukupno: <b class="zivi-vrijeme">{{ n.ukupno.laser_ukupno_tekst }}</b></span>
                 </div>
             </div>
         </div>
