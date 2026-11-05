@@ -234,65 +234,79 @@
             font-style: italic;
             padding: 4px 2px;
         }
-        .ploca-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            background: linear-gradient(135deg, rgba(13, 202, 240, 0.14), rgba(13, 202, 240, 0.05));
-            border: 1px solid rgba(13, 202, 240, 0.4);
-            color: #f8fafc;
-            font-size: 0.84rem;
-            font-weight: 600;
-            padding: 5px 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            transition: all 0.15s ease;
-            max-width: 100%;
+        .ploca-chip, .smart-chip-item {
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 7px !important;
+            background: linear-gradient(135deg, rgba(13, 202, 240, 0.16), rgba(13, 202, 240, 0.05)) !important;
+            border: 1px solid rgba(13, 202, 240, 0.35) !important;
+            color: #ffffff !important;
+            font-size: 0.85rem !important;
+            font-weight: 600 !important;
+            padding: 4px 8px 4px 10px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+            transition: all 0.15s ease !important;
+            max-width: 100% !important;
         }
-        .ploca-chip.chip-materijal {
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.14), rgba(14, 165, 233, 0.05));
-            border-color: rgba(56, 189, 248, 0.4);
+        .ploca-chip.chip-materijal, .smart-chip-item.chip-materijal {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(14, 165, 233, 0.05)) !important;
+            border-color: rgba(56, 189, 248, 0.35) !important;
         }
-        .ploca-chip:hover {
-            border-color: #0dcaf0;
+        .ploca-chip:hover, .smart-chip-item:hover {
+            border-color: #0dcaf0 !important;
+            box-shadow: 0 3px 10px rgba(13, 202, 240, 0.25) !important;
             transform: translateY(-1px);
         }
-        .ploca-chip-num {
-            background: rgba(13, 202, 240, 0.22);
-            color: #38bdf8;
-            font-size: 0.7rem;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 5px;
-            line-height: 1;
+        .ploca-chip-num, .chip-idx {
+            background: rgba(13, 202, 240, 0.25) !important;
+            color: #38bdf8 !important;
+            font-size: 0.72rem !important;
+            font-weight: 800 !important;
+            padding: 2px 6px !important;
+            border-radius: 5px !important;
+            line-height: 1 !important;
+            letter-spacing: 0.5px;
+            display: inline-block !important;
         }
-        .ploca-chip-text {
-            cursor: pointer;
-            word-break: break-word;
+        .ploca-chip-text, .smart-chip-text {
+            cursor: pointer !important;
+            color: #ffffff !important;
+            word-break: break-word !important;
+            font-weight: 600 !important;
+            transition: color 0.15s ease !important;
         }
-        .ploca-chip-text:hover {
-            color: #38bdf8;
-            text-decoration: underline;
+        .ploca-chip-text:hover, .smart-chip-text:hover {
+            color: #38bdf8 !important;
+            text-decoration: underline !important;
         }
-        .ploca-chip-remove {
-            background: rgba(239, 68, 68, 0.15);
-            border: none;
-            color: #f87171;
-            width: 20px;
-            height: 20px;
-            border-radius: 5px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            cursor: pointer;
-            padding: 0;
-            transition: all 0.15s ease;
-            flex-shrink: 0;
+        .ploca-chip-remove, .smart-chip-remove {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            background: rgba(239, 68, 68, 0.15) !important;
+            border: 1px solid rgba(239, 68, 68, 0.35) !important;
+            color: #f87171 !important;
+            width: 22px !important;
+            height: 22px !important;
+            border-radius: 6px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.75rem !important;
+            cursor: pointer !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            margin-left: 4px !important;
+            outline: none !important;
+            transition: all 0.15s ease !important;
+            flex-shrink: 0 !important;
+            box-shadow: none !important;
         }
-        .ploca-chip-remove:hover {
-            background: #ef4444;
-            color: #ffffff;
+        .ploca-chip-remove:hover, .smart-chip-remove:hover {
+            background: #ef4444 !important;
+            border-color: #ef4444 !important;
+            color: #ffffff !important;
+            transform: scale(1.1) !important;
         }
         .smart-chip-input-row {
             display: flex;
@@ -378,6 +392,38 @@
         body.light-mode .poz-time-summary-group {
             background: #f1f5f9;
             border-color: #cbd5e1;
+        }
+        .poz-time-badge {
+            background: #11141d !important;
+            color: #94a3b8 !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            padding: 4px 10px !important;
+            border-radius: 7px !important;
+            font-size: 0.8rem !important;
+            font-weight: 500 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 5px !important;
+            line-height: 1.3 !important;
+        }
+        .poz-time-badge b {
+            font-weight: 700 !important;
+        }
+        .poz-time-badge-ukupno-laser {
+            background: rgba(13, 202, 240, 0.08) !important;
+            border: 1px solid rgba(13, 202, 240, 0.45) !important;
+            color: #94a3b8 !important;
+        }
+        .poz-time-badge-ukupno-laser b {
+            color: #0dcaf0 !important;
+        }
+        .poz-time-badge-ukupno-bravarija {
+            background: rgba(245, 158, 11, 0.08) !important;
+            border: 1px solid rgba(245, 158, 11, 0.45) !important;
+            color: #94a3b8 !important;
+        }
+        .poz-time-badge-ukupno-bravarija b {
+            color: #fbbf24 !important;
         }
         /* Kompaktni prikaz ploča na Šefo Panelu i u Arhivi */
         .mini-ploca-badge {
@@ -1536,6 +1582,7 @@
                     var form = widget.closest('form');
                     var emptyText = widget.getAttribute('data-empty-text') || 'Nema dodanih stavki';
                     var chipIcon = widget.getAttribute('data-chip-icon') || 'fa-layer-group';
+                    var isMaterijal = (chipIcon === 'fa-cube' || widget.dataset.chipType === 'materijal' || (hiddenInput && hiddenInput.name === 'materijal_ploce'));
 
                     var items = [];
 
@@ -1598,7 +1645,10 @@
                     function renderirajCipove() {
                         if (!listEl) return;
                         listEl.innerHTML = '';
-                        if (countBadge) countBadge.textContent = items.length;
+                        if (countBadge) {
+                            countBadge.textContent = items.length;
+                            countBadge.style.display = items.length > 0 ? 'inline-block' : 'none';
+                        }
                         if (clearBtn) {
                             if (items.length > 1) clearBtn.classList.remove('d-none');
                             else clearBtn.classList.add('d-none');
@@ -1613,11 +1663,11 @@
                         for (var i = 0; i < items.length; i++) {
                             (function(idx) {
                                 var chip = document.createElement('span');
-                                chip.className = 'smart-chip-item';
+                                chip.className = 'smart-chip-item ploca-chip' + (isMaterijal ? ' chip-materijal' : '');
                                 chip.title = 'Kliknite na tekst za uređivanje ili X za uklanjanje';
 
                                 var idxBadge = document.createElement('span');
-                                idxBadge.className = 'chip-idx';
+                                idxBadge.className = 'chip-idx ploca-chip-num';
                                 idxBadge.textContent = (idx + 1) + '.';
 
                                 var iconEl = document.createElement('i');
@@ -1625,8 +1675,10 @@
                                 iconEl.style.fontSize = '0.75rem';
 
                                 var textSpan = document.createElement('span');
+                                textSpan.className = 'smart-chip-text ploca-chip-text';
                                 textSpan.textContent = items[idx];
                                 textSpan.style.cursor = 'pointer';
+                                textSpan.title = 'Kliknite za uređivanje stavke';
                                 textSpan.onclick = function(ev) {
                                     ev.stopPropagation();
                                     var valZaUrediti = items[idx];
@@ -1638,7 +1690,7 @@
 
                                 var removeBtn = document.createElement('button');
                                 removeBtn.type = 'button';
-                                removeBtn.className = 'smart-chip-remove';
+                                removeBtn.className = 'smart-chip-remove ploca-chip-remove';
                                 removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
                                 removeBtn.title = 'Ukloni stavku';
                                 removeBtn.onclick = function(ev) {
