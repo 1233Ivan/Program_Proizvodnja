@@ -1127,35 +1127,5 @@
             }, 120);
         }
     </script>
-    {% if auto_print %}
-    <script>
-        (function() {
-            var printPokrenut = false;
-            function okiniIspis() {
-                if (printPokrenut) return;
-                printPokrenut = true;
-                ispisiKaoA4Pdf();
-            }
-
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                setTimeout(okiniIspis, 150);
-            } else {
-                if (document.addEventListener) {
-                    document.addEventListener('DOMContentLoaded', function() {
-                        setTimeout(okiniIspis, 150);
-                    });
-                    window.addEventListener('load', function() {
-                        setTimeout(okiniIspis, 100);
-                    });
-                } else if (window.attachEvent) {
-                    window.attachEvent('onload', function() {
-                        setTimeout(okiniIspis, 150);
-                    });
-                }
-                setTimeout(okiniIspis, 450);
-            }
-        })();
-    </script>
-    {% endif %}
 </body>
 </html>

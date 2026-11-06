@@ -1282,7 +1282,7 @@ def api_autosave_nalog():
     objavi_promjenu("autosave", sender_id=sender_id)
     return {"ok": True}
 
-def generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False):
+def generiraj_html_izvjestaja(conn, id, online_pregled=False):
     n_row = conn.execute("SELECT * FROM radni_nalozi WHERE id=?", (id,)).fetchone()
     if not n_row:
         return None, None, None, None
@@ -1322,16 +1322,14 @@ def generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False):
         pdf_datoteke=parsiraj_listu_datoteka(n.get('pdf_datoteka')),
         lxdf_datoteke=parsiraj_listu_datoteka(n.get('lxdf_datoteka')),
         generirano_u=dobij_zg_vrijeme().strftime('%d.%m.%Y. u %H:%M'),
-        online_pregled=online_pregled,
-        auto_print=auto_print
+        online_pregled=online_pregled
     )
     return n, pozicije, uk, html_izvjestaj
 
 @app.route('/izvjestaj_pdf/<int:id>')
 def izvjestaj_pdf(id):
     conn = get_db_connection()
-    auto_print_flag = (request.args.get('print', '1') != '0')
-    n, pozicije, uk, html_izvjestaj = generiraj_html_izvjestaja(conn, id, online_pregled=True, auto_print=auto_print_flag)
+    n, pozicije, uk, html_izvjestaj = generiraj_html_izvjestaja(conn, id, online_pregled=True)
     if not n:
         return redirect(url_for('index_master'))
     return html_izvjestaj
@@ -1386,7 +1384,7 @@ def preuzmi_izvjestaj(id):
                 if os.path.exists(fpath): 
                     dodaj_u_zip(zf, fpath, "DXF_Datoteke", lx['filename'])
             
-            _, _, _, report_html = generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False)
+            _, _, _, report_html = generiraj_html_izvjestaja(conn, id, online_pregled=False)
             if report_html:
                 zf.writestr(f"{glavni_folder}/Pregled_Naloga_{id}.html", report_html.encode('utf-8'))
     except Exception as e: pass
