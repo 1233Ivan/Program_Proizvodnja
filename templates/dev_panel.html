@@ -85,8 +85,9 @@
                         </div>
                     </div>
                     <form method="POST">
+                        <input type="hidden" name="akcija" value="toggle_maint">
                         <input type="hidden" name="maint_status" value="0">
-                        <button type="submit" name="akcija" value="toggle_maint" class="btn btn-success w-100 fw-bold py-2 shadow">
+                        <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow">
                             <i class="fa-solid fa-play me-2"></i>Otključaj Pogon i Vrati u Produkciju
                         </button>
                     </form>
@@ -122,7 +123,8 @@
                         </div>
                         <div class="text-white fs-5 fw-bold my-2 p-2 rounded" style="background: rgba(0,0,0,0.3);">{{ aktivna_obavijest }}</div>
                         <form method="POST" class="mt-2">
-                            <button type="submit" name="akcija" value="ugasi_ticker" class="btn btn-sm btn-danger fw-bold px-3">
+                            <input type="hidden" name="akcija" value="ugasi_ticker">
+                            <button type="submit" class="btn btn-sm btn-danger fw-bold px-3">
                                 <i class="fa-solid fa-xmark me-1"></i>Ugasi Aktivnu Obavijest Odmah
                             </button>
                         </form>
@@ -130,6 +132,7 @@
                 {% endif %}
 
                 <form method="POST">
+                    <input type="hidden" name="akcija" value="lansiraj_ticker">
                     <label class="form-label text-white fw-bold mb-1">Tekst obavijesti za pogon</label>
                     <input type="text" id="dev_ticker_input" class="form-control mb-2 border-danger text-white" name="ticker_tekst" placeholder="Upišite poruku ili kliknite na brzi predložak ispod..." required>
                     
@@ -179,7 +182,8 @@
                 </h6>
                 {% if blokade %}
                 <form method="POST" class="m-0">
-                    <button type="submit" name="akcija" value="odblokiraj_sve" class="btn btn-sm btn-outline-warning fw-bold py-1 px-2">
+                    <input type="hidden" name="akcija" value="odblokiraj_sve">
+                    <button type="submit" class="btn btn-sm btn-outline-warning fw-bold py-1 px-2">
                         <i class="fa-solid fa-unlock me-1"></i>Odblokiraj sve ({{ blokade|length }})
                     </button>
                 </form>
@@ -195,7 +199,7 @@
                         </div>
                     </div>
                 {% else %}
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                         <table class="table table-sm text-white align-middle mb-0">
                             <thead>
                                 <tr>
@@ -213,8 +217,9 @@
                                     <td class="small text-white-50">{{ b.prikaz_vremena }}</td>
                                     <td class="text-end">
                                         <form method="POST" class="m-0 d-inline">
+                                            <input type="hidden" name="akcija" value="odblokiraj">
                                             <input type="hidden" name="ip_adresa" value="{{ b.ip_adresa }}">
-                                            <button type="submit" name="akcija" value="odblokiraj" class="btn btn-sm btn-outline-warning py-1 px-2 fw-bold">Resetiraj</button>
+                                            <button type="submit" class="btn btn-sm btn-outline-warning py-1 px-2 fw-bold">Resetiraj</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -256,12 +261,14 @@
                         <i class="fa-solid fa-cloud-arrow-down me-1"></i>Preuzmi Kopiju (.db)
                     </a>
                     <form method="POST" class="m-0 flex-fill">
-                        <button type="submit" name="akcija" value="kreiraj_backup" class="btn btn-outline-info w-100 fw-bold py-2">
+                        <input type="hidden" name="akcija" value="kreiraj_backup">
+                        <button type="submit" class="btn btn-outline-info w-100 fw-bold py-2">
                             <i class="fa-solid fa-floppy-disk me-1"></i>Spremi Lokalni Backup
                         </button>
                     </form>
                     <form method="POST" class="m-0 flex-fill">
-                        <button type="submit" name="akcija" value="optimiziraj_bazu" class="btn btn-outline-success w-100 fw-bold py-2" title="Izvršava WAL Checkpoint i VACUUM baze">
+                        <input type="hidden" name="akcija" value="optimiziraj_bazu">
+                        <button type="submit" class="btn btn-outline-success w-100 fw-bold py-2" title="Izvršava WAL Checkpoint i VACUUM baze">
                             <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Optimiziraj (VACUUM)
                         </button>
                     </form>
@@ -320,8 +327,9 @@
         <div class="d-flex justify-content-center gap-3">
             <button type="button" class="btn btn-outline-secondary px-4 fw-bold text-white" data-bs-dismiss="modal">Odustani</button>
             <form method="POST" class="m-0">
+                <input type="hidden" name="akcija" value="toggle_maint">
                 <input type="hidden" name="maint_status" value="1">
-                <button type="submit" name="akcija" value="toggle_maint" class="btn btn-danger fw-bold px-4 shadow">Da, Zaključaj Pogon</button>
+                <button type="submit" class="btn btn-danger fw-bold px-4 shadow">Da, Zaključaj Pogon</button>
             </form>
         </div>
       </div>

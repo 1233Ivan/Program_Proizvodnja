@@ -941,9 +941,11 @@ def dev_panel():
             ip_od = request.form.get('ip_adresa')
             conn.execute("DELETE FROM blokade WHERE ip_adresa=?", (ip_od,))
             conn.commit()
+            objavi_promjenu("blokada_resetirana")
         elif akcija == 'odblokiraj_sve':
             conn.execute("DELETE FROM blokade")
             conn.commit()
+            objavi_promjenu("blokade_ociscene")
         elif akcija == 'toggle_maint':
             status = request.form.get('maint_status', '0')
             conn.execute("UPDATE postavke SET vrijednost=? WHERE kljuc='maintenance'", (status,))
