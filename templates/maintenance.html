@@ -50,12 +50,12 @@
     </div>
 
     <script>
-        let clickCount = 0;
-        let clickTimer;
+        var clickCount = 0;
+        var clickTimer = null;
         document.getElementById('secret-logo').addEventListener('click', function() {
             clickCount++;
-            clearTimeout(clickTimer);
-            clickTimer = setTimeout(() => { clickCount = 0; }, 1500);
+            if (clickTimer) clearTimeout(clickTimer);
+            clickTimer = setTimeout(function() { clickCount = 0; }, 1500);
             if (clickCount >= 5) {
                 document.getElementById('hidden-login').style.display = 'block';
                 clickCount = 0;

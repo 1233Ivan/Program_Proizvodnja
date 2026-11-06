@@ -269,14 +269,21 @@ def izracunaj_ukupno_za_nalog(pozicije):
         'cilj_ukupno': uk_cilj,
         'laser_komada_ukupno': l_kom_uk,
         'laser_skart_ukupno': l_skart_uk,
+        'laser_priprema_min': l_p_min_uk,
+        'laser_rezanje_min': l_r_min_uk,
+        'laser_ukupno_min': l_uk_min,
         'laser_priprema_tekst': f"{l_p_min_uk // 60}h {l_p_min_uk % 60}m",
         'laser_rezanje_tekst': f"{l_r_min_uk // 60}h {l_r_min_uk % 60}m",
         'laser_ukupno_tekst': f"{l_uk_min // 60}h {l_uk_min % 60}m",
         'bravarija_komada_ukupno': b_kom_uk,
         'bravarija_skart_ukupno': b_skart_uk,
+        'bravarija_priprema_min': b_p_min_uk,
+        'bravarija_piganje_min': b_pig_min_uk,
+        'bravarija_ukupno_min': b_uk_min,
         'bravarija_priprema_tekst': f"{b_p_min_uk // 60}h {b_p_min_uk % 60}m",
         'bravarija_piganje_tekst': f"{b_pig_min_uk // 60}h {b_pig_min_uk % 60}m",
         'bravarija_ukupno_tekst': f"{b_uk_min // 60}h {b_uk_min % 60}m",
+        'sveukupno_min': sveuk_min,
         'sveukupno_vrijeme_tekst': f"{sveuk_min // 60}h {sveuk_min % 60}m"
     }
 
@@ -287,19 +294,33 @@ _MATERIJAL_MAPA = {
     'čelici': 'Čelici',
     'crno': 'Crno',
     'crni': 'Crni',
+    'crnog': 'Crno',
+    'crnoga': 'Crno',
     'inox': 'INOX',
+    'inoxa': 'INOX',
     'prokrom': 'Prokrom',
     'prohrom': 'Prohrom',
     'hardox': 'Hardox',
+    'hardoxa': 'Hardox',
     'strenx': 'Strenx',
+    'stren': 'Strenx',
     'domex': 'Domex',
     'weldox': 'Weldox',
     'aluminij': 'Aluminij',
-    'alu': 'Alu',
+    'aluminium': 'Aluminij',
+    'alu': 'Aluminij',
     'pocincano': 'Pocinčano',
     'pocinčano': 'Pocinčano',
     'pocincani': 'Pocinčani',
     'pocinčani': 'Pocinčani',
+    'poc': 'Pocinčano',
+    'pocinacno': 'Pocinčano',
+    'pocinkovano': 'Pocinčano',
+    'suza': 'Suza lim',
+    'suze': 'Suza lim',
+    'suza lim': 'Suza lim',
+    'suzalim': 'Suza lim',
+    'rebrasti': 'Suza lim',
     'bakar': 'Bakar',
     'mesing': 'Mesing',
     'bronca': 'Bronca',
@@ -308,61 +329,124 @@ _MATERIJAL_MAPA = {
     'titan': 'Titan',
     'plastika': 'Plastika',
     'guma': 'Guma',
+    # ISO i normirane oznake iz proizvodnje -> automatsko pretvaranje u striktna imena materijala
+    '1.4301': 'INOX',
+    '1.4404': 'INOX',
+    's235': 'Čelik', 's275': 'Čelik', 's355': 'Čelik', 's420': 'Čelik', 's460': 'Čelik',
+    'dd11': 'Crno', 'dd12': 'Crno', 'dd13': 'Crno', 'dd14': 'Crno',
+    'dc01': 'Crno', 'dc02': 'Crno', 'dc03': 'Crno', 'dc04': 'Crno',
+    '304': 'INOX', '316': 'INOX', '304l': 'INOX', '316l': 'INOX', '321': 'INOX',
+    'almg3': 'Aluminij', 'almg4.5': 'Aluminij', 'al99.5': 'Aluminij', 'aw5754': 'Aluminij',
+    'dx51': 'Pocinčano', 'dx51d': 'Pocinčano',
+    '400': 'Hardox', '450': 'Hardox', '500': 'Hardox',
+    '700': 'Strenx',
 }
 
 def normaliziraj_pojedinu_stavku_ploce_ili_materijala(stavka, je_materijal=False):
-    """Pretvara nazive materijala (npr. 'celik' -> 'Čelik', 'hardox' -> 'Hardox', 'inox' -> 'INOX') u uredan zapis."""
+    """Pretvara nazive materijala i dimenzija u uredan, standardiziran zapis bez zalutalih '+' znakova."""
     if not stavka:
         return ''
-    s = str(stavka).strip()
-    if not s:
+    s = str(stavka).replace('+', ' ').strip()
+    if not je_materijal:
+        s = re.sub(r'(\d)\s*[x×*]+$', r'\1', s, flags=re.IGNORECASE).strip()
+    else:
+        # STRIKTNO IMENA MATERIJALA: Ukloni ISO oznake/brojeve ako se nalaze uz ime materijala (npr. 'INOX 304' -> 'INOX', 'Čelik S355' -> 'Čelik')
+        s = re.sub(r'\s+(?:s\d{3}[a-z0-9]*|dd\d+|dc\d+|304[a-z0-9]*|316[a-z0-9]*|400|450|500|700|almg[a-z0-9.]*|dx\d+[a-z0-9]*|aisi\s*\d+)\b', '', s, flags=re.IGNORECASE).strip()
+    if not s or s.lower() in ('none', 'null'):
         return ''
     
-    dijelovi_kosa = [d.strip() for d in s.split('/')]
+    dijelovi_kosa = [d.strip() for d in s.split('/') if d.strip()]
     obradeni_dijelovi_kosa = []
     for dio in dijelovi_kosa:
-        # Razdvoji ako je materijal zalijepljen direktno uz dimenziju (npr. '3000x1500x5hardox' -> '3000x1500x5 hardox')
         dio_razdvojen = re.sub(r'(\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)*(?:mm|cm|m)?)([a-zčćžšđ]{3,})\b', r'\1 \2', dio, flags=re.IGNORECASE)
         rijeci = dio_razdvojen.split()
         nove_rijeci = []
         for idx, r in enumerate(rijeci):
-            r_clean = r.strip()
+            r_clean = r.strip('+-_,. ')
+            if not r_clean:
+                continue
             r_low = r_clean.lower()
             
             if r_low in _MATERIJAL_MAPA:
-                nove_rijeci.append(_MATERIJAL_MAPA[r_low])
+                mat_naziv = _MATERIJAL_MAPA[r_low]
+                if mat_naziv not in nove_rijeci:
+                    nove_rijeci.append(mat_naziv)
                 continue
             
             m_spojeno = re.match(r'^([a-zčćžšđ]+)(\d+.*)$', r_low)
             if m_spojeno and m_spojeno.group(1) in _MATERIJAL_MAPA:
                 pref = _MATERIJAL_MAPA[m_spojeno.group(1)]
-                suf = m_spojeno.group(2).upper() if m_spojeno.group(2).isalnum() else m_spojeno.group(2)
-                nove_rijeci.append(f"{pref}{suf}")
+                if je_materijal:
+                    if pref not in nove_rijeci:
+                        nove_rijeci.append(pref)
+                else:
+                    suf = m_spojeno.group(2).upper() if m_spojeno.group(2).isalnum() else m_spojeno.group(2)
+                    nove_rijeci.append(f"{pref}{suf}")
                 continue
             
             if re.match(r'^(s\d{3}[a-z0-9]*|a\d{3}[a-z0-9]*|dd11|dc01|dc04)$', r_low):
-                nove_rijeci.append(r_clean.upper())
+                if je_materijal:
+                    iso_ime = _MATERIJAL_MAPA.get(r_low, 'Čelik')
+                    if iso_ime not in nove_rijeci:
+                        nove_rijeci.append(iso_ime)
+                else:
+                    nove_rijeci.append(r_clean.upper())
                 continue
             
             if re.match(r'^\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)+(?:mm|cm|m)?$', r_low) or re.match(r'^\d+(?:[.,]\d+)?(?:mm|cm|m|kom)$', r_low):
-                nove_rijeci.append(re.sub(r'[X*]', 'x', r_clean).replace('MM', 'mm'))
+                nove_rijeci.append(re.sub(r'[X*×]', 'x', r_clean).replace('MM', 'mm'))
                 continue
             
             if je_materijal or idx > 0 or not any(ch.isdigit() for ch in r_clean):
                 if r_low not in ('mm', 'cm', 'm', 'kom', 'x', 'i', 'ili', 'za', 'na', 'po', 'od', 'do', 'u', 's', 'sa'):
-                    nove_rijeci.append(r_clean[0].upper() + r_clean[1:])
+                    rijec_format = r_clean[0].upper() + r_clean[1:]
+                    if rijec_format not in nove_rijeci:
+                        nove_rijeci.append(rijec_format)
                 else:
                     nove_rijeci.append(r_low)
             else:
                 nove_rijeci.append(r_clean)
-        obradeni_dijelovi_kosa.append(' '.join(nove_rijeci))
+        if nove_rijeci:
+            obradeni_dijelovi_kosa.append(' '.join(nove_rijeci))
     return ' / '.join(obradeni_dijelovi_kosa)
 
-def normaliziraj_popis_ploca_ili_materijala(tekst, je_materijal=False):
+def je_valjana_3d_dimenzija_ploce(stavka):
+    """Provjerava ima li dimenzija ploče sve 3 vrijednosti (Dužina x Širina x Debljina, sve > 0)."""
+    if not stavka:
+        return False
+    s = str(stavka).strip()
+    m = re.match(r'^(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)', s, flags=re.IGNORECASE)
+    if not m:
+        return False
+    try:
+        d1 = float(m.group(1).replace(',', '.'))
+        d2 = float(m.group(2).replace(',', '.'))
+        d3 = float(m.group(3).replace(',', '.'))
+        return d1 > 0 and d2 > 0 and d3 > 0
+    except Exception:
+        return False
+
+def normaliziraj_popis_ploca_ili_materijala(tekst, je_materijal=False, zahtijevaj_3d_dimenziju=False):
     if tekst is None:
         return None
-    stavke = [normaliziraj_pojedinu_stavku_ploce_ili_materijala(x, je_materijal) for x in str(tekst).split(',')]
-    stavke = [x for x in stavke if x]
+    raw_str = str(tekst)
+    if je_materijal:
+        raw_str = re.sub(r'\s+\bi\b\s+', ', ', raw_str, flags=re.IGNORECASE)
+    stavke = []
+    videno_mat = set()
+    for x in raw_str.split(','):
+        norm = normaliziraj_pojedinu_stavku_ploce_ili_materijala(x, je_materijal)
+        if not norm:
+            continue
+        if zahtijevaj_3d_dimenziju and not je_materijal:
+            if not je_valjana_3d_dimenzija_ploce(norm):
+                continue
+        if je_materijal:
+            kljuc = norm.lower()
+            if kljuc in videno_mat:
+                continue
+            videno_mat.add(kljuc)
+        stavke.append(norm)
     return ', '.join(stavke)
 
 def init_db():
@@ -436,8 +520,14 @@ def init_db():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_obavijesti_vrijedi_do ON obavijesti(vrijedi_do)")
     except: pass
 
-    # Automatska normalizacija postojećih naziva ploča i materijala u bazi (npr. 'celik' -> 'Čelik', 'hardox' -> 'Hardox')
+    # Automatska normalizacija postojećih naziva ploča i materijala te popunjavanje praznog zavrseno_u za arhivirane naloge
     try:
+        fallback_zavrseno = dobij_zg_vrijeme().strftime('%Y-%m-%d %H:%M:%S')
+        conn.execute(
+            "UPDATE radni_nalozi SET zavrseno_u = COALESCE(NULLIF(zavrseno_u, ''), NULLIF(kreirano_u, ''), ?) "
+            "WHERE status IN ('Arhivirano', 'Na pregledu') AND (zavrseno_u IS NULL OR TRIM(zavrseno_u) = '')",
+            (fallback_zavrseno,)
+        )
         rows_norm = conn.execute("SELECT id, debljina_ploce, dimenzije_ploce_laser, materijal_ploce_laser FROM radni_nalozi").fetchall()
         for rn in rows_norm:
             stari_deb = rn['debljina_ploce'] or ''
@@ -520,7 +610,7 @@ def api_stream():
 
 @app.before_request
 def provjera_pristupa():
-    dozvoljeno_svima = ['/prijava_stanice', '/logo.png', '/favicon.png', '/favicon.ico', '/postavi_stanicu', '/odjava_stanice', '/login', '/logout', '/maintenance', '/skriveni_dev_login', '/api/stream', '/api/state_version']
+    dozvoljeno_svima = ['/prijava_stanice', '/logo.png', '/favicon.png', '/favicon.ico', '/manifest.json', '/postavi_stanicu', '/odjava_stanice', '/ugasi_program', '/login', '/logout', '/maintenance', '/skriveni_dev_login', '/api/stream', '/api/state_version']
     if any(request.path.startswith(d) for d in dozvoljeno_svima): return
     
     conn = get_db_connection()
@@ -544,7 +634,8 @@ def add_etag_and_cache(response):
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
         if request.method == 'GET' and response.status_code == 200:
-            etag = hashlib.md5(response.get_data()).hexdigest()
+            etag_raw = response.get_data() + f"_v{_STATE_VERSION}".encode('utf-8')
+            etag = hashlib.md5(etag_raw).hexdigest()
             response.set_etag(etag)
             if request.if_none_match and etag in request.if_none_match:
                 response.status_code = 304
@@ -577,6 +668,22 @@ def serve_favicon(): return send_from_directory(BASE_DIR, 'favicon.png', max_age
 
 @app.route('/favicon.ico')
 def favicon_fallback(): return redirect(url_for('serve_favicon'))
+
+@app.route('/manifest.json')
+def serve_manifest():
+    manifest_data = {
+        "name": "FirstCutLaser Pogon MES",
+        "short_name": "FCL Pogon",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#090b10",
+        "theme_color": "#090b10",
+        "icons": [
+            {"src": "/favicon.png", "sizes": "192x192", "type": "image/png"},
+            {"src": "/logo.png", "sizes": "512x512", "type": "image/png"}
+        ]
+    }
+    return Response(json.dumps(manifest_data), mimetype='application/manifest+json')
 
 @app.route('/maintenance')
 def maintenance():
@@ -640,14 +747,96 @@ def prijava_stanice():
 @app.route('/odjava_stanice')
 def odjava_stanice():
     resp = make_response(redirect(url_for('prijava_stanice')))
-    resp.set_cookie('zakljucana_stanica', '', expires=0)
-    resp.set_cookie('stanica_lokalno', '', expires=0)
-    resp.set_cookie('pogon_role', '', expires=0)
+    resp.set_cookie('zakljucana_stanica', '', expires=0, path='/')
+    resp.set_cookie('stanica_lokalno', '', expires=0, path='/')
+    resp.set_cookie('pogon_role', '', expires=0, path='/')
     session.clear()
     return resp
 
-@app.route('/ugasi_program')
-def ugasi_program(): return redirect(url_for('index_pogon_hub'))
+@app.route('/ugasi_program', methods=['GET', 'POST'])
+def ugasi_program():
+    session.clear()
+    if request.method == 'POST' or request.args.get('ajax') == '1':
+        resp = make_response(jsonify({"ok": True, "logged_out": True}))
+        resp.set_cookie('zakljucana_stanica', '', expires=0, path='/')
+        resp.set_cookie('stanica_lokalno', '', expires=0, path='/')
+        resp.set_cookie('pogon_role', '', expires=0, path='/')
+        return resp
+
+    close_html = """<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odjava iz sustava — FirstCutLaser MES</title>
+    <style>
+        body {
+            margin: 0; padding: 0; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            background: #090b10; color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif;
+            text-align: center;
+        }
+        .exit-card {
+            background: linear-gradient(180deg, #131824 0%, #0e121b 100%);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-top: 4px solid #ef4444;
+            border-radius: 18px;
+            padding: 38px 34px;
+            max-width: 440px;
+            width: 90%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+        }
+        .exit-icon {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(16, 185, 129, 0.14);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #10b981;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; margin-bottom: 18px;
+        }
+        h2 { margin: 0 0 10px 0; font-size: 1.35rem; font-weight: 800; letter-spacing: 0.3px; }
+        p { margin: 0 0 24px 0; color: #94a3b8; font-size: 0.92rem; line-height: 1.5; }
+        .btn-relogin {
+            display: inline-block; background: #0dcaf0; color: #090b10;
+            font-weight: 800; font-size: 0.9rem; text-decoration: none;
+            padding: 11px 24px; border-radius: 10px;
+            transition: all 0.2s ease;
+        }
+        .btn-relogin:hover { background: #38bdf8; transform: translateY(-1px); }
+    </style>
+    <script>
+        function pokusajZatvoritiProzor() {
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.izadji) {
+                    window.pywebview.api.izadji();
+                    return;
+                }
+            } catch (e) {}
+            try { window.open('', '_self', ''); } catch (e) {}
+            try { window.close(); } catch (e) {}
+            try { self.close(); } catch (e) {}
+        }
+        pokusajZatvoritiProzor();
+        window.onload = function() {
+            setTimeout(pokusajZatvoritiProzor, 80);
+        };
+    </script>
+</head>
+<body>
+    <div class="exit-card">
+        <div class="exit-icon">&#10003;</div>
+        <h2>USPJEŠNO STE ODJAVLJENI</h2>
+        <p>Radna stanica i sesija su sigurno odjavljene.<br>Sada možete zatvoriti ovaj prozor (<b>Alt + F4</b>) ili se ponovno prijaviti.</p>
+        <a href="/prijava_stanice" class="btn-relogin">Ponovna prijava u sustav</a>
+    </div>
+</body>
+</html>"""
+    resp = make_response(close_html)
+    resp.set_cookie('zakljucana_stanica', '', expires=0, path='/')
+    resp.set_cookie('stanica_lokalno', '', expires=0, path='/')
+    resp.set_cookie('pogon_role', '', expires=0, path='/')
+    return resp
 
 @app.route('/postavi_stanicu/<ime_stanice>')
 def postavi_stanicu(ime_stanice):
@@ -663,17 +852,42 @@ def postavi_stanicu(ime_stanice):
 @app.route('/')
 def index_pogon_hub():
     conn = get_db_connection()
-    svi_nalozi = conn.execute('SELECT * FROM radni_nalozi ORDER BY id DESC').fetchall()
+    svi_nalozi = conn.execute("SELECT * FROM radni_nalozi WHERE status != 'Arhivirano' ORDER BY id DESC").fetchall()
+    nalog_ids = [r['id'] for r in svi_nalozi]
+    pozicije_map = dohvati_pozicije_za_naloge(conn, nalog_ids)
+
     trenutno_na_laseru = []
+    cekanje_laser = []
     trenutno_u_bravariji = []
+    cekanje_bravarija = []
+    na_pregledu_count = 0
+
     for r in svi_nalozi:
         n = dict(r)
         n['kreirano_u_prikaz'] = formatiraj_datum(n['kreirano_u'])
-        if n['status'] in ['Laser', 'Pauzirano - Laser'] and (n['laser_zapoceto_u'] or n['status'] == 'Pauzirano - Laser'):
-            trenutno_na_laseru.append(n)
-        if n['status'] in ['Piganje', 'Pauzirano - Bravarija'] and (n['bravarija_zapoceto_u'] or n['status'] == 'Pauzirano - Bravarija'):
-            trenutno_u_bravariji.append(n)
-    return render_template('monitor.html', trenutno_na_laseru=trenutno_na_laseru, trenutno_u_bravariji=trenutno_u_bravariji)
+        n['pozicije'] = pozicije_map.get(n['id'], [])
+        n['ukupno'] = izracunaj_ukupno_za_nalog(n['pozicije'])
+        if n['status'] == 'Na pregledu':
+            na_pregledu_count += 1
+        elif n['status'] in ['Laser', 'Pauzirano - Laser']:
+            if n['laser_zapoceto_u'] or n['status'] == 'Pauzirano - Laser':
+                trenutno_na_laseru.append(n)
+            else:
+                cekanje_laser.append(n)
+        elif n['status'] in ['Piganje', 'Pauzirano - Bravarija']:
+            if n['bravarija_zapoceto_u'] or n['status'] == 'Pauzirano - Bravarija':
+                trenutno_u_bravariji.append(n)
+            else:
+                cekanje_bravarija.append(n)
+
+    return render_template(
+        'monitor.html',
+        trenutno_na_laseru=trenutno_na_laseru,
+        cekanje_laser=cekanje_laser,
+        trenutno_u_bravariji=trenutno_u_bravariji,
+        cekanje_bravarija=cekanje_bravarija,
+        na_pregledu_count=na_pregledu_count
+    )
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -711,13 +925,14 @@ def dev_panel():
     if request.method == 'POST':
         akcija = request.form.get('akcija')
         if akcija == 'lansiraj_ticker':
-            tekst = request.form.get('ticker_tekst')
-            trajanje_minuta = float(request.form.get('trajanje_minuta', 60))
-            vrijedi_do = (dobij_zg_vrijeme() + timedelta(minutes=trajanje_minuta)).isoformat()
-            conn.execute("DELETE FROM obavijesti")
-            conn.execute("INSERT INTO obavijesti (tekst, vrijedi_do) VALUES (?, ?)", (tekst, vrijedi_do))
-            conn.commit()
-            objavi_promjenu("ticker_promijenjen")
+            tekst = (request.form.get('ticker_tekst') or '').strip()
+            if tekst:
+                trajanje_minuta = float(request.form.get('trajanje_minuta', 60))
+                vrijedi_do = (dobij_zg_vrijeme() + timedelta(minutes=trajanje_minuta)).isoformat()
+                conn.execute("DELETE FROM obavijesti")
+                conn.execute("INSERT INTO obavijesti (tekst, vrijedi_do) VALUES (?, ?)", (tekst, vrijedi_do))
+                conn.commit()
+                objavi_promjenu("ticker_promijenjen")
         elif akcija == 'ugasi_ticker':
             conn.execute("DELETE FROM obavijesti")
             conn.commit()
@@ -726,32 +941,92 @@ def dev_panel():
             ip_od = request.form.get('ip_adresa')
             conn.execute("DELETE FROM blokade WHERE ip_adresa=?", (ip_od,))
             conn.commit()
+        elif akcija == 'odblokiraj_sve':
+            conn.execute("DELETE FROM blokade")
+            conn.commit()
         elif akcija == 'toggle_maint':
             status = request.form.get('maint_status', '0')
             conn.execute("UPDATE postavke SET vrijednost=? WHERE kljuc='maintenance'", (status,))
             conn.commit()
             objavi_promjenu("maint_toggle")
+        elif akcija == 'kreiraj_backup':
+            napravi_sigurnosnu_kopiju_baze("manual_dev")
+        elif akcija == 'optimiziraj_bazu':
+            try:
+                conn.commit()
+                conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                conn.execute("VACUUM")
+                conn.execute("ANALYZE")
+            except Exception:
+                pass
             
         return redirect(url_for('dev_panel'))
 
-    blokade_rows = conn.execute("SELECT * FROM blokade WHERE blokiran_do IS NOT NULL").fetchall()
+    blokade_rows = conn.execute("SELECT * FROM blokade WHERE blokiran_do IS NOT NULL OR pokusaji > 0 ORDER BY pokusaji DESC").fetchall()
     blokade = []
     for b in blokade_rows:
         bd = dict(b)
-        bd['kratki_ip'] = bd['ip_adresa'][:15] if bd['ip_adresa'] else ''
-        bd['prikaz_vremena'] = bd['blokiran_do'].replace('T', ' ')[:16] if bd['blokiran_do'] else ''
+        bd['kratki_ip'] = bd['ip_adresa'][:16] if bd['ip_adresa'] else ''
+        bd['prikaz_vremena'] = bd['blokiran_do'].replace('T', ' ')[:16] if bd['blokiran_do'] else 'Samo pokušaji (' + str(bd.get('pokusaji', 0)) + '/5)'
         blokade.append(bd)
         
     uk_naloga = conn.execute("SELECT COUNT(id) FROM radni_nalozi").fetchone()[0]
+    aktivnih_naloga_broj = conn.execute("SELECT COUNT(id) FROM radni_nalozi WHERE status != 'Arhivirano'").fetchone()[0]
+    arhiviranih_naloga_broj = conn.execute("SELECT COUNT(id) FROM radni_nalozi WHERE status = 'Arhivirano'").fetchone()[0]
     uk_pozicija = conn.execute("SELECT COUNT(id) FROM nalog_pozicije").fetchone()[0]
     
     maint_row = conn.execute("SELECT vrijednost FROM postavke WHERE kljuc='maintenance'").fetchone()
     maint_status = maint_row['vrijednost'] if maint_row else '0'
     
     try: db_velicina_mb = round(os.path.getsize(DB_FILE) / (1024 * 1024), 2)
-    except: db_velicina_mb = 0.0
+    except Exception: db_velicina_mb = 0.0
 
-    return render_template('dev_panel.html', blokade=blokade, uk_naloga=uk_naloga, uk_pozicija=uk_pozicija, db_velicina_mb=db_velicina_mb, maint_status=maint_status)
+    # Telemetrija pohrane nacrta
+    broj_datoteka_nacrta = 0
+    nacrti_velicina_mb = 0.0
+    try:
+        if os.path.exists(UPLOAD_FOLDER):
+            datoteke_u_pohrani = [os.path.join(UPLOAD_FOLDER, f) for f in os.listdir(UPLOAD_FOLDER) if os.path.isfile(os.path.join(UPLOAD_FOLDER, f))]
+            broj_datoteka_nacrta = len(datoteke_u_pohrani)
+            nacrti_velicina_mb = round(sum(os.path.getsize(f) for f in datoteke_u_pohrani) / (1024 * 1024), 2)
+    except Exception:
+        pass
+
+    # Popis zadnjih sigurnosnih kopija
+    backup_lista = []
+    try:
+        if os.path.exists(BACKUP_FOLDER):
+            sve_kopije = sorted(
+                [f for f in os.listdir(BACKUP_FOLDER) if f.endswith('.db')],
+                key=lambda x: os.path.getmtime(os.path.join(BACKUP_FOLDER, x)),
+                reverse=True
+            )
+            for b_ime in sve_kopije[:8]:
+                b_putanja = os.path.join(BACKUP_FOLDER, b_ime)
+                vel_kb = round(os.path.getsize(b_putanja) / 1024, 1)
+                mtime_dt = datetime.fromtimestamp(os.path.getmtime(b_putanja))
+                backup_lista.append({
+                    'filename': b_ime,
+                    'velicina_kb': vel_kb,
+                    'vrijeme': mtime_dt.strftime('%d.%m.%Y. u %H:%M:%S')
+                })
+    except Exception:
+        pass
+
+    return render_template(
+        'dev_panel.html',
+        blokade=blokade,
+        uk_naloga=uk_naloga,
+        aktivnih_naloga_broj=aktivnih_naloga_broj,
+        arhiviranih_naloga_broj=arhiviranih_naloga_broj,
+        uk_pozicija=uk_pozicija,
+        db_velicina_mb=db_velicina_mb,
+        broj_datoteka_nacrta=broj_datoteka_nacrta,
+        nacrti_velicina_mb=nacrti_velicina_mb,
+        backup_lista=backup_lista,
+        state_version=_STATE_VERSION,
+        maint_status=maint_status
+    )
 
 @app.route('/preuzmi_backup_baze')
 def preuzmi_backup_baze():
@@ -763,6 +1038,18 @@ def preuzmi_backup_baze():
     elif os.path.exists(DB_FILE):
         return send_file(DB_FILE, as_attachment=True, download_name=f"proizvodnja_backup_{dobij_zg_vrijeme().strftime('%Y%m%d_%H%M%S')}.db")
     return redirect(request.referrer or url_for('dev_panel'))
+
+@app.route('/preuzmi_backup_datoteku/<path:filename>')
+def preuzmi_backup_datoteku(filename):
+    if request.cookies.get('pogon_role') not in ['Admin', 'Developer']:
+        return redirect(url_for('login'))
+    sigurno = os.path.basename(filename)
+    if not sigurno.endswith('.db'):
+        return redirect(url_for('dev_panel'))
+    putanja = os.path.join(BACKUP_FOLDER, sigurno)
+    if os.path.exists(putanja):
+        return send_file(putanja, as_attachment=True, download_name=sigurno)
+    return redirect(url_for('dev_panel'))
 
 @app.route('/sefo_panel', methods=['GET', 'POST'])
 def index_master():
@@ -1009,6 +1296,14 @@ def generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False):
     glavni_laser_radnik = n.get('laser_radnik') or next((p.get('laser_radnik') for p in pozicije if p.get('laser_radnik')), None) or '-'
     glavni_bravarija_radnik = n.get('bravarija_radnik') or next((p.get('bravarija_radnik') for p in pozicije if p.get('bravarija_radnik')), None) or '-'
 
+    kreirano_fmt = formatiraj_datum(n.get('kreirano_u')) or '-'
+    zavrseno_fmt = formatiraj_datum(n.get('zavrseno_u'))
+    if not zavrseno_fmt:
+        if n.get('status') in ['Arhivirano', 'Na pregledu']:
+            zavrseno_fmt = kreirano_fmt if kreirano_fmt != '-' else dobij_zg_vrijeme().strftime('%d.%m.%Y. u %H:%M')
+        else:
+            zavrseno_fmt = 'U obradi'
+
     html_izvjestaj = render_template(
         'izvjestaj_naloga.html',
         n=n,
@@ -1020,8 +1315,8 @@ def generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False):
         mat_lista=mat_lista,
         glavni_laser_radnik=glavni_laser_radnik,
         glavni_bravarija_radnik=glavni_bravarija_radnik,
-        kreirano_prikaz=formatiraj_datum(n.get('kreirano_u')),
-        zavrseno_prikaz=formatiraj_datum(n.get('zavrseno_u')),
+        kreirano_prikaz=kreirano_fmt,
+        zavrseno_prikaz=zavrseno_fmt,
         pdf_datoteke=parsiraj_listu_datoteka(n.get('pdf_datoteka')),
         lxdf_datoteke=parsiraj_listu_datoteka(n.get('lxdf_datoteka')),
         generirano_u=dobij_zg_vrijeme().strftime('%d.%m.%Y. u %H:%M'),
@@ -1033,8 +1328,8 @@ def generiraj_html_izvjestaja(conn, id, online_pregled=False, auto_print=False):
 @app.route('/izvjestaj_pdf/<int:id>')
 def izvjestaj_pdf(id):
     conn = get_db_connection()
-    auto_print = request.args.get('print') == '1'
-    n, pozicije, uk, html_izvjestaj = generiraj_html_izvjestaja(conn, id, online_pregled=True, auto_print=auto_print)
+    auto_print_flag = (request.args.get('print', '1') != '0')
+    n, pozicije, uk, html_izvjestaj = generiraj_html_izvjestaja(conn, id, online_pregled=True, auto_print=auto_print_flag)
     if not n:
         return redirect(url_for('index_master'))
     return html_izvjestaj
@@ -1095,7 +1390,6 @@ def preuzmi_izvjestaj(id):
     except Exception as e: pass
     
     memory_file.seek(0)
-    return send_file(memory_file, download_name=predlozeno_ime_zipa, as_attachment=True)
     return send_file(memory_file, download_name=predlozeno_ime_zipa, as_attachment=True)
 
 # --- PREUZMI ZIP DATOTEKA (Samo PDF i DXF datoteke) ---
@@ -1219,38 +1513,46 @@ def zapocni_fazu(id, faza):
     faza = (faza or '').lower()
     trenutno_vrijeme = dobij_zg_vrijeme().strftime('%Y-%m-%d %H:%M:%S')
     conn = get_db_connection()
+    stanica = request.cookies.get('zakljucana_stanica') or request.cookies.get('stanica_lokalno', 'dashboard')
+    sender_id = request.headers.get('X-Client-ID') or request.args.get('client_id')
     
     if faza == 'laser': 
-        stanica = request.cookies.get('stanica_lokalno', 'dashboard')
-        if stanica == 'laser1':
-            ime_lasera = 'Laser 1'
-        elif stanica == 'laser2':
-            ime_lasera = 'Laser 2'
+        ime_lasera = 'Laser 2' if stanica == 'laser2' else 'Laser 1'
+        if stanica in ['laser1', 'laser2']:
+            aktivni = conn.execute(
+                "SELECT id FROM radni_nalozi WHERE status='Laser' AND odabrani_laser=? AND laser_zapoceto_u IS NOT NULL AND id!=?",
+                (ime_lasera, id)
+            ).fetchone()
+            if aktivni:
+                return redirect(url_for('sekcija_laser', err='zauzeto'))
         else:
-            l1_busy = conn.execute("SELECT id FROM radni_nalozi WHERE status='Laser' AND odabrani_laser='Laser 1' AND laser_zapoceto_u IS NOT NULL").fetchone()
-            l2_busy = conn.execute("SELECT id FROM radni_nalozi WHERE status='Laser' AND odabrani_laser='Laser 2' AND laser_zapoceto_u IS NOT NULL").fetchone()
-            if not l1_busy:
-                ime_lasera = 'Laser 1'
-            elif not l2_busy:
-                ime_lasera = 'Laser 2'
-            else:
-                ime_lasera = 'Laser 1'
+            aktivni = conn.execute(
+                "SELECT id FROM radni_nalozi WHERE status='Laser' AND laser_zapoceto_u IS NOT NULL AND id!=?",
+                (id,)
+            ).fetchone()
+            if aktivni:
+                return redirect(url_for('sekcija_laser', err='zauzeto'))
         
-        aktivni = conn.execute("SELECT id FROM radni_nalozi WHERE status='Laser' AND odabrani_laser=? AND laser_zapoceto_u IS NOT NULL", (ime_lasera,)).fetchone()
-        if aktivni:
-            return redirect(url_for('sekcija_laser', err='zauzeto'))
-            
-        conn.execute("UPDATE radni_nalozi SET status='Laser', laser_zapoceto_u=?, odabrani_laser=? WHERE id=?", (trenutno_vrijeme, ime_lasera, id))
+        conn.execute(
+            "UPDATE radni_nalozi SET status='Laser', laser_zapoceto_u=?, odabrani_laser=? WHERE id=?",
+            (trenutno_vrijeme, ime_lasera, id)
+        )
         
     elif faza == 'bravarija': 
-        aktivni = conn.execute("SELECT id FROM radni_nalozi WHERE status='Piganje' AND bravarija_zapoceto_u IS NOT NULL").fetchone()
+        aktivni = conn.execute(
+            "SELECT id FROM radni_nalozi WHERE status='Piganje' AND bravarija_zapoceto_u IS NOT NULL AND id!=?",
+            (id,)
+        ).fetchone()
         if aktivni:
             return redirect(url_for('sekcija_bravarija', err='zauzeto'))
             
-        conn.execute("UPDATE radni_nalozi SET status='Piganje', bravarija_zapoceto_u=? WHERE id=?", (trenutno_vrijeme, id))
+        conn.execute(
+            "UPDATE radni_nalozi SET status='Piganje', bravarija_zapoceto_u=? WHERE id=?",
+            (trenutno_vrijeme, id)
+        )
         
     conn.commit()
-    objavi_promjenu("zapoceta_faza")
+    objavi_promjenu("zapoceta_faza", sender_id=sender_id)
     return redirect(url_for(f'sekcija_{faza}'))
 
 @app.route('/laser', methods=['GET', 'POST'])
@@ -1269,6 +1571,7 @@ def sekcija_laser():
         dimenzije_ploce = normaliziraj_popis_ploca_ili_materijala(request.form.get('dimenzije_ploce', ''), False)
         materijal_ploce = normaliziraj_popis_ploca_ili_materijala(request.form.get('materijal_ploce', ''), True)
         akcija = request.form.get('akcija', 'zavrsi_odmah')
+        sender_id = request.headers.get('X-Client-ID') or request.form.get('client_id')
         
         parser_int = to_int if akcija == 'pauziraj' else to_int_or_zero
         for pid in request.form.getlist('pozicija_id'):
@@ -1277,7 +1580,7 @@ def sekcija_laser():
                          (naziv_poz, parser_int(request.form.get(f'komada_{pid}')), parser_int(request.form.get(f'skart_{pid}')), parser_int(request.form.get(f'priprema_sati_{pid}')), parser_int(request.form.get(f'priprema_minute_{pid}')), parser_int(request.form.get(f'rezanje_sati_{pid}')), parser_int(request.form.get(f'rezanje_minute_{pid}')), radnik, pid))
         
         if akcija == 'pauziraj':
-            conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Laser', laser_zapoceto_u=NULL, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=?, laser_radnik=? WHERE id=?", (radnik_napomena, dimenzije_ploce, materijal_ploce, radnik, id_naloga))
+            conn.execute("UPDATE radni_nalozi SET status='Pauzirano - Laser', laser_zapoceto_u=NULL, odabrani_laser=NULL, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=?, laser_radnik=? WHERE id=?", (radnik_napomena, dimenzije_ploce, materijal_ploce, radnik, id_naloga))
         else:
             novi_status = 'Piganje' if akcija == 'bravarija' else 'Na pregledu'
             vrijeme_zav = dobij_zg_vrijeme().strftime('%Y-%m-%d %H:%M:%S') if novi_status == 'Na pregledu' else None
@@ -1286,7 +1589,7 @@ def sekcija_laser():
             else:
                 conn.execute("UPDATE radni_nalozi SET status=?, laser_napomena=?, dimenzije_ploce_laser=?, materijal_ploce_laser=?, laser_radnik=? WHERE id=?", (novi_status, radnik_napomena, dimenzije_ploce, materijal_ploce, radnik, id_naloga))
         conn.commit()
-        objavi_promjenu("laser_zavrseno")
+        objavi_promjenu("laser_zavrseno", sender_id=sender_id)
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'ok': True})
@@ -1328,6 +1631,7 @@ def sekcija_bravarija():
         radnik = request.form.get('radnik', '')
         radnik_napomena = request.form.get('radnik_napomena', '')
         akcija = request.form.get('akcija', 'zavrsi_odmah')
+        sender_id = request.headers.get('X-Client-ID') or request.form.get('client_id')
         
         parser_int = to_int if akcija == 'pauziraj' else to_int_or_zero
         for pid in request.form.getlist('pozicija_id'):
@@ -1342,7 +1646,7 @@ def sekcija_bravarija():
             conn.execute("UPDATE radni_nalozi SET status='Na pregledu', bravarija_napomena=?, bravarija_radnik=?, zavrseno_u=? WHERE id=?", (radnik_napomena, radnik, vrijeme_zav, id_naloga))
                          
         conn.commit()
-        objavi_promjenu("bravarija_zavrseno")
+        objavi_promjenu("bravarija_zavrseno", sender_id=sender_id)
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'ok': True})

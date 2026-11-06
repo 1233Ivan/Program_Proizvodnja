@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#090b10">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
     <title>FirstCutLaser Pogon</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -14,39 +19,121 @@
     
     <style>
         :root {
-            --fcl-paused: #fbbf24; --fcl-paused-bg: rgba(251, 191, 36, 0.04);
-            --fcl-active: #38bdf8; --fcl-active-bg: rgba(56, 189, 248, 0.04);
-            --fcl-completed: #10b981; --fcl-completed-bg: rgba(16, 185, 129, 0.04);
+            --fcl-bg-main: #090b10;
+            --fcl-bg-surface: #111520;
+            --fcl-bg-elevated: #161b29;
+            --fcl-bg-header: #141926;
+            --fcl-border: #22293a;
+            --fcl-border-light: rgba(255, 255, 255, 0.08);
+            --fcl-paused: #fbbf24; --fcl-paused-bg: rgba(251, 191, 36, 0.05);
+            --fcl-active: #38bdf8; --fcl-active-bg: rgba(56, 189, 248, 0.05);
+            --fcl-completed: #10b981; --fcl-completed-bg: rgba(16, 185, 129, 0.05);
             --fcl-pending: #94a3b8; --fcl-pending-bg: rgba(255, 255, 255, 0.02);
+            --fcl-laser: #ef4444;
+            --fcl-bravarija: #f59e0b;
         }
-        body { background-color: #0b0c10; font-family: 'Plus Jakarta Sans', sans-serif; color: #e2e8f0; overflow-y: scroll; overflow-x: hidden; }
-        .glavni-prostor { padding: 24px 30px; }
-        .navbar { background-color: #12141c; border-bottom: 3px solid #ff0000; box-shadow: 0 4px 25px rgba(0,0,0,0.5); padding: 14px 24px; border-radius: 8px; margin-bottom: 15px; }
-        .navbar-brand img { height: 42px; width: auto; object-fit: contain; }
-        .card { background: #12141c; border-radius: 14px; border: 1px solid #222736; box-shadow: 0 6px 20px rgba(0,0,0,0.4); margin-bottom: 24px; transition: all 0.3s ease; }
-        .card-header-custom { padding: 18px 24px; border-bottom: 1px solid #222736; background: #171b26; color: #ffffff; border-top-left-radius: 14px; border-top-right-radius: 14px; }
-        .table { color: #ffffff; border-color: #222736; margin-bottom: 0; }
-        .table th { background-color: #171b26; color: #f1f5f9 !important; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; padding: 14px; border-bottom: 2px solid #222736; letter-spacing: 0.03em; }
-        .table td { padding: 14px; vertical-align: middle; background-color: transparent; border-bottom: 1px solid #222736; }
-        .table-modern { border-collapse: separate; border-spacing: 0 10px; margin-top: -10px; }
-        .table-modern > thead > tr > th { border: none !important; background: transparent !important; color: #64748b !important; font-weight: 700; padding-bottom: 8px; font-size: 0.75rem; letter-spacing: 0.05em; }
-        .table-modern > tbody > tr { box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .table-modern > tbody > tr:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
-        .table-modern > tbody > tr > td { border-top: 1px solid transparent; border-bottom: 1px solid transparent; background-color: #151822; padding: 18px 16px; }
-        .table-modern > tbody > tr > td:first-child { border-left: 3px solid transparent; border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-        .table-modern > tbody > tr > td:last-child { border-right: 1px solid transparent; border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-        .row-state-paused > td { background-color: var(--fcl-paused-bg); border-top-color: rgba(251, 191, 36, 0.08); border-bottom-color: rgba(251, 191, 36, 0.08); }
+        body {
+            background-color: var(--fcl-bg-main);
+            background-image:
+                radial-gradient(circle at 12% 0%, rgba(13, 202, 240, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 88% 0%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
+            background-attachment: fixed;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #e2e8f0;
+            overflow-y: scroll;
+            overflow-x: hidden;
+            letter-spacing: -0.01em;
+        }
+        .glavni-prostor { padding: 20px 28px 40px 28px; max-width: 1920px; margin: 0 auto; }
+        .navbar {
+            background: linear-gradient(180deg, #151a28 0%, #0f131d 100%);
+            border-bottom: 2px solid #ef4444;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+            padding: 12px 24px;
+            margin-bottom: 18px;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+        .navbar-brand img { height: 40px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
+        .nav-brand-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.12); margin: 0 14px; }
+        .nav-station-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 5px 11px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #cbd5e1;
+        }
+        .card {
+            background: linear-gradient(180deg, #131722 0%, #10131c 100%);
+            border-radius: 16px;
+            border: 1px solid var(--fcl-border);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            margin-bottom: 24px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .card-header-custom {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--fcl-border);
+            background: linear-gradient(90deg, #171c2b 0%, #131722 100%);
+            color: #ffffff;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+        .table { color: #ffffff; border-color: var(--fcl-border); margin-bottom: 0; }
+        .table th {
+            background-color: #161b28;
+            color: #94a3b8 !important;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.76rem;
+            padding: 13px 14px;
+            border-bottom: 2px solid var(--fcl-border);
+            letter-spacing: 0.05em;
+        }
+        .table td { padding: 14px; vertical-align: middle; background-color: transparent; border-bottom: 1px solid var(--fcl-border); }
+        .table-modern { border-collapse: separate; border-spacing: 0 10px; margin-top: -8px; }
+        .table-modern > thead > tr > th {
+            border: none !important;
+            background: transparent !important;
+            color: #64748b !important;
+            font-weight: 800;
+            padding-bottom: 6px;
+            font-size: 0.73rem;
+            letter-spacing: 0.06em;
+        }
+        .table-modern > tbody > tr {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .table-modern > tbody > tr:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.38); }
+        .table-modern > tbody > tr > td {
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: #151925;
+            padding: 16px;
+        }
+        .table-modern > tbody > tr > td:first-child { border-left: 4px solid transparent; border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+        .table-modern > tbody > tr > td:last-child { border-right: 1px solid rgba(255, 255, 255, 0.05); border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+        .row-state-paused > td { background-color: var(--fcl-paused-bg); border-top-color: rgba(251, 191, 36, 0.14); border-bottom-color: rgba(251, 191, 36, 0.14); }
         .row-state-paused > td:first-child { border-left-color: var(--fcl-paused); }
-        .row-state-paused > td:last-child { border-right-color: rgba(251, 191, 36, 0.08); }
-        .row-state-active > td { background-color: var(--fcl-active-bg); border-top-color: rgba(56, 189, 248, 0.08); border-bottom-color: rgba(56, 189, 248, 0.08); }
+        .row-state-paused > td:last-child { border-right-color: rgba(251, 191, 36, 0.14); }
+        .row-state-active > td { background-color: var(--fcl-active-bg); border-top-color: rgba(56, 189, 248, 0.14); border-bottom-color: rgba(56, 189, 248, 0.14); }
         .row-state-active > td:first-child { border-left-color: var(--fcl-active); }
-        .row-state-active > td:last-child { border-right-color: rgba(56, 189, 248, 0.08); }
-        .row-state-completed > td { background-color: var(--fcl-completed-bg); border-top-color: rgba(16, 185, 129, 0.08); border-bottom-color: rgba(16, 185, 129, 0.08); }
+        .row-state-active > td:last-child { border-right-color: rgba(56, 189, 248, 0.14); }
+        .row-state-completed > td { background-color: var(--fcl-completed-bg); border-top-color: rgba(16, 185, 129, 0.14); border-bottom-color: rgba(16, 185, 129, 0.14); }
         .row-state-completed > td:first-child { border-left-color: var(--fcl-completed); }
-        .row-state-completed > td:last-child { border-right-color: rgba(16, 185, 129, 0.08); }
-        .row-state-pending > td { background-color: var(--fcl-pending-bg); border-top-color: rgba(100, 116, 139, 0.1); border-bottom-color: rgba(100, 116, 139, 0.1); }
+        .row-state-completed > td:last-child { border-right-color: rgba(16, 185, 129, 0.14); }
+        .row-state-pending > td { background-color: #141824; border-top-color: rgba(148, 163, 184, 0.12); border-bottom-color: rgba(148, 163, 184, 0.12); }
         .row-state-pending > td:first-child { border-left-color: var(--fcl-pending); }
-        .row-state-pending > td:last-child { border-right-color: rgba(100, 116, 139, 0.1); }
+        .row-state-pending > td:last-child { border-right-color: rgba(148, 163, 184, 0.12); }
         .txt-paused { color: var(--fcl-paused) !important; }
         .txt-active { color: var(--fcl-active) !important; }
         .txt-completed { color: var(--fcl-completed) !important; }
@@ -55,34 +142,227 @@
         .badge-active { background-color: rgba(56, 189, 248, 0.15) !important; color: var(--fcl-active) !important; border: 1px solid rgba(56, 189, 248, 0.4) !important; }
         .badge-completed { background-color: rgba(16, 185, 129, 0.15) !important; color: var(--fcl-completed) !important; border: 1px solid rgba(16, 185, 129, 0.4) !important; }
         .badge-pending { background-color: rgba(100, 116, 139, 0.15) !important; color: #cbd5e1 !important; border: 1px solid rgba(100, 116, 139, 0.4) !important; }
-        .text-muted { color: #cbd5e1 !important; }
-        .text-info { color: #0dcaf0 !important; } 
+        .text-muted { color: #94a3b8 !important; }
+        .text-info { color: #38bdf8 !important; }
         .text-white { color: #ffffff !important; }
-        .form-label { color: #f1f5f9 !important; font-weight: 600; font-size: 0.85rem; letter-spacing: 0.02em; }
-        .form-control::placeholder { color: #94a3b8 !important; opacity: 1; }
-        .form-control { background-color: #1a1e2b; border: 1px solid #2d3446; color: #ffffff; border-radius: 8px; padding: 10px 14px; font-size: 0.9rem; transition: all 0.2s; }
-        .form-control:focus { background-color: #23293b; border-color: #0dcaf0; color: #fff; box-shadow: 0 0 0 3px rgba(13,202,240,0.15); outline: none; }
+        .form-label { color: #e2e8f0 !important; font-weight: 700; font-size: 0.82rem; letter-spacing: 0.02em; margin-bottom: 6px; }
+        .form-control::placeholder { color: #64748b !important; opacity: 1; }
+        .form-control {
+            background-color: #181d2c;
+            border: 1px solid #2b3348;
+            color: #ffffff;
+            border-radius: 9px;
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            transition: all 0.18s ease;
+        }
+        .form-control:focus {
+            background-color: #1f2638;
+            border-color: #38bdf8;
+            color: #fff;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+            outline: none;
+        }
         textarea.auto-expand { resize: none; overflow-y: hidden; min-height: 45px; max-height: 150px; }
         textarea.auto-expand:focus { overflow-y: auto; }
-        input[type="file"].form-control { padding: 10px 14px; color: #ffffff !important; line-height: 1.5; background-color: #1a1e2b !important; border: 1px solid #2d3446 !important; font-size: 0.9rem; height: auto; }
-        input[type="file"].form-control::file-selector-button { margin-left: -5px; margin-right: 14px; background-color: #2d3446 !important; color: #ffffff !important; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer; transition: all 0.2s ease; font-weight: 600; font-size: 0.85rem; }
-        
-        .table .form-control { background-color: #1a1e2b; border: 1px solid #2d3446; padding: 8px 10px; border-radius: 6px; color: #ffffff !important; }
-        .table .form-control:focus { background-color: #23293b; border-color: #0dcaf0; }
-        
-        .form-check-input { width: 1.25rem; height: 1.25rem; background-color: #1a1e2b; border-color: #2d3446; cursor: pointer; }
-        .btn-primary { background-color: #ff0000; border-color: #ff0000; font-weight: 600; border-radius: 8px; padding: 10px 20px; }
-        .btn-success { background-color: #16a34a; border-color: #16a34a; font-weight: 600; border-radius: 8px; color: white !important;}
-        .btn-warning { background-color: #eab308; border-color: #eab308; color: #000 !important; font-weight: 700; border-radius: 8px; }
-        .btn-nav { color: #d1d5db; font-weight: 600; text-decoration: none; padding: 8px 16px; border-radius: 6px; white-space: nowrap; }
-        .clock-box { background: #171b26; border: 1px solid #222736; border-radius: 8px; padding: 6px 14px; font-family: monospace; color: #ffffff; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-        .vidljiv-tekst { background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); border-radius: 8px; padding: 20px; color: #ffffff !important; font-size: 1.1rem; }
-        .login-wrapper { min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
-        .login-box { width: 100%; max-width: 420px; background: #12141c; border-radius: 16px; border-top: 5px solid #0dcaf0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); padding: 36px 28px; }
-        .tamni-kontejner { background-color: #12141c; border: 1px solid #222736; border-radius: 8px; }
-        .dodaj-kontejner { background-color: #171b26; border: 1px solid #2d3446; border-radius: 8px; }
-        .napomena-box { background: rgba(13, 202, 240, 0.1); border-left: 3px solid #0dcaf0; padding: 12px; border-radius: 0 6px 6px 0; margin-top: 8px;}
+        input[type="file"].form-control { padding: 9px 14px; color: #ffffff !important; line-height: 1.5; background-color: #181d2c !important; border: 1px dashed #3b4664 !important; font-size: 0.88rem; height: auto; }
+        input[type="file"].form-control:hover { border-color: #38bdf8 !important; background-color: #1c2234 !important; }
+        input[type="file"].form-control::file-selector-button { margin-left: -4px; margin-right: 12px; background-color: #283147 !important; color: #ffffff !important; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s ease; font-weight: 700; font-size: 0.82rem; }
+        .table .form-control { background-color: #181d2c; border: 1px solid #2b3348; padding: 8px 10px; border-radius: 7px; color: #ffffff !important; }
+        .table .form-control:focus { background-color: #21283b; border-color: #38bdf8; }
+        .form-check-input { width: 1.25rem; height: 1.25rem; background-color: #181d2c; border-color: #36405a; cursor: pointer; }
+        .btn-primary { background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; font-weight: 700; border-radius: 9px; padding: 10px 20px; }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); border-color: #10b981; font-weight: 700; border-radius: 9px; color: white !important; }
+        .btn-warning { background: linear-gradient(135deg, #fbbf24, #eab308); border-color: #eab308; color: #090b10 !important; font-weight: 800; border-radius: 9px; }
+        .btn-nav {
+            color: #cbd5e1;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 9px;
+            white-space: nowrap;
+            border: 1px solid transparent;
+            transition: all 0.18s ease;
+        }
+        .btn-nav:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #ffffff !important;
+        }
+        .btn-nav.active-nav-item {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.22);
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+        }
+        .clock-box {
+            background: #0d1018;
+            border: 1px solid #252d40;
+            border-radius: 9px;
+            padding: 7px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .vidljiv-tekst { background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); border-radius: 12px; padding: 24px; color: #94a3b8 !important; font-size: 1rem; }
+        .login-wrapper { min-height: 85vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .login-box {
+            width: 100%;
+            max-width: 440px;
+            background: linear-gradient(180deg, #151a28 0%, #10131d 100%);
+            border-radius: 20px;
+            border: 1px solid #262f45;
+            border-top: 4px solid #38bdf8;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+            padding: 38px 32px;
+        }
+        .tamni-kontejner { background-color: #111520; border: 1px solid var(--fcl-border); border-radius: 10px; }
+        .dodaj-kontejner { background-color: #161b29; border: 1px solid #2b3348; border-radius: 10px; }
+        .napomena-box { background: rgba(56, 189, 248, 0.08); border-left: 3px solid #38bdf8; padding: 12px 14px; border-radius: 0 8px 8px 0; margin-top: 8px; }
         .dropdown-item:hover { background-color: #23293b; color: #fff !important; }
+
+        /* ========================================================
+           NOVI INDUSTRIJSKI SCADA/MES KOMPONENTNI SUSTAV
+           ======================================================== */
+        .sector-hero-banner {
+            background: linear-gradient(135deg, #151a28 0%, #10141f 100%);
+            border: 1px solid var(--fcl-border);
+            border-radius: 16px;
+            padding: 18px 24px;
+            margin-bottom: 22px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+        }
+        .sector-hero-left { display: flex; align-items: center; gap: 16px; }
+        .sector-hero-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.45rem;
+            flex-shrink: 0;
+        }
+        .sector-hero-icon.laser { background: rgba(239, 68, 68, 0.14); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; }
+        .sector-hero-icon.bravarija { background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; }
+        .sector-hero-icon.monitor { background: rgba(56, 189, 248, 0.14); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; }
+        .sector-hero-icon.uprava { background: rgba(16, 185, 129, 0.14); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; }
+        .sector-hero-title { font-size: 1.35rem; font-weight: 800; color: #ffffff; margin: 0; letter-spacing: -0.01em; }
+        .sector-hero-sub { font-size: 0.82rem; color: #94a3b8; margin: 2px 0 0 0; font-weight: 500; }
+
+        /* KPI KARTICE (MONITOR POGONA & UPRAVLJAČKA PLOČA) */
+        .fcl-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .fcl-kpi-card {
+            background: linear-gradient(180deg, #151a28 0%, #111520 100%);
+            border: 1px solid var(--fcl-border);
+            border-radius: 14px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .fcl-kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 4px;
+            background: #38bdf8;
+        }
+        .fcl-kpi-card.kpi-red::before { background: #ef4444; }
+        .fcl-kpi-card.kpi-amber::before { background: #f59e0b; }
+        .fcl-kpi-card.kpi-cyan::before { background: #38bdf8; }
+        .fcl-kpi-card.kpi-green::before { background: #10b981; }
+        .fcl-kpi-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #94a3b8; margin-bottom: 4px; }
+        .fcl-kpi-val { font-size: 1.65rem; font-weight: 800; color: #ffffff; line-height: 1.1; }
+        .fcl-kpi-sub { font-size: 0.76rem; color: #64748b; margin-top: 4px; font-weight: 600; }
+        .fcl-kpi-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+
+        /* META PILLOVI NA KARTICAMA NALOGA */
+        .order-meta-pills {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .order-meta-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 7px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+        .order-meta-pill b { color: #ffffff; font-weight: 700; }
+
+        /* SAŽETAK PAUZIRANOG RADA NA KARTICI NALOGA */
+        .paused-summary-banner {
+            background: rgba(251, 191, 36, 0.06);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-left: 4px solid #fbbf24;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 12px 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        /* FILTER TABLET GUMBI NA ŠEFO PANELU */
+        .filter-pill-group { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+        .filter-pill-btn {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #94a3b8;
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .filter-pill-btn:hover, .filter-pill-btn.active {
+            background: rgba(56, 189, 248, 0.16);
+            border-color: rgba(56, 189, 248, 0.45);
+            color: #ffffff;
+        }
         @keyframes pulseLive { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         .pulse-live { animation: pulseLive 2s infinite; }
         
@@ -873,9 +1153,377 @@
             .mob-kartica-pozicije td:first-child .poz-naziv-wrap {
                 width: 100%;
             }
+
+            /* Responzivne kartice za Upravljačku ploču i Arhivu na mobitelu */
+            .table-modern thead { display: none; }
+            .table-modern > tbody > tr:not(.collapse) {
+                display: block;
+                margin-bottom: 14px;
+                border-radius: 14px;
+                overflow: hidden;
+                border: 1px solid #262f45;
+                background-color: #151925;
+            }
+            .table-modern > tbody > tr:not(.collapse) > td {
+                display: block;
+                width: 100%;
+                padding: 10px 14px !important;
+                border: none !important;
+                border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+                border-radius: 0 !important;
+                text-align: left !important;
+            }
+            .table-modern > tbody > tr:not(.collapse) > td:last-child {
+                border-bottom: none !important;
+                padding-top: 12px !important;
+            }
+            .table-modern > tbody > tr.collapse.show {
+                display: block;
+                margin-top: -10px;
+                margin-bottom: 14px;
+            }
+            .table-modern > tbody > tr.collapse.show > td {
+                display: block;
+                width: 100%;
+            }
         }
         @media (max-width: 480px) {
             .login-box { padding: 28px 18px; }
+        }
+
+        /* ========================================================
+           V2 ENTERPRISE DODACI: DEBLJINE, DROPZONE, DEV PANEL, GUMBI
+           ======================================================== */
+        .thickness-quick-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            padding: 7px 10px;
+            background: rgba(56, 189, 248, 0.05);
+            border: 1px dashed rgba(56, 189, 248, 0.28);
+            border-radius: 9px;
+            transition: all 0.2s ease;
+        }
+        .thickness-quick-bar.highlight-needed {
+            background: rgba(245, 158, 11, 0.12);
+            border-color: #fbbf24;
+            box-shadow: 0 0 14px rgba(245, 158, 11, 0.2);
+        }
+        .thickness-bar-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #94a3b8;
+            margin-right: 4px;
+        }
+        .thickness-quick-bar.highlight-needed .thickness-bar-label {
+            color: #fbbf24;
+        }
+        .thickness-pill-btn {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #e2e8f0;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .thickness-pill-btn:hover {
+            background: #0dcaf0;
+            color: #090b10;
+            border-color: #0dcaf0;
+            transform: translateY(-1px);
+        }
+        .chip-validation-hint {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 8px;
+            padding: 6px 10px;
+            margin-top: 6px;
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
+        .chip-validation-hint.active {
+            display: flex;
+        }
+        @keyframes shakeInputError {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .smart-chip-input.input-missing-thickness {
+            border-color: #fbbf24 !important;
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.25) !important;
+            animation: shakeInputError 0.35s ease;
+        }
+
+        /* UPLOAD ZONE ZA NACRTE NA ŠEFO PANELU */
+        .fcl-upload-zone {
+            background: rgba(15, 19, 30, 0.7);
+            border: 1px dashed rgba(148, 163, 184, 0.3);
+            border-radius: 12px;
+            padding: 14px 16px;
+            transition: all 0.2s ease;
+            height: 100%;
+        }
+        .fcl-upload-zone:hover {
+            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(22, 28, 43, 0.8);
+        }
+        .fcl-upload-zone.zone-pdf:hover {
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        /* DISPEČERSKI GUMBI ZA LANSIRANJE NALOGA */
+        .btn-dispatch-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-weight: 800;
+            text-align: left;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+        .btn-dispatch-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.45);
+        }
+        .btn-dispatch-card i {
+            font-size: 1.35rem;
+        }
+        .btn-dispatch-sub {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            opacity: 0.85;
+            letter-spacing: 0.02em;
+        }
+
+        /* CUSTOM SLIDER I DEV PANEL KOMPONENTE */
+        input[type="range"].form-range::-webkit-slider-runnable-track {
+            background: #1e293b;
+            height: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        input[type="range"].form-range::-webkit-slider-thumb {
+            background: #ef4444;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-top: -7px;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+        }
+        .dev-preset-pill {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #cbd5e1;
+            border-radius: 8px;
+            padding: 5px 11px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .dev-preset-pill:hover, .dev-preset-pill.active {
+            background: rgba(239, 68, 68, 0.18);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #ffffff;
+        }
+
+        /* ========================================================
+           V3 ENTERPRISE DODACI: KOMPAKTNI GLASS TOAST & MONITOR SATI
+           ======================================================== */
+        @keyframes fclToastSlideIn {
+            0% { opacity: 0; transform: translate3d(24px, -6px, 0) scale(0.97); }
+            100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+        }
+        @keyframes fclToastProgress {
+            0% { width: 100%; }
+            100% { width: 0%; }
+        }
+        .fcl-toast-card {
+            position: fixed;
+            top: 76px;
+            right: 20px;
+            z-index: 99999;
+            width: auto;
+            min-width: 280px;
+            max-width: 360px;
+            background: rgba(15, 20, 32, 0.96);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #10b981;
+            border-radius: 12px;
+            padding: 11px 14px;
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.55);
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            color: #f8fafc;
+            overflow: hidden;
+            animation: fclToastSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fcl-toast-card.toast-error { border-left-color: #ef4444; }
+        .fcl-toast-card.toast-warning { border-left-color: #f59e0b; }
+        .fcl-toast-card.toast-success { border-left-color: #10b981; }
+        .fcl-toast-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+        .toast-success .fcl-toast-icon {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .toast-error .fcl-toast-icon {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .toast-warning .fcl-toast-icon {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        .fcl-toast-body {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .fcl-toast-title {
+            font-size: 0.66rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            line-height: 1.1;
+            margin-bottom: 2px;
+        }
+        .toast-success .fcl-toast-title { color: #34d399; }
+        .toast-error .fcl-toast-title { color: #f87171; }
+        .toast-warning .fcl-toast-title { color: #fbbf24; }
+        .fcl-toast-msg {
+            font-size: 0.83rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+        .fcl-toast-close {
+            background: transparent;
+            border: none;
+            color: #64748b;
+            font-size: 1.05rem;
+            line-height: 1;
+            padding: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+        .fcl-toast-close:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .fcl-toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            background: #10b981;
+            opacity: 0.85;
+        }
+        .toast-error .fcl-toast-progress { background: #ef4444; }
+        .toast-warning .fcl-toast-progress { background: #f59e0b; }
+
+        @media (max-width: 575.98px) {
+            .fcl-toast-card {
+                top: auto;
+                bottom: 16px;
+                right: 12px;
+                left: 12px;
+                max-width: none;
+            }
+        }
+
+        /* ČITLJIVI INDUSTRIJSKI SATI NA MONITORU POGONA (TABULAR-NUMS BEZ PREKRIŽENE NULE) */
+        .monitor-time-cluster {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .monitor-time-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif !important;
+            font-variant-numeric: tabular-nums;
+            font-size: 0.77rem;
+            font-weight: 700;
+            padding: 4px 9px;
+            border-radius: 7px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            color: #cbd5e1;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+        }
+        .monitor-time-pill .time-lbl {
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .monitor-time-pill .time-val {
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.81rem;
+        }
+        .monitor-time-pill.time-total-laser {
+            background: rgba(13, 202, 240, 0.12);
+            border-color: rgba(56, 189, 248, 0.45);
+            color: #38bdf8;
+        }
+        .monitor-time-pill.time-total-laser .time-val {
+            color: #38bdf8;
+        }
+        .monitor-time-pill.time-total-brav {
+            background: rgba(245, 158, 11, 0.14);
+            border-color: rgba(251, 191, 36, 0.45);
+            color: #fbbf24;
+        }
+        .monitor-time-pill.time-total-brav .time-val {
+            color: #fde68a;
+        }
+
+        /* PULSIRANJE POSTOJEĆEG ČIPA KOD POKUŠAJA UNOSA DUPLIKATA */
+        @keyframes chipDuplicateFlash {
+            0%, 100% { transform: scale(1); box-shadow: none; }
+            40% { transform: scale(1.07); box-shadow: 0 0 14px rgba(251, 191, 36, 0.65); border-color: #fbbf24; }
+        }
+        .smart-chip-item.chip-duplicate-pulse {
+            animation: chipDuplicateFlash 0.45s ease;
         }
     </style>
     <script>
@@ -893,6 +1541,43 @@
 
         if (!Element.prototype.matches) { Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector; }
         if (!Element.prototype.closest) { Element.prototype.closest = function(s) { var el = this; while (el && el.nodeType === 1) { if (el.matches(s)) return el; el = el.parentElement || el.parentNode; } return null; }; }
+        if (!Element.prototype.remove) {
+            Element.prototype.remove = function() {
+                if (this.parentNode) this.parentNode.removeChild(this);
+            };
+        }
+        if (!String.prototype.includes) {
+            String.prototype.includes = function(search, start) {
+                if (typeof start !== 'number') start = 0;
+                if (start + search.length > this.length) return false;
+                return this.indexOf(search, start) !== -1;
+            };
+        }
+        if (!Array.prototype.includes) {
+            Array.prototype.includes = function(searchElement, fromIndex) {
+                var o = Object(this);
+                var len = parseInt(o.length, 10) || 0;
+                if (len === 0) return false;
+                var n = parseInt(fromIndex, 10) || 0;
+                var k = n >= 0 ? n : Math.max(len + n, 0);
+                while (k < len) {
+                    if (o[k] === searchElement) return true;
+                    k++;
+                }
+                return false;
+            };
+        }
+        if (window.NodeList && !NodeList.prototype.forEach) {
+            NodeList.prototype.forEach = Array.prototype.forEach;
+        }
+
+        // Globalno praćenje zadnjeg kliknutog submit gumba (fallback za e.submitter na Windows 7)
+        document.addEventListener('click', function(e) {
+            var btn = e.target && e.target.closest ? e.target.closest('button[type="submit"], input[type="submit"]') : null;
+            if (btn && btn.form) {
+                btn.form._lastSubmitter = btn;
+            }
+        }, true);
 
         function escapeHtml(str) {
             if (str === null || str === undefined) return '';
@@ -942,50 +1627,169 @@
             }
         }
 
-        function prikaziGresku(poruka) {
+        function prikaziToastObavijest(arg1, arg2, arg3, arg4) {
+            var tip = 'info';
+            var naslov = 'Obavijest';
+            var poruka = '';
+            var trajanjeMs = 3500;
+
+            if (arguments.length >= 4) {
+                tip = arg1 || 'info';
+                naslov = arg2 || 'Obavijest';
+                poruka = arg3 || '';
+                trajanjeMs = (typeof arg4 === 'number') ? arg4 : 3500;
+            } else if (arguments.length === 3) {
+                if (typeof arg3 === 'number') {
+                    trajanjeMs = arg3;
+                    if (arg2 === 'error' || arg2 === 'warning' || arg2 === 'success' || arg2 === 'info') {
+                        poruka = arg1 || '';
+                        tip = arg2;
+                    } else if (arg1 === 'error' || arg1 === 'warning' || arg1 === 'success' || arg1 === 'info') {
+                        tip = arg1;
+                        poruka = arg2 || '';
+                    } else {
+                        naslov = arg1 || 'Obavijest';
+                        poruka = arg2 || '';
+                    }
+                } else {
+                    tip = arg1 || 'info';
+                    naslov = arg2 || 'Obavijest';
+                    poruka = arg3 || '';
+                }
+            } else if (arguments.length === 2) {
+                if (typeof arg2 === 'number') {
+                    poruka = arg1 || '';
+                    trajanjeMs = arg2;
+                } else if (arg2 === 'error' || arg2 === 'warning' || arg2 === 'success' || arg2 === 'info') {
+                    poruka = arg1 || '';
+                    tip = arg2;
+                } else if (arg1 === 'error' || arg1 === 'warning' || arg1 === 'success' || arg1 === 'info') {
+                    tip = arg1;
+                    poruka = arg2 || '';
+                } else {
+                    naslov = arg1 || 'Obavijest';
+                    poruka = arg2 || '';
+                }
+            } else if (arguments.length === 1) {
+                poruka = arg1 || '';
+            }
+
+            if (!naslov || naslov === 'Obavijest' || naslov === tip) {
+                naslov = (tip === 'error') ? 'Upozorenje sustava' : (tip === 'warning') ? 'Upozorenje' : (tip === 'success') ? 'Potvrđeno' : 'Obavijest';
+            }
+
             var stari = document.getElementById('fcl-toast-obavijest');
-            if (stari) stari.remove();
-            
+            if (stari && stari.parentNode) stari.parentNode.removeChild(stari);
+            clearTimeout(toastTimeout);
+
+            var klasaTip = (tip === 'error') ? 'toast-error' : (tip === 'warning') ? 'toast-warning' : 'toast-success';
+            var ikona = (tip === 'error') ? 'fa-triangle-exclamation' : (tip === 'warning') ? 'fa-triangle-exclamation' : 'fa-check';
+
             var div = document.createElement('div');
             div.id = 'fcl-toast-obavijest';
-            div.style.cssText = 'position:fixed; top:20px; right:16px; left:16px; max-width:440px; margin-left:auto; background:#ef4444; color:white; padding:15px 20px; border-radius:12px; z-index:99999; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-size: 1rem; border: 2px solid #b91c1c; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease-out;';
-            div.innerHTML = '<i class="fa-solid fa-triangle-exclamation fs-3"></i> <div style="flex-grow:1;"><div style="font-size:1.1rem; line-height:1.2;">GREŠKA</div><div style="font-size:0.9rem; font-weight:500;">'+escapeHtml(poruka)+'</div></div><button type="button" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; margin-left:10px; padding: 0;" onclick="this.parentElement.remove()">&times;</button>';
-            
+            div.className = 'fcl-toast-card ' + klasaTip;
+
+            var progressHtml = '';
+            if (trajanjeMs && trajanjeMs > 0) {
+                progressHtml = '<div class="fcl-toast-progress" style="animation: fclToastProgress ' + (trajanjeMs / 1000) + 's linear forwards;"></div>';
+            }
+
+            div.innerHTML =
+                '<div class="fcl-toast-icon"><i class="fa-solid ' + ikona + '"></i></div>' +
+                '<div class="fcl-toast-body">' +
+                    '<div class="fcl-toast-title">' + escapeHtml(naslov) + '</div>' +
+                    '<div class="fcl-toast-msg">' + escapeHtml(poruka) + '</div>' +
+                '</div>' +
+                '<button type="button" class="fcl-toast-close" title="Zatvori" onclick="if(this.parentNode&&this.parentNode.parentNode)this.parentNode.parentNode.removeChild(this.parentNode)"><i class="fa-solid fa-xmark"></i></button>' +
+                progressHtml;
+
             document.body.appendChild(div);
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(function() { 
-                var el = document.getElementById('fcl-toast-obavijest');
-                if (el) el.remove(); 
-            }, 4500);
+            if (trajanjeMs && trajanjeMs > 0) {
+                toastTimeout = setTimeout(function() {
+                    var el = document.getElementById('fcl-toast-obavijest');
+                    if (el && el.parentNode) el.parentNode.removeChild(el);
+                }, trajanjeMs);
+            }
         }
 
-        function prikaziUspjeh(poruka) {
-            var stari = document.getElementById('fcl-toast-obavijest');
-            if (stari) stari.remove();
-            
-            var div = document.createElement('div');
-            div.id = 'fcl-toast-obavijest';
-            div.style.cssText = 'position:fixed; top:20px; right:16px; left:16px; max-width:440px; margin-left:auto; background:#10b981; color:white; padding:15px 20px; border-radius:12px; z-index:99999; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-size: 1rem; border: 2px solid #059669; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease-out;';
-            div.innerHTML = '<i class="fa-solid fa-circle-check fs-3"></i> <div style="flex-grow:1;"><div style="font-size:1.1rem; line-height:1.2;">USPJEŠNO</div><div style="font-size:0.9rem; font-weight:500;">'+escapeHtml(poruka)+'</div></div><button type="button" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; margin-left:10px; padding: 0;" onclick="this.parentElement.remove()">&times;</button>';
-            
-            document.body.appendChild(div);
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(function() { 
-                var el = document.getElementById('fcl-toast-obavijest');
-                if (el) el.remove(); 
-            }, 3000);
+        function prikaziGresku(poruka) {
+            prikaziToastObavijest('error', 'Upozorenje sustava', poruka, 4200);
+        }
+
+        function prikaziUspjeh(poruka, naslov, trajanje) {
+            if (typeof naslov === 'number') {
+                trajanje = naslov;
+                naslov = 'Potvrđeno';
+            }
+            prikaziToastObavijest('success', naslov || 'Potvrđeno', poruka, trajanje || 3800);
         }
 
         function prikaziUpozorenje(poruka) {
-            var stari = document.getElementById('fcl-toast-obavijest');
-            if (stari) stari.remove();
-            
-            var div = document.createElement('div');
-            div.id = 'fcl-toast-obavijest';
-            div.style.cssText = 'position:fixed; top:20px; right:16px; left:16px; max-width:460px; margin-left:auto; background:#f59e0b; color:#000; padding:15px 20px; border-radius:12px; z-index:99999; font-weight:bold; box-shadow:0 10px 25px rgba(0,0,0,0.5); font-size: 1rem; border: 2px solid #d97706; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s ease-out;';
-            div.innerHTML = '<i class="fa-solid fa-spinner fa-spin fs-3"></i> <div style="flex-grow:1;"><div style="font-size:1.05rem; line-height:1.2;">POVEZIVANJE U TIJEKU</div><div style="font-size:0.88rem; font-weight:600;">'+escapeHtml(poruka)+'</div></div><button type="button" style="background:none; border:none; color:#000; font-size:1.5rem; cursor:pointer; margin-left:10px; padding: 0;" onclick="this.parentElement.remove()">&times;</button>';
-            
-            document.body.appendChild(div);
+            prikaziToastObavijest('warning', 'Sinkronizacija u tijeku', poruka, 0);
+        }
+
+        function provjeriNaCekanjuToast() {
+            try {
+                var pendingToastStr = sessionStorage.getItem('fcl_pending_toast');
+                if (pendingToastStr) {
+                    sessionStorage.removeItem('fcl_pending_toast');
+                    var pt = JSON.parse(pendingToastStr);
+                    if (pt && pt.poruka) {
+                        setTimeout(function() {
+                            prikaziToastObavijest(pt.tip || 'success', pt.naslov || 'Potvrđeno', pt.poruka, pt.trajanje || 4200);
+                        }, 220);
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function izvrsiIzlazIzPrograma(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            isNavigating = true;
+            try { prekinSvePozadinskeZahtjeve(); } catch (e) {}
+
+            // 1. Pošalji eventualne nespremljene promjene aktivnog naloga
+            try {
+                var dirtyForms = document.querySelectorAll('.nav-forma');
+                for (var f = 0; f < dirtyForms.length; f++) {
+                    if (!dirtyForms[f].querySelector('[data-dirty="1"]')) continue;
+                    var fd = new FormData(dirtyForms[f]);
+                    if (window.location.pathname.indexOf('/laser') !== -1) fd.append('izvor', 'laser');
+                    else if (window.location.pathname.indexOf('/bravarija') !== -1) fd.append('izvor', 'bravarija');
+                    fd.append('client_id', fclClientId);
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon('/api/autosave_nalog', fd);
+                    }
+                }
+            } catch (e) {}
+
+            // 2. Odmah odjavi sesiju i kolačiće na serveru
+            try {
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('/ugasi_program?ajax=1');
+                } else {
+                    fetch('/ugasi_program?ajax=1', { method: 'POST', keepalive: true, credentials: 'same-origin' });
+                }
+            } catch (e) {}
+
+            // 3. Ako se vrti u pywebview wrapperu, ugasi prozor nativno
+            try {
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.izadji) {
+                    window.pywebview.api.izadji();
+                    return false;
+                }
+            } catch (e) {}
+
+            // 4. Pokušaj zatvoriti prozor direktno unutar user-click eventa (radi za PWA / Chrome App / Kiosk prozore)
+            try { window.open('', '_self', ''); } catch (e) {}
+            try { window.close(); } catch (e) {}
+            try { self.close(); } catch (e) {}
+
+            // 5. Fallback ako preglednik ne dopušta gašenje običnog taba: preusmjeri na /ugasi_program ekran odjave
+            setTimeout(function() {
+                window.location.href = '/ugasi_program';
+            }, 120);
+            return false;
         }
 
         function postaviGlasnuValidaciju() {
@@ -1016,11 +1820,33 @@
             var cartKomada = document.getElementById('cart_komada');
             if(cartNaziv && !cartNaziv.dataset.cartEvent) {
                 cartNaziv.dataset.cartEvent = "da";
-                cartNaziv.addEventListener('keydown', function(e) { if(e.key === 'Enter') { e.preventDefault(); dodajUKosaricu(); } });
+                cartNaziv.addEventListener('keydown', function(e) {
+                    if(e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (cartKomada && cartKomada.value === '') {
+                            cartKomada.focus();
+                        } else {
+                            dodajUKosaricu();
+                        }
+                    }
+                });
             }
             if(cartKomada && !cartKomada.dataset.cartEvent) {
                 cartKomada.dataset.cartEvent = "da";
-                cartKomada.addEventListener('keydown', function(e) { if(e.key === 'Enter') { e.preventDefault(); dodajUKosaricu(); } });
+                cartKomada.addEventListener('keydown', function(e) {
+                    if(e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dodajUKosaricu();
+                    }
+                });
+            }
+            // Osiguraj da polje za kreatora naloga uvijek bude potpuno prazno i čisto pri novom nalogu (bez pamćenja tuđih imena)
+            try { localStorage.removeItem('fcl_zadnji_kreator'); } catch(e){}
+            var kreiraoEl = document.querySelector('#form-kreiranje input[name="kreirao"]');
+            if (kreiraoEl) {
+                kreiraoEl.value = '';
             }
         }
 
@@ -1030,8 +1856,11 @@
             if (!cartNaziv) return;
             var naziv = cartNaziv.value.trim();
             var komada = cartKomada ? cartKomada.value : '';
-            if(!naziv) return; 
-            kosaricaStavke.push({naziv: naziv, komada: parseInt(komada) || 0});
+            if(!naziv) {
+                cartNaziv.focus();
+                return;
+            }
+            kosaricaStavke.push({naziv: naziv, komada: parseInt(komada, 10) || 0});
             cartNaziv.value = '';
             if (cartKomada) cartKomada.value = '';
             cartNaziv.focus();
@@ -1042,7 +1871,44 @@
             localStorage.removeItem(baseKey + "cart_komada");
         }
 
-        function ukloniIzKosarice(index) { kosaricaStavke.splice(index, 1); osvjeziKosaricu(); }
+        function ukloniIzKosarice(index) {
+            kosaricaStavke.splice(index, 1);
+            osvjeziKosaricu();
+        }
+
+        function ocistiCijeluKosaricu() {
+            kosaricaStavke = [];
+            osvjeziKosaricu();
+        }
+
+        function azurirajStavkuKosarice(index, polje, vrijednost) {
+            if (!kosaricaStavke[index]) return;
+            if (polje === 'naziv') {
+                kosaricaStavke[index].naziv = String(vrijednost || '').trim();
+            } else if (polje === 'komada') {
+                kosaricaStavke[index].komada = parseInt(vrijednost, 10) || 0;
+            }
+            var hidden = document.getElementById('kosarica_data');
+            if (hidden) hidden.value = JSON.stringify(kosaricaStavke);
+            localStorage.setItem('fcl_kosarica', JSON.stringify(kosaricaStavke));
+            azurirajZaglavljeKosarice();
+        }
+
+        function azurirajZaglavljeKosarice() {
+            var badge = document.getElementById('cart_summary_badge');
+            var clearBtn = document.getElementById('cart_clear_btn');
+            var ukKom = 0;
+            for (var i = 0; i < kosaricaStavke.length; i++) {
+                ukKom += (parseInt(kosaricaStavke[i].komada, 10) || 0);
+            }
+            if (badge) {
+                badge.textContent = kosaricaStavke.length + ' pozicija • ' + ukKom + ' kom ukupno';
+                badge.style.display = kosaricaStavke.length > 0 ? 'inline-block' : 'none';
+            }
+            if (clearBtn) {
+                clearBtn.style.display = kosaricaStavke.length > 0 ? 'inline-block' : 'none';
+            }
+        }
 
         function osvjeziKosaricu() {
             var tbl = document.getElementById('cart_table');
@@ -1050,16 +1916,24 @@
             var hidden = document.getElementById('kosarica_data');
             if (!tbl || !body || !hidden) return; 
             body.innerHTML = '';
-            if(kosaricaStavke.length === 0) { tbl.style.display = 'none'; } else {
+            if(kosaricaStavke.length === 0) {
+                tbl.style.display = 'none';
+            } else {
                 tbl.style.display = 'table';
                 for(var i=0; i<kosaricaStavke.length; i++) {
                     var s = kosaricaStavke[i];
-                    var kolicinaText = s.komada > 0 ? s.komada + ' kom' : '-';
-                    body.innerHTML += '<tr><td class="text-info fw-bold">' + escapeHtml(s.naziv) + '</td><td class="text-white fw-bold" style="font-size: 0.95rem;">' + escapeHtml(kolicinaText) + '</td><td class="text-end"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="ukloniIzKosarice('+i+')"><i class="fa-solid fa-trash"></i></button></td></tr>';
+                    var komVal = s.komada > 0 ? s.komada : '';
+                    body.innerHTML += '<tr>' +
+                        '<td class="ps-3" style="width: 45px;"><span class="badge bg-dark border border-secondary text-white-50">' + (i + 1) + '.</span></td>' +
+                        '<td><input type="text" class="form-control form-control-sm text-info fw-bold border-0 bg-transparent" value="' + escapeHtml(s.naziv) + '" oninput="azurirajStavkuKosarice(' + i + ', \'naziv\', this.value)"></td>' +
+                        '<td style="width: 160px;"><input type="number" min="0" class="form-control form-control-sm text-white fw-bold text-center" style="max-width: 110px;" value="' + escapeHtml(komVal) + '" placeholder="Po nacrtu" oninput="azurirajStavkuKosarice(' + i + ', \'komada\', this.value)"></td>' +
+                        '<td class="text-end pe-3" style="width: 70px;"><button type="button" class="btn btn-sm btn-outline-danger py-1 px-2" onclick="ukloniIzKosarice(' + i + ')" title="Ukloni poziciju"><i class="fa-solid fa-trash"></i></button></td>' +
+                    '</tr>';
                 }
             }
             hidden.value = JSON.stringify(kosaricaStavke);
             localStorage.setItem('fcl_kosarica', JSON.stringify(kosaricaStavke));
+            azurirajZaglavljeKosarice();
         }
 
         function filtrirajArhivu() {
@@ -1071,7 +1945,7 @@
                 var tekst = (redovi[i].getAttribute("data-search") || "").toLowerCase();
                 var id = redovi[i].getAttribute("data-id");
                 var detalji = document.getElementById("detalji-" + id);
-                if (tekst.includes(filter)) { redovi[i].style.display = ""; } 
+                if (tekst.indexOf(filter) !== -1) { redovi[i].style.display = ""; } 
                 else { 
                     redovi[i].style.display = "none"; 
                     if(detalji) detalji.classList.remove("show"); 
@@ -1080,17 +1954,31 @@
             if(typeof updateBulkBar === 'function') updateBulkBar();
         }
 
+        var trenutniFilterSefo = 'all';
+        function postaviFilterSefo(stanje, btnEl) {
+            trenutniFilterSefo = stanje || 'all';
+            var btns = document.querySelectorAll('.sefo-filter-btn');
+            for (var b = 0; b < btns.length; b++) {
+                btns[b].classList.remove('active');
+            }
+            if (btnEl) btnEl.classList.add('active');
+            filtrirajSefoPanel();
+        }
+
         function filtrirajSefoPanel() {
             var input = document.getElementById("traziAktivne");
-            if (!input) return;
-            var filter = input.value.toLowerCase();
+            var filter = input ? input.value.toLowerCase() : "";
             var redovi = document.querySelectorAll(".aktivni-red");
             for (var i = 0; i < redovi.length; i++) {
                 var tekst = (redovi[i].getAttribute("data-search") || "").toLowerCase();
+                var rowState = redovi[i].getAttribute("data-state") || "pending";
                 var id = redovi[i].getAttribute("data-id");
                 var detalji = document.getElementById("detalji-" + id);
-                if (tekst.includes(filter)) { redovi[i].style.display = ""; }
-                else {
+                var odgovaraTekstu = (!filter || (tekst.indexOf(filter) !== -1));
+                var odgovaraStanju = (trenutniFilterSefo === 'all' || rowState === trenutniFilterSefo);
+                if (odgovaraTekstu && odgovaraStanju) {
+                    redovi[i].style.display = "";
+                } else {
                     redovi[i].style.display = "none";
                     if (detalji) detalji.classList.remove("show");
                 }
@@ -1434,6 +2322,7 @@
         function posaljiFormuSigurno(form, submitter, pokusaj) {
             pokusaj = pokusaj || 1;
             var maxPokusaja = 5;
+            clearTimeout(autoSaveTimer);
 
             // Ako radnik ima upisan tekst u polju za ploče/materijal pri završnom slanju naloga, potvrdi ga
             var chipWidgets = form.querySelectorAll('.smart-chip-widget');
@@ -1441,6 +2330,15 @@
                 if (typeof chipWidgets[cw]._commitPendingInput === 'function') {
                     chipWidgets[cw]._commitPendingInput();
                 }
+            }
+
+            // Ako je forma za kreiranje novog naloga i poslovođa je upisao naziv pozicije u #cart_naziv bez klika na '+ Dodaj stavku', automatski je dodaj
+            if (form.id === 'form-kreiranje') {
+                var cNaziv = document.getElementById('cart_naziv');
+                if (cNaziv && cNaziv.value.trim() !== '') {
+                    dodajUKosaricu();
+                }
+                try { localStorage.removeItem('fcl_zadnji_kreator'); } catch(e){}
             }
             
             // Osiguraj jedinstveni request_uuid token
@@ -1478,6 +2376,11 @@
                     try { return JSON.parse(txt); } catch(e) { return { ok: true, html: txt }; }
                 });
             }).then(function(data) {
+                isSubmitting = false;
+                var dirties = form.querySelectorAll('[data-dirty="1"]');
+                for (var d = 0; d < dirties.length; d++) {
+                    delete dirties[d].dataset.dirty;
+                }
                 // TEK NAKON USPJEHA NA SERVERU BRIŠEMO LOCALSTORAGE!
                 var formInputs = form.querySelectorAll('input, textarea');
                 for (var k = 0; k < formInputs.length; k++) {
@@ -1495,10 +2398,93 @@
                     osvjeziKosaricu();
                 }
                 
-                prikaziUspjeh("Uspješno spremljeno u sustav!");
+                // Određivanje poruke uspjeha prema akciji i formi
+                var akcijaVal = '';
+                if (submitter && submitter.name === 'akcija') {
+                    akcijaVal = submitter.value || '';
+                } else {
+                    var akcijaInput = form.querySelector('input[name="akcija"]');
+                    if (akcijaInput) akcijaVal = akcijaInput.value || '';
+                }
+
+                var nalogIdEl = form.querySelector('input[name="id_naloga"]') || form.querySelector('input[name="nalog_id"]');
+                var nalogBroj = nalogIdEl ? nalogIdEl.value : '';
+                var nalogOznaka = nalogBroj ? ('Nalog #' + nalogBroj) : 'Nalog';
+
+                var porukaUspjeha = 'Uspješno spremljeno u sustav!';
+                var naslovUspjeha = 'Potvrđeno';
+                var trebaAnimiratiKartu = false;
+
+                if (akcijaVal === 'zavrsi_odmah') {
+                    naslovUspjeha = 'Poslano u Upravu';
+                    porukaUspjeha = nalogOznaka + ' je uspješno završen i poslan na pregled u Upravu!';
+                    trebaAnimiratiKartu = true;
+                } else if (akcijaVal === 'bravarija') {
+                    naslovUspjeha = 'Poslano u Bravariju';
+                    porukaUspjeha = nalogOznaka + ' je uspješno proslijeđen u Bravariju!';
+                    trebaAnimiratiKartu = true;
+                } else if (akcijaVal === 'pauziraj') {
+                    naslovUspjeha = 'Nalog Pauziran';
+                    porukaUspjeha = nalogOznaka + ' je privremeno pauziran.';
+                } else if (form.id === 'form-kreiranje') {
+                    naslovUspjeha = 'Novi Nalog Kreiran';
+                    porukaUspjeha = 'Radni nalog je uspješno kreiran i poslan u pogon!';
+                } else if (form.id === 'formUrediNalog') {
+                    naslovUspjeha = 'Izmjene Spremljene';
+                    porukaUspjeha = 'Podaci naloga su uspješno ažurirani!';
+                }
+
+                // 1. ZAVRŠETAK ILI PROSLJEĐIVANJE NALOGA IZ POGONA (Završi Na Pregled / Šalji u Bravariju)
+                // Glatka animacija bez naglog osvježavanja ekrana — obavijest ostaje mirno na ekranu puna 4.5 sekunde!
+                var card = form.closest('.card') || (nalogBroj ? document.getElementById('nalog-card-' + nalogBroj) : null);
+                if (trebaAnimiratiKartu && card) {
+                    prikaziToastObavijest('success', naslovUspjeha, porukaUspjeha, 4500);
+
+                    card.style.transition = 'all 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
+                    card.style.transform = 'translateY(-14px) scale(0.98)';
+                    card.style.opacity = '0';
+
+                    setTimeout(function() {
+                        if (card && card.parentNode) {
+                            card.parentNode.removeChild(card);
+                        }
+                        var preostaleKarte = document.querySelectorAll('.card[id^="nalog-card-"]');
+                        var badgeBrojac = document.querySelector('.badge.bg-dark.border.border-danger') || document.querySelector('.badge.bg-dark.border.border-warning');
+                        if (badgeBrojac) {
+                            badgeBrojac.textContent = 'Ukupno naloga: ' + preostaleKarte.length;
+                        }
+                        if (preostaleKarte.length === 0) {
+                            var postojecaPrazna = document.querySelector('.alert.alert-dark');
+                            if (!postojecaPrazna) {
+                                var prazanDiv = document.createElement('div');
+                                prazanDiv.className = 'alert alert-dark text-center my-5 py-5 border-0';
+                                prazanDiv.style.background = '#12141c';
+                                prazanDiv.style.color = '#94a3b8';
+                                prazanDiv.textContent = 'Nema otvorenih naloga na čekanju.';
+                                var kontejner = document.querySelector('.container') || document.querySelector('.container-fluid') || document.body;
+                                if (kontejner) kontejner.appendChild(prazanDiv);
+                            }
+                        }
+                    }, 450);
+                    return;
+                }
+
+                // 2. KREIRANJE NALOGA, PAUZIRANJE ILI DRUGE FORME
+                // Spremamo obavijest u sessionStorage tako da NIKADA ne nestane pri učitavanju!
+                try {
+                    sessionStorage.setItem('fcl_pending_toast', JSON.stringify({
+                        tip: 'success',
+                        naslov: naslovUspjeha,
+                        poruka: porukaUspjeha,
+                        trajanje: 4500
+                    }));
+                } catch (e) {}
+
+                prikaziToastObavijest('success', naslovUspjeha, porukaUspjeha, 4500);
+
                 setTimeout(function() {
                     window.location.reload();
-                }, 400);
+                }, 800);
             }).catch(function(err) {
                 if (pokusaj < maxPokusaja) {
                     prikaziUpozorenje("Poslužitelj se ažurira ili je veza u prekidu — automatski ponavljam slanje (Pokušaj " + pokusaj + "/" + maxPokusaja + ")...");
@@ -1546,10 +2532,10 @@
                     }
                     isSubmitting = true; 
                     
-                    var submitter = e.submitter;
+                    var submitter = e.submitter || this._lastSubmitter || document.activeElement;
                     if(submitter) {
                         submitter.dataset.originalHtml = submitter.innerHTML;
-                        if (!submitter.innerHTML.includes("fa-spin")) {
+                        if (submitter.innerHTML.indexOf("fa-spin") === -1) {
                             submitter.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin me-2"></i>Obrada...';
                         }
                     }
@@ -1584,15 +2570,130 @@
             isPolling = false;
         }
 
+        var MATERIJAL_MAPA_GLOBAL = {
+            'celik': 'Čelik', 'čelik': 'Čelik', 'celici': 'Čelici', 'čelici': 'Čelici',
+            'crno': 'Crno', 'crni': 'Crni', 'crnog': 'Crno', 'crnoga': 'Crno',
+            'inox': 'INOX', 'inoxa': 'INOX', 'prokrom': 'Prokrom', 'prohrom': 'Prohrom',
+            'hardox': 'Hardox', 'hardoxa': 'Hardox', 'strenx': 'Strenx', 'stren': 'Strenx', 'domex': 'Domex',
+            'weldox': 'Weldox', 'aluminij': 'Aluminij', 'aluminium': 'Aluminij', 'alu': 'Aluminij',
+            'pocincano': 'Pocinčano', 'pocinčano': 'Pocinčano', 'pocincani': 'Pocinčani', 'pocinčani': 'Pocinčani',
+            'poc': 'Pocinčano', 'pocinacno': 'Pocinčano', 'pocinkovano': 'Pocinčano',
+            'suza': 'Suza lim', 'suze': 'Suza lim', 'suza lim': 'Suza lim', 'suzalim': 'Suza lim', 'rebrasti': 'Suza lim',
+            'bakar': 'Bakar', 'mesing': 'Mesing', 'bronca': 'Bronca', 'corten': 'Corten',
+            'kortan': 'Corten', 'titan': 'Titan', 'plastika': 'Plastika', 'guma': 'Guma',
+            // ISO i normirane oznake iz baze -> automatsko pretvaranje u striktna imena materijala
+            '1.4301': 'INOX',
+            '1.4404': 'INOX',
+            's235': 'Čelik', 's275': 'Čelik', 's355': 'Čelik', 's420': 'Čelik', 's460': 'Čelik',
+            'dd11': 'Crno', 'dd12': 'Crno', 'dd13': 'Crno', 'dd14': 'Crno',
+            'dc01': 'Crno', 'dc02': 'Crno', 'dc03': 'Crno', 'dc04': 'Crno',
+            '304': 'INOX', '316': 'INOX', '304l': 'INOX', '316l': 'INOX', '321': 'INOX',
+            'almg3': 'Aluminij', 'almg4.5': 'Aluminij', 'al99.5': 'Aluminij', 'aw5754': 'Aluminij',
+            'dx51': 'Pocinčano', 'dx51d': 'Pocinčano',
+            '400': 'Hardox', '450': 'Hardox', '500': 'Hardox',
+            '700': 'Strenx'
+        };
+
+        function provjeriJeLiValjana3DDimenzija(tekst) {
+            if (!tekst) return false;
+            var s = String(tekst).replace(/\+/g, '').trim();
+            // Mora imati 3 broja odvojena s x, × ili * (Dužina x Širina x Debljina)
+            var m = s.match(/^(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)(\s*(?:mm|cm|m))?(?:\s+.*)?$/i);
+            if (!m) return false;
+            var d1 = parseFloat(m[1].replace(',', '.'));
+            var d2 = parseFloat(m[2].replace(',', '.'));
+            var d3 = parseFloat(m[3].replace(',', '.'));
+            return (d1 > 0 && d2 > 0 && d3 > 0);
+        }
+
+        function jeLiSamo2DDimenzijaBezDebljine(tekst) {
+            if (!tekst) return false;
+            var s = String(tekst).replace(/\+/g, '').trim();
+            return /^(\d+(?:[.,]\d+)?)\s*[x×*]\s*(\d+(?:[.,]\d+)?)\s*[x×*]?$/i.test(s);
+        }
+
+        function formatirajStavkuChipGlobal(stavka, jeMat) {
+            if (!stavka) return '';
+            var s = String(stavka).replace(/\+/g, ' ').trim();
+            if (!s || s.toLowerCase() === 'none' || s.toLowerCase() === 'null') return '';
+            if (!jeMat) {
+                s = s.replace(/(\d)\s*[x×*]+$/i, '$1').trim();
+            } else {
+                // STRIKTNO IMENA MATERIJALA: Ukloni ISO oznake/brojeve ako se nalaze uz ime (npr. INOX 304 -> INOX, Čelik S355 -> Čelik)
+                s = s.replace(/\s+(?:s\d{3}[a-z0-9]*|dd\d+|dc\d+|304[a-z0-9]*|316[a-z0-9]*|400|450|500|700|almg[a-z0-9.]*|dx\d+[a-z0-9]*|aisi\s*\d+)\b/gi, '').trim();
+            }
+            if (!s) return '';
+            var dijeloviKosa = s.split('/');
+            var obradeniKosa = [];
+            for (var k = 0; k < dijeloviKosa.length; k++) {
+                var dio = dijeloviKosa[k].trim();
+                if (!dio) continue;
+                dio = dio.replace(/(\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)*(?:mm|cm|m)?)([a-zčćžšđ]{3,})\b/gi, '$1 $2');
+                var rijeci = dio.split(/\s+/);
+                var noveRijeci = [];
+                for (var rIdx = 0; rIdx < rijeci.length; rIdx++) {
+                    var rClean = rijeci[rIdx].replace(/^[+\-_,.\s]+|[+\-_,.\s]+$/g, '');
+                    if (!rClean) continue;
+                    var rLow = rClean.toLowerCase();
+                    if (MATERIJAL_MAPA_GLOBAL.hasOwnProperty(rLow)) {
+                        var matNaziv = MATERIJAL_MAPA_GLOBAL[rLow];
+                        if (noveRijeci.indexOf(matNaziv) === -1) {
+                            noveRijeci.push(matNaziv);
+                        }
+                        continue;
+                    }
+                    var mSpojeno = rLow.match(/^([a-zčćžšđ]+)(\d+.*)$/);
+                    if (mSpojeno && MATERIJAL_MAPA_GLOBAL.hasOwnProperty(mSpojeno[1])) {
+                        var matPref = MATERIJAL_MAPA_GLOBAL[mSpojeno[1]];
+                        if (jeMat) {
+                            if (noveRijeci.indexOf(matPref) === -1) {
+                                noveRijeci.push(matPref);
+                            }
+                        } else {
+                            noveRijeci.push(matPref + mSpojeno[2].toUpperCase());
+                        }
+                        continue;
+                    }
+                    if (/^(s\d{3}[a-z0-9]*|a\d{3}[a-z0-9]*|dd11|dc01|dc04)$/i.test(rLow)) {
+                        if (jeMat) {
+                            var isoNaziv = MATERIJAL_MAPA_GLOBAL[rLow] || 'Čelik';
+                            if (noveRijeci.indexOf(isoNaziv) === -1) {
+                                noveRijeci.push(isoNaziv);
+                            }
+                        } else {
+                            noveRijeci.push(rClean.toUpperCase());
+                        }
+                        continue;
+                    }
+                    if (/^\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)+(?:mm|cm|m)?$/i.test(rLow) || /^\d+(?:[.,]\d+)?(?:mm|cm|m|kom)$/i.test(rLow)) {
+                        noveRijeci.push(rClean.replace(/[X*×]/g, 'x').replace(/MM/g, 'mm'));
+                        continue;
+                    }
+                    var imaBroj = /\d/.test(rClean);
+                    if (jeMat || rIdx > 0 || !imaBroj) {
+                        if (['mm', 'cm', 'm', 'kom', 'x', 'i', 'ili', 'za', 'na', 'po', 'od', 'do', 'u', 's', 'sa'].indexOf(rLow) === -1) {
+                            var rf = rClean.charAt(0).toUpperCase() + rClean.slice(1);
+                            if (noveRijeci.indexOf(rf) === -1) {
+                                noveRijeci.push(rf);
+                            }
+                        } else {
+                            noveRijeci.push(rLow);
+                        }
+                    } else {
+                        noveRijeci.push(rClean);
+                    }
+                }
+                if (noveRijeci.length > 0) {
+                    obradeniKosa.push(noveRijeci.join(' '));
+                }
+            }
+            return obradeniKosa.join(' / ');
+        }
+
         function inicijalizirajPametnePloce() {
             var widgets = document.querySelectorAll('.smart-chip-widget');
             for (var w = 0; w < widgets.length; w++) {
                 (function(widget) {
-                    if (widget._chipInitialized || widget.dataset.chipInit === '1') return;
-                    widget._chipInitialized = true;
-                    widget.dataset.chipInit = '1';
-                    widget.setAttribute('data-morphdom-ignore', 'true');
-
                     var hiddenInput = widget.querySelector('.smart-chip-hidden');
                     var listEl = widget.querySelector('.smart-chip-list');
                     var textInput = widget.querySelector('.smart-chip-input');
@@ -1600,126 +2701,84 @@
                     var countBadge = widget.querySelector('.smart-chip-count');
                     var clearBtn = widget.querySelector('.smart-chip-clear-btn');
                     var presetBtns = widget.querySelectorAll('.preset-chip-btn');
+                    var thicknessBtns = widget.querySelectorAll('.thickness-pill-btn:not(.material-direct-btn):not(.material-grade-btn):not(.material-confirm-btn)');
+                    var matDirectBtns = widget.querySelectorAll('.material-direct-btn, .material-grade-btn');
+                    var matConfirmBtns = widget.querySelectorAll('.material-confirm-btn');
+                    var thicknessBar = widget.querySelector('.thickness-quick-bar');
+                    var hintBox = widget.querySelector('.chip-validation-hint');
                     var form = widget.closest('form');
                     var emptyText = widget.getAttribute('data-empty-text') || 'Nema dodanih stavki';
                     var chipIcon = widget.getAttribute('data-chip-icon') || 'fa-layer-group';
-                    var isMaterijal = (chipIcon === 'fa-cube' || widget.dataset.chipType === 'materijal' || (hiddenInput && hiddenInput.name === 'materijal_ploce'));
+                    var isMaterijal = (chipIcon === 'fa-cube' || widget.getAttribute('data-chip-type') === 'materijal' || (hiddenInput && hiddenInput.name === 'materijal_ploce'));
+
+                    if (widget._chipInitialized && widget._boundTextInput === textInput && widget._boundHidden === hiddenInput) {
+                        return;
+                    }
+                    widget._chipInitialized = true;
+                    widget._boundTextInput = textInput;
+                    widget._boundHidden = hiddenInput;
 
                     var items = [];
 
-                    var MATERIJAL_MAPA = {
-                        'celik': 'Čelik',
-                        'čelik': 'Čelik',
-                        'celici': 'Čelici',
-                        'čelici': 'Čelici',
-                        'crno': 'Crno',
-                        'crni': 'Crni',
-                        'inox': 'INOX',
-                        'prokrom': 'Prokrom',
-                        'prohrom': 'Prohrom',
-                        'hardox': 'Hardox',
-                        'strenx': 'Strenx',
-                        'domex': 'Domex',
-                        'weldox': 'Weldox',
-                        'aluminij': 'Aluminij',
-                        'alu': 'Alu',
-                        'pocincano': 'Pocinčano',
-                        'pocinčano': 'Pocinčano',
-                        'pocincani': 'Pocinčani',
-                        'pocinčani': 'Pocinčani',
-                        'bakar': 'Bakar',
-                        'mesing': 'Mesing',
-                        'bronca': 'Bronca',
-                        'corten': 'Corten',
-                        'kortan': 'Corten',
-                        'titan': 'Titan',
-                        'plastika': 'Plastika',
-                        'guma': 'Guma'
-                    };
-
-                    function formatirajStavkuChip(stavka, jeMat) {
-                        if (!stavka) return '';
-                        var s = String(stavka).trim();
-                        if (!s) return '';
-                        var dijeloviKosa = s.split('/');
-                        var obradeniKosa = [];
-                        for (var k = 0; k < dijeloviKosa.length; k++) {
-                            var dio = dijeloviKosa[k].trim();
-                            // Razdvoji ako je materijal zalijepljen uz dimenziju (npr. '3000x1500x5hardox' -> '3000x1500x5 hardox')
-                            dio = dio.replace(/(\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)*(?:mm|cm|m)?)([a-zčćžšđ]{3,})\b/gi, '$1 $2');
-                            var rijeci = dio.split(/\s+/);
-                            var noveRijeci = [];
-                            for (var rIdx = 0; rIdx < rijeci.length; rIdx++) {
-                                var rClean = rijeci[rIdx].trim();
-                                if (!rClean) continue;
-                                var rLow = rClean.toLowerCase();
-                                if (MATERIJAL_MAPA.hasOwnProperty(rLow)) {
-                                    noveRijeci.push(MATERIJAL_MAPA[rLow]);
-                                    continue;
-                                }
-                                var mSpojeno = rLow.match(/^([a-zčćžšđ]+)(\d+.*)$/);
-                                if (mSpojeno && MATERIJAL_MAPA.hasOwnProperty(mSpojeno[1])) {
-                                    noveRijeci.push(MATERIJAL_MAPA[mSpojeno[1]] + mSpojeno[2].toUpperCase());
-                                    continue;
-                                }
-                                if (/^(s\d{3}[a-z0-9]*|a\d{3}[a-z0-9]*|dd11|dc01|dc04)$/i.test(rLow)) {
-                                    noveRijeci.push(rClean.toUpperCase());
-                                    continue;
-                                }
-                                if (/^\d+(?:[.,]\d+)?(?:[x×*]\d+(?:[.,]\d+)?)+(?:mm|cm|m)?$/i.test(rLow) || /^\d+(?:[.,]\d+)?(?:mm|cm|m|kom)$/i.test(rLow)) {
-                                    noveRijeci.push(rClean.replace(/[X*]/g, 'x').replace(/MM/g, 'mm'));
-                                    continue;
-                                }
-                                var imaBroj = /\d/.test(rClean);
-                                if (jeMat || rIdx > 0 || !imaBroj) {
-                                    if (['mm', 'cm', 'm', 'kom', 'x', 'i', 'ili', 'za', 'na', 'po', 'od', 'do', 'u', 's', 'sa'].indexOf(rLow) === -1) {
-                                        noveRijeci.push(rClean.charAt(0).toUpperCase() + rClean.slice(1));
-                                    } else {
-                                        noveRijeci.push(rLow);
-                                    }
-                                } else {
-                                    noveRijeci.push(rClean);
-                                }
+                    function postaviUpozorenjeDebljine(poruka) {
+                        if (!textInput) return;
+                        if (poruka) {
+                            textInput.classList.remove('input-missing-thickness');
+                            void textInput.offsetWidth;
+                            textInput.classList.add('input-missing-thickness');
+                            if (thicknessBar) thicknessBar.classList.add('highlight-needed');
+                            if (hintBox) {
+                                hintBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i><span>' + escapeHtml(poruka) + '</span>';
+                                hintBox.classList.add('active');
                             }
-                            obradeniKosa.push(noveRijeci.join(' '));
+                        } else {
+                            textInput.classList.remove('input-missing-thickness');
+                            if (thicknessBar) thicknessBar.classList.remove('highlight-needed');
+                            if (hintBox) hintBox.classList.remove('active');
                         }
-                        return obradeniKosa.join(' / ');
                     }
 
-                    function ucitajPocetneStavke() {
-                        var raw = '';
-                        var storageKey = null;
-                        if (hiddenInput && form) {
-                            var nalogIdInput = form.querySelector('input[name="id_naloga"]');
-                            storageKey = "fcl_" + window.location.pathname + "_";
-                            if (nalogIdInput) storageKey += "nalog_" + nalogIdInput.value + "_";
-                            storageKey += hiddenInput.name;
-                            var izMemorije = localStorage.getItem(storageKey);
-                            if (izMemorije !== null && izMemorije !== undefined) {
-                                raw = izMemorije;
-                            } else {
-                                raw = hiddenInput.value || '';
+                    function nadjiIndeksPostojecegMaterijala(kandidat) {
+                        if (!kandidat) return -1;
+                        var normKandidat = kandidat.toLowerCase().trim();
+                        for (var m = 0; m < items.length; m++) {
+                            if (items[m].toLowerCase().trim() === normKandidat) {
+                                return m;
                             }
-                        } else if (hiddenInput) {
-                            raw = hiddenInput.value || '';
                         }
+                        return -1;
+                    }
+
+                    function istakniPostojeciCip(idx) {
+                        if (!listEl) return;
+                        var sviCipovi = listEl.querySelectorAll('.smart-chip-item');
+                        if (sviCipovi && sviCipovi[idx]) {
+                            sviCipovi[idx].classList.remove('chip-duplicate-pulse');
+                            void sviCipovi[idx].offsetWidth;
+                            sviCipovi[idx].classList.add('chip-duplicate-pulse');
+                        }
+                    }
+
+                    function ucitajStavkeIzHiddenPolja() {
+                        var raw = (hiddenInput && hiddenInput.value) ? String(hiddenInput.value) : '';
+                        if (raw.toLowerCase() === 'none' || raw.toLowerCase() === 'null') raw = '';
                         items = [];
-                        var dijelovi = raw.split(',');
+                        var rawObraden = isMaterijal ? raw.replace(/\s+\bi\b\s+/gi, ', ') : raw;
+                        var dijelovi = rawObraden.split(',');
                         for (var i = 0; i < dijelovi.length; i++) {
-                            var s = formatirajStavkuChip(dijelovi[i], isMaterijal);
-                            if (s) items.push(s);
-                        }
-                        var normaliziraniString = items.join(', ');
-                        if (hiddenInput) {
-                            var dbValNorm = (hiddenInput.value || '').split(',').map(function(x) { return formatirajStavkuChip(x, isMaterijal); }).filter(Boolean).join(', ');
-                            hiddenInput.value = normaliziraniString;
-                            if (storageKey && localStorage.getItem(storageKey) !== null) {
-                                if (normaliziraniString === dbValNorm) {
-                                    localStorage.removeItem(storageKey);
-                                } else {
-                                    localStorage.setItem(storageKey, normaliziraniString);
+                            var s = formatirajStavkuChipGlobal(dijelovi[i], isMaterijal);
+                            if (s) {
+                                if (!isMaterijal && !provjeriJeLiValjana3DDimenzija(s)) {
+                                    continue;
                                 }
+                                if (isMaterijal && nadjiIndeksPostojecegMaterijala(s) !== -1) {
+                                    continue;
+                                }
+                                items.push(s);
                             }
+                        }
+                        if (hiddenInput) {
+                            hiddenInput.value = items.join(', ');
                         }
                     }
 
@@ -1729,11 +2788,6 @@
                             hiddenInput.value = konacniString;
                             if (!preskociAutoSave && form) {
                                 hiddenInput.dataset.dirty = "1";
-                                var nalogIdInput = form.querySelector('input[name="id_naloga"]');
-                                var storageKey = "fcl_" + window.location.pathname + "_";
-                                if (nalogIdInput) storageKey += "nalog_" + nalogIdInput.value + "_";
-                                storageKey += hiddenInput.name;
-                                localStorage.setItem(storageKey, konacniString);
                                 triggerDbAutoSave(form);
                             }
                         }
@@ -1762,7 +2816,7 @@
                             countBadge.style.display = items.length > 0 ? 'inline-block' : 'none';
                         }
                         if (clearBtn) {
-                            if (items.length > 1) clearBtn.classList.remove('d-none');
+                            if (items.length > 0) clearBtn.classList.remove('d-none');
                             else clearBtn.classList.add('d-none');
                         }
                         if (items.length === 0) {
@@ -1785,8 +2839,6 @@
                                 var textSpan = document.createElement('span');
                                 textSpan.className = 'smart-chip-text ploca-chip-text';
                                 textSpan.textContent = items[idx];
-                                textSpan.style.cursor = 'pointer';
-                                textSpan.title = 'Kliknite za uređivanje stavke';
                                 textSpan.onclick = function(ev) {
                                     ev.stopPropagation();
                                     var valZaUrediti = items[idx];
@@ -1816,51 +2868,105 @@
                         }
                     }
 
-                    function dodajIzPolja(vrijednostIzvana) {
+                    function dodajIzPolja(vrijednostIzvana, tihiNacin) {
                         var rawVal = (typeof vrijednostIzvana === 'string') ? vrijednostIzvana : (textInput ? textInput.value : '');
-                        if (!rawVal) return false;
+                        if (!rawVal || !rawVal.trim()) return false;
                         var dijelovi = rawVal.split(',');
                         var dodano = false;
+                        var bioDuplikat = false;
                         for (var i = 0; i < dijelovi.length; i++) {
-                            var cisto = formatirajStavkuChip(dijelovi[i], isMaterijal);
-                            // Ignoriraj nepotpune dimenzije koje završavaju na 'x' ili '×' bez upisane debljine
-                            if (cisto && cisto.slice(-1) !== 'x' && cisto.slice(-1) !== '×') {
+                            var siroviDio = dijelovi[i].replace(/\+/g, '').trim();
+                            if (!siroviDio) continue;
+
+                            if (!isMaterijal) {
+                                // PROVJERA 3D DIMENZIJE (DUŽINA x ŠIRINA x DEBLJINA)
+                                if (jeLiSamo2DDimenzijaBezDebljine(siroviDio)) {
+                                    var baza = siroviDio.replace(/[x×*]+$/i, '') + 'x';
+                                    if (!tihiNacin) {
+                                        fokusirajPoljeNaKraj(baza);
+                                        var poruka = 'Obavezno upišite debljinu ploče (npr. ' + baza + '5) ili kliknite na debljinu ispod!';
+                                        postaviUpozorenjeDebljine(poruka);
+                                        if (typeof prikaziGresku === 'function') prikaziGresku(poruka);
+                                    }
+                                    return false;
+                                }
+                                if (!provjeriJeLiValjana3DDimenzija(siroviDio)) {
+                                    if (!tihiNacin) {
+                                        fokusirajPoljeNaKraj(siroviDio);
+                                        var porukaFormat = 'Dimenzija ploče mora sadržavati Dužinu x Širinu x Debljinu (npr. 3000x1500x5)!';
+                                        postaviUpozorenjeDebljine(porukaFormat);
+                                        if (typeof prikaziGresku === 'function') prikaziGresku(porukaFormat);
+                                    }
+                                    return false;
+                                }
+                            }
+
+                            var cisto = formatirajStavkuChipGlobal(siroviDio, isMaterijal);
+                            if (cisto) {
+                                if (isMaterijal) {
+                                    var postojeciIdx = nadjiIndeksPostojecegMaterijala(cisto);
+                                    if (postojeciIdx !== -1) {
+                                        bioDuplikat = true;
+                                        postaviUpozorenjeDebljine(null);
+                                        if (textInput) {
+                                            textInput.value = '';
+                                            textInput.classList.remove('staged-pulse');
+                                        }
+                                        istakniPostojeciCip(postojeciIdx);
+                                        continue;
+                                    }
+                                }
                                 items.push(cisto);
                                 dodano = true;
                             }
                         }
                         if (dodano) {
+                            postaviUpozorenjeDebljine(null);
                             if (typeof vrijednostIzvana !== 'string' && textInput) {
                                 textInput.value = '';
                                 textInput.classList.remove('staged-pulse');
                             }
                             renderirajCipove();
                             sinkronizirajVrijednost(false);
-                        } else if (textInput && rawVal.trim() !== '') {
-                            // Ako je radnik kliknuo '+ Dodaj' dok dimenzija još završava na 'x' (npr. '3000x1500x'), fokusiraj polje da dopiše debljinu
-                            fokusirajPoljeNaKraj();
                         }
-                        return dodano;
+                        return dodano || bioDuplikat;
                     }
 
-                    // Metoda koju posaljiFormuSigurno poziva isključivo pri završnom slanju naloga
+                    // Pri slanju forme potvrdi samo valjani upis (ne dodaje goli preset '3000x1500x' bez debljine)
                     widget._commitPendingInput = function() {
                         if (textInput && textInput.value.trim() !== '') {
-                            var t = textInput.value.trim();
-                            if (t.slice(-1) !== 'x' && t.slice(-1) !== '×') {
-                                dodajIzPolja();
+                            var v = textInput.value.trim();
+                            if (!isMaterijal && !provjeriJeLiValjana3DDimenzija(v)) {
+                                return false;
                             }
+                            return dodajIzPolja(undefined, true);
                         }
+                        return true;
+                    };
+
+                    widget._refreshFromHidden = function(noviTekst) {
+                        if (document.activeElement === textInput) return;
+                        if (hiddenInput && hiddenInput.dataset.dirty === "1") return;
+                        if (hiddenInput && typeof noviTekst === 'string') {
+                            hiddenInput.value = noviTekst;
+                        }
+                        ucitajStavkeIzHiddenPolja();
+                        renderirajCipove();
                     };
 
                     if (textInput && !textInput._chipInputBound) {
                         textInput._chipInputBound = true;
+                        textInput.addEventListener('input', function() {
+                            if (isMaterijal || provjeriJeLiValjana3DDimenzija(textInput.value) || textInput.value.trim() === '') {
+                                postaviUpozorenjeDebljine(null);
+                            }
+                        });
                         textInput.addEventListener('keydown', function(e) {
-                            if (e.key === 'Enter' || e.key === ',') {
+                            if (e.key === 'Enter' || e.keyCode === 13 || e.key === ',') {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                dodajIzPolja();
-                            } else if (e.key === 'Backspace' && textInput.value === '' && items.length > 0) {
+                                dodajIzPolja(undefined, false);
+                            } else if ((e.key === 'Backspace' || e.keyCode === 8) && textInput.value === '' && items.length > 0) {
                                 var zadnja = items.pop();
                                 renderirajCipove();
                                 sinkronizirajVrijednost(false);
@@ -1872,12 +2978,11 @@
 
                     if (addBtn && !addBtn._chipAddBound) {
                         addBtn._chipAddBound = true;
-                        addBtn.addEventListener('mousedown', function(e) {
-                            e.preventDefault();
-                        });
+                        addBtn.addEventListener('mousedown', function(e) { e.preventDefault(); });
                         addBtn.addEventListener('click', function(e) {
                             e.preventDefault();
-                            dodajIzPolja();
+                            e.stopPropagation();
+                            dodajIzPolja(undefined, false);
                             if (textInput) textInput.focus();
                         });
                     }
@@ -1886,7 +2991,9 @@
                         clearBtn._chipClearBound = true;
                         clearBtn.addEventListener('click', function(e) {
                             e.preventDefault();
+                            e.stopPropagation();
                             items = [];
+                            postaviUpozorenjeDebljine(null);
                             if (textInput) {
                                 textInput.value = '';
                                 textInput.classList.remove('staged-pulse');
@@ -1896,32 +3003,138 @@
                         });
                     }
 
+                    // KLIK NA PRESET GUMB (Format npr. + 3000x1500 ILI Materijal npr. + Čelik, + INOX, + Crno...)
                     for (var p = 0; p < presetBtns.length; p++) {
                         (function(btn) {
                             if (btn._presetBound) return;
                             btn._presetBound = true;
-                            btn.addEventListener('mousedown', function(e) {
-                                // Sprječava gubitak fokusa i neželjene skokove na ekranu osjetljivom na dodir
-                                e.preventDefault();
-                            });
+                            btn.addEventListener('mousedown', function(e) { e.preventDefault(); });
                             btn.addEventListener('click', function(e) {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                var val = btn.getAttribute('data-preset') || '';
+                                var val = (btn.getAttribute('data-preset') || btn.textContent || '').replace(/^\+\s*/, '').trim();
                                 if (!val || !textInput) return;
-                                // SVI prijedlozi (i Dimenzije i Materijal) UVIJEK prvo ulaze u polje za pisanje/dodavanje!
-                                fokusirajPoljeNaKraj(val);
+                                if (isMaterijal) {
+                                    // Za materijal: odmah dodaj odabrani materijal u listu čipova!
+                                    textInput.value = val;
+                                    dodajIzPolja(undefined, false);
+                                } else {
+                                    fokusirajPoljeNaKraj(val);
+                                    if (jeLiSamo2DDimenzijaBezDebljine(val)) {
+                                        if (thicknessBar) thicknessBar.classList.add('highlight-needed');
+                                        if (hintBox) {
+                                            hintBox.innerHTML = '<i class="fa-solid fa-hand-point-up"></i><span>Sada upišite broj debljine (npr. <b>5</b>) ili kliknite na debljinu ispod:</span>';
+                                            hintBox.classList.add('active');
+                                        }
+                                    }
+                                }
                             });
                         })(presetBtns[p]);
                     }
 
-                    ucitajPocetneStavke();
+                    // KLIK NA BRZI GUMB DEBLJINE (npr. 5mm) -> NADOPUNJUJE 2D DIMENZIJU I ODMAH DODAJE PLOČU!
+                    for (var tb = 0; tb < thicknessBtns.length; tb++) {
+                        (function(tBtn) {
+                            if (tBtn._thickBound) return;
+                            tBtn._thickBound = true;
+                            tBtn.addEventListener('mousedown', function(e) { e.preventDefault(); });
+                            tBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                var debljinaVal = (tBtn.getAttribute('data-thick') || '').trim();
+                                if (!debljinaVal || !textInput) return;
+                                var trenutno = textInput.value.trim();
+                                if (!trenutno) {
+                                    var uputa = 'Prvo odaberite format ploče (npr. + 3000×1500), a zatim kliknite na debljinu ' + debljinaVal + '!';
+                                    postaviUpozorenjeDebljine(uputa);
+                                    if (typeof prikaziToastObavijest === 'function') {
+                                        prikaziToastObavijest('warning', 'Odaberite format ploče', uputa, 3500);
+                                    } else if (typeof prikaziGresku === 'function') {
+                                        prikaziGresku(uputa);
+                                    }
+                                    return;
+                                }
+                                if (jeLiSamo2DDimenzijaBezDebljine(trenutno)) {
+                                    var baza2D = trenutno.replace(/[x×*]+$/i, '');
+                                    var spojeno = baza2D + 'x' + debljinaVal;
+                                    textInput.value = spojeno;
+                                    dodajIzPolja(undefined, false);
+                                } else if (provjeriJeLiValjana3DDimenzija(trenutno)) {
+                                    var zamijenjeno = trenutno.replace(/^(\d+(?:[.,]\d+)?\s*[x×*]\s*\d+(?:[.,]\d+)?\s*[x×*]\s*)\d+(?:[.,]\d+)?(?:mm)?/i, '$1' + debljinaVal);
+                                    textInput.value = zamijenjeno;
+                                    dodajIzPolja(undefined, false);
+                                } else {
+                                    fokusirajPoljeNaKraj(trenutno + 'x' + debljinaVal);
+                                }
+                            });
+                        })(thicknessBtns[tb]);
+                    }
+
+                    // KLIK NA BRZI GUMB MATERIJALA (2. Red: Hardox, Strenx, Mesing, Bakar, Corten, Plastika, Guma...) -> ODMAH DODAJE!
+                    for (var md = 0; md < matDirectBtns.length; md++) {
+                        (function(dBtn) {
+                            if (dBtn._matDirectBound) return;
+                            dBtn._matDirectBound = true;
+                            dBtn.addEventListener('mousedown', function(e) { e.preventDefault(); });
+                            dBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                var matVal = (dBtn.getAttribute('data-material') || dBtn.getAttribute('data-preset') || dBtn.getAttribute('data-grade') || dBtn.textContent || '').replace(/^\+\s*/, '').trim();
+                                if (!matVal || !textInput) return;
+                                textInput.value = matVal;
+                                dodajIzPolja(undefined, false);
+                            });
+                        })(matDirectBtns[md]);
+                    }
+
+                    // KLIK NA GUMB '⚡ Potvrdi' (AKO POSTOJI)
+                    for (var mc = 0; mc < matConfirmBtns.length; mc++) {
+                        (function(cBtn) {
+                            if (cBtn._confirmBound) return;
+                            cBtn._confirmBound = true;
+                            cBtn.addEventListener('mousedown', function(e) { e.preventDefault(); });
+                            cBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (!textInput || !textInput.value.trim()) {
+                                    var uputaPrazno = 'Prvo upišite ili odaberite naziv materijala!';
+                                    postaviUpozorenjeDebljine(uputaPrazno);
+                                    if (typeof prikaziToastObavijest === 'function') {
+                                        prikaziToastObavijest('warning', 'Upozorenje', uputaPrazno, 3000);
+                                    } else if (typeof prikaziGresku === 'function') {
+                                        prikaziGresku(uputaPrazno);
+                                    }
+                                    return;
+                                }
+                                dodajIzPolja(undefined, false);
+                            });
+                        })(matConfirmBtns[mc]);
+                    }
+
+                    ucitajStavkeIzHiddenPolja();
                     renderirajCipove();
                 })(widgets[w]);
             }
         }
 
+        function oznaciAktivniNavLink() {
+            var path = window.location.pathname;
+            var navLinks = document.querySelectorAll('nav.navbar a.btn-nav');
+            for (var i = 0; i < navLinks.length; i++) {
+                var btn = navLinks[i];
+                var targetPath = btn.getAttribute('data-nav-path') || btn.getAttribute('href');
+                if (targetPath === path || (targetPath === '/' && path === '/')) {
+                    btn.classList.add('active-nav-item');
+                } else if (targetPath && targetPath !== '/' && path.indexOf(targetPath) === 0) {
+                    btn.classList.add('active-nav-item');
+                } else {
+                    btn.classList.remove('active-nav-item');
+                }
+            }
+        }
+
         function osvjeziSveHandlereStranice() {
+            oznaciAktivniNavLink();
             if (typeof filtrirajArhivu === 'function') filtrirajArhivu();
             if (typeof filtrirajSefoPanel === 'function') filtrirajSefoPanel();
             if (typeof updateBulkBar === 'function') updateBulkBar();
@@ -1978,6 +3191,16 @@
                             if (currentMain && newMain && typeof morphdom !== 'undefined') {
                                 morphdom(currentMain, newMain, {
                                     onBeforeElUpdated: function(fromEl, toEl) {
+                                        if (fromEl.classList && fromEl.classList.contains('smart-chip-widget')) {
+                                            var fromHidden = fromEl.querySelector('.smart-chip-hidden');
+                                            var toHidden = toEl.querySelector('.smart-chip-hidden');
+                                            if (fromHidden && toHidden && fromHidden.dataset.dirty !== "1") {
+                                                if (fromHidden.value !== toHidden.value && typeof fromEl._refreshFromHidden === 'function') {
+                                                    fromEl._refreshFromHidden(toHidden.value);
+                                                }
+                                            }
+                                            return false;
+                                        }
                                         if (fromEl.hasAttribute && fromEl.hasAttribute('data-morphdom-ignore')) {
                                             return false;
                                         }
@@ -1989,11 +3212,6 @@
                                         }
                                         if (fromEl.id === 'sliderText' || fromEl.id === 'bulkActionBar' || fromEl.id === 'traziAktivne' || fromEl.id === 'traziArhivu') {
                                             return false;
-                                        }
-                                        if (fromEl.classList && fromEl.classList.contains('smart-chip-widget')) {
-                                            if (fromEl._chipInitialized || fromEl.dataset.chipInit === '1') {
-                                                return false;
-                                            }
                                         }
 
                                         // Zaštita polja koja korisnik trenutno uređuje (ili ima dirty oznaku)
@@ -2384,7 +3602,22 @@
             }
         }
 
-        window.onload = pokreniZiveElemente;
+        var _ziviPokrenuti = false;
+        function sigurnoPokreniZiveElemente() {
+            if (_ziviPokrenuti) return;
+            _ziviPokrenuti = true;
+            provjeriNaCekanjuToast();
+            pokreniZiveElemente();
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', sigurnoPokreniZiveElemente);
+        } else {
+            sigurnoPokreniZiveElemente();
+        }
+        window.addEventListener('load', sigurnoPokreniZiveElemente);
+        window.addEventListener('pageshow', function() {
+            oznaciAktivniNavLink();
+        });
     </script>
 </head>
 <body class="{% if prikazi_klijent_gumbe %}is-client{% else %}is-browser{% endif %}">
@@ -2392,37 +3625,43 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="/"><img src="/logo.png" alt="FirstCutLaser"></a>
+            
+            {% if z_stanica %}
+            <div class="d-none d-md-flex align-items-center ms-3 me-auto">
+                <span class="badge px-3 py-2 text-uppercase fw-bold" style="background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; font-size: 0.78rem; letter-spacing: 0.08em; border-radius: 20px;">
+                    <i class="fa-solid fa-industry me-1"></i> STANICA: {{ z_stanica }}
+                </span>
+            </div>
+            {% endif %}
+
             <button class="navbar-toggler border-0 shadow-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#fclNav" aria-controls="fclNav" aria-expanded="false" aria-label="Navigacija"><i class="fa-solid fa-bars text-info fs-3"></i></button>
             <div class="collapse navbar-collapse" id="fclNav">
-                <div class="d-flex gap-3 ms-auto align-items-center nav-mob-col">
-                    <a href="/" class="btn btn-nav text-white-50"><i class="fa-solid fa-desktop me-2"></i> Monitor Pogona</a>
-                    {% if z_stanica in ['uprava', 'laser1', 'laser2'] %}<a href="/laser" class="btn btn-nav text-danger"><i class="fa-solid fa-fire me-2"></i> Rezanje</a>{% endif %}
-                    {% if z_stanica in ['uprava', 'bravarija'] %}<a href="/bravarija" class="btn btn-nav text-warning"><i class="fa-solid fa-hammer me-2"></i> Bravarija</a>{% endif %}
-                    {% if z_stanica == 'uprava' %}<a href="/sefo_panel" class="btn btn-nav text-info border border-info border-opacity-25"><i class="fa-solid fa-user-gear me-2"></i> Upravljačka Ploča</a>{% endif %}
+                <div class="d-flex gap-2 ms-auto align-items-center nav-mob-col">
+                    <a href="/" data-nav-path="/" class="btn btn-nav"><i class="fa-solid fa-desktop me-2"></i> Monitor Pogona</a>
+                    {% if z_stanica in ['uprava', 'laser1', 'laser2'] %}<a href="/laser" data-nav-path="/laser" class="btn btn-nav text-danger"><i class="fa-solid fa-fire me-2"></i> Rezanje</a>{% endif %}
+                    {% if z_stanica in ['uprava', 'bravarija'] %}<a href="/bravarija" data-nav-path="/bravarija" class="btn btn-nav text-warning"><i class="fa-solid fa-hammer me-2"></i> Bravarija</a>{% endif %}
+                    {% if z_stanica == 'uprava' %}<a href="/sefo_panel" data-nav-path="/sefo_panel" class="btn btn-nav text-info border border-info border-opacity-25"><i class="fa-solid fa-user-gear me-2"></i> Upravljačka Ploča</a>{% endif %}
+                    
                     <div class="clock-box" id="mreza-sat-box">
                         <span id="sync-status-dot" class="sync-dot sync-live" title="Veza u stvarnom vremenu aktivna"></span>
                         <span id="mreza-sat">00:00:00</span>
                     </div>
+
                     {% if pogon_role in ['Admin', 'Developer'] and request.path in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
-                        <a href="/arhiva" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Arhiva Naloga"><i class="fa-solid fa-box-archive me-1"></i> Arhiva</a>
+                        <a href="/arhiva" data-nav-path="/arhiva" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Arhiva Naloga"><i class="fa-solid fa-box-archive me-1"></i> Arhiva</a>
                     {% endif %}
                     {% if pogon_role == 'Developer' %}
-                        <a href="/dev_panel" class="btn btn-sm btn-outline-danger text-white px-3 py-2 border-danger border-opacity-50"><i class="fa-solid fa-terminal me-1"></i> DEV PANEL</a>
+                        <a href="/dev_panel" data-nav-path="/dev_panel" class="btn btn-sm btn-outline-danger text-white px-3 py-2 border-danger border-opacity-50"><i class="fa-solid fa-terminal me-1"></i> DEV PANEL</a>
                     {% endif %}
-                    {% if pogon_role in ['Admin', 'Developer'] %}
-                        <a href="/logout" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Odjava"><i class="fa-solid fa-power-off me-1"></i> Odjava</a>
-                    {% endif %}
-                    {% if is_server_window %}
-                        <button onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.izadji) { if(confirm('Želite li potpuno ugasiti server aplikaciju?')) pywebview.api.izadji(); } else { window.location.href='/ugasi_program'; }" class="btn btn-sm btn-danger fw-bold px-4 py-2"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</button>
-                    {% elif prikazi_klijent_gumbe %}
+                    {% if prikazi_klijent_gumbe %}
                         <button id="klijent-postavke-btn" class="btn btn-sm btn-outline-secondary text-white-50 d-none" title="Postavke Klijenta (F12)" onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.reset_postavki) { if(confirm('Želite li resetirati IP i stanicu? Program će se ugasiti.')) pywebview.api.reset_postavki(); }"><i class="fa-solid fa-gear"></i></button>
-                        <button onclick="if(window.pywebview && window.pywebview.api && window.pywebview.api.izadji) { if(confirm('Želite li potpuno ugasiti klijent aplikaciju?')) pywebview.api.izadji(); }" class="btn btn-sm btn-danger fw-bold px-4 py-2"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</button>
-                    {% elif pogon_role in ['Admin', 'Developer'] and request.path not in ['/sefo_panel', '/arhiva', '/dev_panel'] %}
-                        <a href="/ugasi_program" class="btn btn-sm btn-danger fw-bold px-4 py-2" title="Potpuno ugasi aplikaciju na Serveru"><i class="fa-solid fa-power-off me-1"></i> IZLAZ</a>
                     {% endif %}
                     {% if not prikazi_klijent_gumbe %}
-                        <a href="/odjava_stanice" class="btn btn-sm btn-outline-danger px-3 py-2 ms-1" title="Zaključaj uređaj i izađi"><i class="fa-solid fa-lock"></i></a>
+                        <a href="/odjava_stanice" class="btn btn-sm btn-outline-secondary text-white-50 px-3 py-2" title="Promijeni radnu stanicu"><i class="fa-solid fa-lock"></i></a>
                     {% endif %}
+                    <a href="/ugasi_program" onclick="return izvrsiIzlazIzPrograma(event);" class="btn btn-sm btn-danger fw-bold px-3 py-2 d-inline-flex align-items-center gap-2 shadow-sm" title="Odjavi se iz sustava i zatvori prozor">
+                        <i class="fa-solid fa-power-off"></i><span>IZLAZ</span>
+                    </a>
                 </div>
             </div>
         </div>

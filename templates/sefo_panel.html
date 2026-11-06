@@ -1,44 +1,169 @@
 {% extends "base.html" %}
 {% block content %}
+{% set u_radu_count = namespace(val=0) %}
+{% set pauzirano_count = namespace(val=0) %}
+{% for an in aktivni_nalozi %}
+    {% if 'Pauzirano' in an.status %}{% set pauzirano_count.val = pauzirano_count.val + 1 %}
+    {% elif (an.status == 'Laser' and an.laser_zapoceto_u) or (an.status == 'Piganje' and an.bravarija_zapoceto_u) %}{% set u_radu_count.val = u_radu_count.val + 1 %}{% endif %}
+{% endfor %}
+<div class="fcl-kpi-grid">
+    <div class="fcl-kpi-card kpi-cyan">
+        <div>
+            <div class="fcl-kpi-label">Ukupno Aktivnih Naloga</div>
+            <div class="fcl-kpi-val">{{ aktivni_nalozi|length }}</div>
+            <div class="fcl-kpi-sub">U pogonu i redu čekanja</div>
+        </div>
+        <div class="fcl-kpi-icon text-info"><i class="fa-solid fa-industry"></i></div>
+    </div>
+    <div class="fcl-kpi-card kpi-red">
+        <div>
+            <div class="fcl-kpi-label">Trenutno u Obradi</div>
+            <div class="fcl-kpi-val">{{ u_radu_count.val }}</div>
+            <div class="fcl-kpi-sub">Aktivni strojevi / stanice</div>
+        </div>
+        <div class="fcl-kpi-icon text-danger"><i class="fa-solid fa-gears"></i></div>
+    </div>
+    <div class="fcl-kpi-card kpi-amber">
+        <div>
+            <div class="fcl-kpi-label">Pauzirani Nalozi</div>
+            <div class="fcl-kpi-val">{{ pauzirano_count.val }}</div>
+            <div class="fcl-kpi-sub">Privremeno zaustavljeno</div>
+        </div>
+        <div class="fcl-kpi-icon text-warning"><i class="fa-solid fa-pause"></i></div>
+    </div>
+    <div class="fcl-kpi-card kpi-green">
+        <div>
+            <div class="fcl-kpi-label">Spremno za Pregled</div>
+            <div class="fcl-kpi-val">{{ zavrseni_nalozi|length }}</div>
+            <div class="fcl-kpi-sub">Čeka kontrolu i arhiviranje</div>
+        </div>
+        <div class="fcl-kpi-icon text-success"><i class="fa-solid fa-check-double"></i></div>
+    </div>
+</div>
+
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card border-info">
-            <div class="card-header-custom bg-info bg-opacity-10 text-info border-info border-opacity-25">
-                <h5 class="mb-0 fw-bold"><i class="fa-solid fa-circle-plus me-2"></i>Lansiranje Novog Radnog Naloga</h5>
+        <div class="card" style="border-top: 4px solid #0dcaf0;">
+            <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0 fw-bold text-info"><i class="fa-solid fa-circle-plus me-2"></i>Lansiranje Novog Radnog Naloga</h5>
+                <span class="badge bg-dark border border-info border-opacity-25 text-info">Izravno slanje u proizvodnju</span>
             </div>
             <div class="card-body p-4">
-                <form method="POST" enctype="multipart/form-data" class="row g-3" id="form-kreiranje">
-                    <div class="col-lg-3 col-md-6"><label class="form-label">Naziv Firme / Kupca</label><input type="text" class="form-control kreiranje-nav" name="naziv_naloga" placeholder="npr. IBO Metal..." required></div>
-                    <div class="col-lg-3 col-md-6"><label class="form-label">Naziv Projekta</label><input type="text" class="form-control kreiranje-nav" name="naziv_projekta" placeholder="npr. Ograda 2. faza..."></div>
-                    <div class="col-lg-3 col-md-6"><label class="form-label text-warning">Kreator Naloga</label><input type="text" class="form-control kreiranje-nav border-warning text-warning fw-bold" name="kreirao" placeholder="Vaše ime..." required oninput="this.value=this.value.replace(/[0-9]/g,'');"></div>
-                    <div class="col-lg-3 col-md-6"><label class="form-label">Debljina ploče</label><input type="text" class="form-control kreiranje-nav" name="debljina_ploce" placeholder="npr. 5 mm, 12 mm..."></div>
-                    <div class="col-12 mt-3"><label class="form-label">Dodatni opis i upute za pogon</label><textarea class="form-control auto-expand kreiranje-nav" name="opis" placeholder="npr. Paziti na ogrebotine, hitno..." oninput="autoProsiri(this)"></textarea></div>
-                    <div class="col-12 mt-4 pt-3 border-top border-secondary border-opacity-25">
-                        <h6 class="text-info fw-bold mb-3"><i class="fa-solid fa-cart-flatbed me-2"></i>Dodavanje stavki (Pozicija) u nalog (Opcionalno)</h6>
+                <form method="POST" enctype="multipart/form-data" class="row g-3" id="form-kreiranje" autocomplete="off">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label"><i class="fa-solid fa-building text-info me-1"></i> Naziv Firme / Kupca</label>
+                        <input type="text" class="form-control kreiranje-nav" name="naziv_naloga" placeholder="npr. IBO Metal d.o.o." autocomplete="off" required>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label"><i class="fa-solid fa-diagram-project text-info me-1"></i> Naziv Projekta</label>
+                        <input type="text" class="form-control kreiranje-nav" name="naziv_projekta" placeholder="npr. Ograda 2. faza..." autocomplete="off">
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label"><i class="fa-solid fa-user-tie text-warning me-1"></i> Kreator Naloga (Poslovođa)</label>
+                        <input type="text" class="form-control kreiranje-nav fw-bold" name="kreirao" placeholder="Vaše ime..." autocomplete="off" required oninput="this.value=this.value.replace(/[0-9]/g,'');">
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label"><i class="fa-solid fa-ruler-vertical text-info me-1"></i> Debljina ploče</label>
+                        <input type="text" id="kreiranje_debljina_input" class="form-control kreiranje-nav" name="debljina_ploce" placeholder="npr. 5 mm, 10 mm...">
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            {% for d_mm in ['1 mm', '2 mm', '3 mm', '4 mm', '5 mm', '6 mm', '8 mm', '10 mm', '12 mm', '15 mm', '20 mm'] %}
+                            <button type="button" class="thickness-pill-btn" style="padding: 1px 6px; font-size: 0.68rem;" onclick="dodajDebljinuKreiranje('{{ d_mm }}')">{{ d_mm|replace(' mm','') }}</button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-2">
+                        <label class="form-label"><i class="fa-solid fa-comment-medical text-info me-1"></i> Dodatni opis i upute za pogon (Opcionalno)</label>
+                        <textarea class="form-control auto-expand kreiranje-nav" name="opis" placeholder="npr. Paziti na ogrebotine, hitna isporuka, prvo rezati poziciju 1..." oninput="autoProsiri(this)"></textarea>
+                    </div>
+
+                    <!-- SEKCIJA ZA POZICIJE -->
+                    <div class="col-12 mt-3 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <h6 class="text-info fw-bold mb-0">
+                                <i class="fa-solid fa-cart-flatbed me-2"></i>Stavke / Pozicije Radnog Naloga
+                            </h6>
+                            <div class="d-flex align-items-center gap-2">
+                                <span id="cart_summary_badge" class="badge bg-info text-dark fw-bold" style="display: none;">0 pozicija</span>
+                                <button type="button" id="cart_clear_btn" class="btn btn-sm btn-outline-danger py-0 px-2" style="display: none; font-size: 0.75rem;" onclick="ocistiCijeluKosaricu()">
+                                    <i class="fa-solid fa-xmark me-1"></i>Isprazni listu
+                                </button>
+                            </div>
+                        </div>
                         <div class="row g-2 align-items-end mb-3">
-                            <div class="col-md-5"><label class="form-label small text-muted mb-1">Naziv pozicije s nacrta</label><input type="text" id="cart_naziv" class="form-control form-control-sm border-info" placeholder="npr. Nosač A"></div>
-                            <div class="col-md-3"><label class="form-label small text-muted mb-1">Potrebno (kom)</label><input type="number" id="cart_komada" class="form-control form-control-sm border-info" placeholder="0" min="0" inputmode="numeric"></div>
-                            <div class="col-md-4"><button type="button" class="btn btn-sm btn-info text-white w-100 fw-bold py-2" onclick="dodajUKosaricu()"><i class="fa-solid fa-plus me-1"></i> Dodaj stavku</button></div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted mb-1">Naziv / Šifra pozicije s nacrta (Enter za dalje)</label>
+                                <input type="text" id="cart_naziv" class="form-control border-info border-opacity-50" placeholder="Upišite naziv pozicije (npr. Nosač A - 5mm Hardox)...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small text-muted mb-1">Potrebno komada (0 = Po nacrtu)</label>
+                                <input type="number" id="cart_komada" class="form-control border-info border-opacity-50" placeholder="Po nacrtu (0)" min="0" inputmode="numeric">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-info text-dark w-100 fw-bold py-2 shadow-sm" onclick="dodajUKosaricu()">
+                                    <i class="fa-solid fa-plus me-1"></i> Dodaj stavku u nalog
+                                </button>
+                            </div>
                         </div>
                         <div class="table-responsive tamni-kontejner p-0">
-                            <table class="table table-sm text-white mb-0" id="cart_table" style="display: none;"><thead class="bg-dark text-secondary" style="font-size: 0.8rem;"><tr><th class="ps-3 py-2">Pozicija</th><th class="py-2">Potrebno Komada</th><th class="text-end pe-3 py-2">Ukloni</th></tr></thead><tbody id="cart_body"></tbody></table>
+                            <table class="table table-sm text-white align-middle mb-0" id="cart_table" style="display: none;">
+                                <thead class="bg-dark text-secondary" style="font-size: 0.75rem;">
+                                    <tr>
+                                        <th class="ps-3 py-2" style="width: 45px;">#</th>
+                                        <th class="py-2">Naziv Pozicije (kliknite za izmjenu)</th>
+                                        <th class="py-2 text-center" style="width: 160px;">Potrebno Komada</th>
+                                        <th class="text-end pe-3 py-2" style="width: 70px;">Ukloni</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cart_body"></tbody>
+                            </table>
                         </div>
                         <input type="hidden" name="kosarica_data" id="kosarica_data" value="[]">
                     </div>
-                    <div class="col-lg-4 col-md-6 mt-4">
-                        <label class="form-label">PDF Nacrti - <small class="text-danger">Možete odabrati više datoteka</small></label>
-                        <input type="file" class="form-control kreiranje-nav" name="pdf_file" accept=".pdf" multiple onchange="azurirajBrojacDatoteka(this, 'pdf_brojac_label', 'fa-file-pdf', 'Priloženi PDF nacrti')">
-                        <div id="pdf_brojac_label" class="mt-1 small"></div>
+
+                    <!-- SIMETRIČNI UPLOAD NACRTA (6 + 6 STUPACA) -->
+                    <div class="col-md-6 mt-3">
+                        <div class="fcl-upload-zone zone-pdf">
+                            <label class="form-label fw-bold text-white mb-1">
+                                <i class="fa-solid fa-file-pdf text-danger me-1"></i> PDF Tehnički Nacrti <small class="text-danger fw-normal">(Više datoteka)</small>
+                            </label>
+                            <input type="file" class="form-control form-control-sm kreiranje-nav" name="pdf_file" accept=".pdf" multiple onchange="azurirajBrojacDatoteka(this, 'pdf_brojac_label', 'fa-file-pdf', 'Odabrani PDF nacrti')">
+                            <div id="pdf_brojac_label" class="mt-1 small"></div>
+                        </div>
                     </div>
-                    <div class="col-lg-4 col-md-6 mt-4">
-                        <label class="form-label">Strojne datoteke (DXF/LXDS) - <small class="text-info">Možete odabrati više datoteka</small></label>
-                        <input type="file" class="form-control kreiranje-nav" name="lxdf_file" accept=".lxds,.dxf" multiple onchange="azurirajBrojacDatoteka(this, 'dxf_brojac_label', 'fa-file-code', 'Priložene strojne datoteke')">
-                        <div id="dxf_brojac_label" class="mt-1 small"></div>
+                    <div class="col-md-6 mt-3">
+                        <div class="fcl-upload-zone">
+                            <label class="form-label fw-bold text-white mb-1">
+                                <i class="fa-solid fa-file-code text-info me-1"></i> Strojne Datoteke (DXF / LXDS) <small class="text-info fw-normal">(Više datoteka)</small>
+                            </label>
+                            <input type="file" class="form-control form-control-sm kreiranje-nav" name="lxdf_file" accept=".lxds,.dxf" multiple onchange="azurirajBrojacDatoteka(this, 'dxf_brojac_label', 'fa-file-code', 'Odabrane strojne datoteke')">
+                            <div id="dxf_brojac_label" class="mt-1 small"></div>
+                        </div>
                     </div>
-                    <div class="col-12 mt-4 d-flex gap-2 btn-rutiranje-grupa">
-                        <button type="submit" name="rutiranje" value="Samo Rezanje" class="btn btn-danger flex-fill fw-bold py-2"><i class="fa-solid fa-fire me-2"></i>Šalji na REZANJE</button>
-                        <button type="submit" name="rutiranje" value="Samo Bravarija" class="btn btn-warning text-dark flex-fill fw-bold py-2"><i class="fa-solid fa-hammer me-2"></i>Šalji u BRAVARIJU</button>
-                        <button type="submit" name="rutiranje" value="Pogon" class="btn btn-info text-white flex-fill fw-bold py-2"><i class="fa-solid fa-industry me-2"></i>Šalji u POGON</button>
+
+                    <!-- 3 DISPEČERSKA GUMBA ZA LANSIRANJE -->
+                    <div class="col-12 mt-4 pt-2 d-flex gap-3 btn-rutiranje-grupa">
+                        <button type="submit" name="rutiranje" value="Samo Rezanje" class="btn btn-danger flex-fill btn-dispatch-card">
+                            <i class="fa-solid fa-fire"></i>
+                            <div>
+                                <div>ŠALJI NA REZANJE</div>
+                                <span class="btn-dispatch-sub">Samo lasersko rezanje</span>
+                            </div>
+                        </button>
+                        <button type="submit" name="rutiranje" value="Samo Bravarija" class="btn btn-warning text-dark flex-fill btn-dispatch-card">
+                            <i class="fa-solid fa-hammer"></i>
+                            <div>
+                                <div>ŠALJI U BRAVARIJU</div>
+                                <span class="btn-dispatch-sub">Izravno u bravarsku obradu</span>
+                            </div>
+                        </button>
+                        <button type="submit" name="rutiranje" value="Pogon" class="btn btn-info text-dark flex-fill btn-dispatch-card">
+                            <i class="fa-solid fa-industry"></i>
+                            <div>
+                                <div>ŠALJI U KOMPLETAN POGON</div>
+                                <span class="btn-dispatch-sub">1. Laser Rezanje &rarr; 2. Bravarija</span>
+                            </div>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -48,11 +173,19 @@
 
 <div class="card mb-4" style="border-top: 4px solid #38bdf8;">
     <div class="card-header-custom d-flex flex-wrap justify-content-between align-items-center gap-2">
-        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-industry text-info me-2"></i>Aktivni Nalozi (U Radu / Na Čekanju)</h5>
-        <div style="max-width: 320px; width: 100%;">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-industry text-info me-2"></i>Aktivni Nalozi (U Radu / Na Čekanju)</h5>
+            <div class="filter-pill-group">
+                <button type="button" class="filter-pill-btn sefo-filter-btn active" onclick="postaviFilterSefo('all', this)">Svi ({{ aktivni_nalozi|length }})</button>
+                <button type="button" class="filter-pill-btn sefo-filter-btn" onclick="postaviFilterSefo('active', this)">U obradi ({{ u_radu_count.val }})</button>
+                <button type="button" class="filter-pill-btn sefo-filter-btn" onclick="postaviFilterSefo('paused', this)">Pauzirano ({{ pauzirano_count.val }})</button>
+                <button type="button" class="filter-pill-btn sefo-filter-btn" onclick="postaviFilterSefo('pending', this)">Na čekanju</button>
+            </div>
+        </div>
+        <div style="max-width: 300px; width: 100%;">
             <div class="input-group input-group-sm">
                 <span class="input-group-text bg-dark border-secondary text-info"><i class="fa-solid fa-magnifying-glass"></i></span>
-                <input type="text" id="traziAktivne" class="form-control form-control-sm border-secondary text-white" placeholder="Pretraži aktivne naloge..." oninput="filtrirajSefoPanel()">
+                <input type="text" id="traziAktivne" class="form-control form-control-sm border-secondary text-white" placeholder="Pretraži kupca, projekt, ID..." oninput="filtrirajSefoPanel()">
             </div>
         </div>
     </div>
@@ -67,7 +200,7 @@
                     {% if 'Pauzirano' in n.status %}{% set row_state = 'paused' %}
                     {% elif (n.status == 'Laser' and n.laser_zapoceto_u) or (n.status == 'Piganje' and n.bravarija_zapoceto_u) %}{% set row_state = 'active' %}{% endif %}
                     
-                    <tr class="row-state-{{ row_state }} aktivni-red" data-id="{{ n.id }}" data-search="{{ n.id }} {{ n.naziv_naloga }} {{ n.naziv_projekta }} {{ n.kreirao }} {{ n.rutiranje }} {{ n.status }}">
+                    <tr id="sefo-akt-red-{{ n.id }}" class="row-state-{{ row_state }} aktivni-red" data-id="{{ n.id }}" data-state="{{ row_state }}" data-search="{{ n.id }} {{ n.naziv_naloga }} {{ n.naziv_projekta }} {{ n.kreirao }} {{ n.rutiranje }} {{ n.status }}">
                         <td class="fs-5 text-muted ps-4 fw-bold">#{{ n.id }}</td>
                         <td>
                             <div class="fs-5 fw-bold {% if row_state == 'paused' %}txt-paused{% elif row_state == 'active' %}txt-active{% else %}text-white{% endif %}">{{ n.naziv_naloga }}</div>
@@ -276,7 +409,7 @@
                 <tbody>
                     {% if not zavrseni_nalozi %}<tr><td colspan="6" class="text-center py-4 text-muted">Nema završenih naloga koji čekaju pregled.</td></tr>{% endif %}
                     {% for n in zavrseni_nalozi %}
-                    <tr class="row-state-completed">
+                    <tr id="sefo-zav-red-{{ n.id }}" class="row-state-completed">
                         <td class="fs-5 text-muted ps-4 fw-bold">#{{ n.id }}</td>
                         <td>
                             <div class="fs-5 fw-bold txt-completed">{{ n.naziv_naloga }}</div>
@@ -299,7 +432,7 @@
                             </div>
                             <div class="text-info small opacity-75 mt-1" style="font-size: 0.75rem;">
                                 <i class="fa-regular fa-calendar-plus text-success me-1"></i>Kreirano: <b class="text-white">{{ n.kreirano_u_prikaz }}</b><br>
-                                <i class="fa-regular fa-calendar-check text-info me-1"></i>Završeno: <b class="text-white">{{ n.zavrseno_u_prikaz }}</b>
+                                <i class="fa-regular fa-calendar-check text-info me-1"></i>Završeno: <b class="text-white">{{ n.zavrseno_u_prikaz or 'Čeka odobrenje' }}</b>
                             </div>
                             {% if n.pozicije %}<button class="btn btn-sm btn-outline-info mt-2 py-0 px-2" style="font-size:0.75rem; border-radius:6px;" type="button" data-bs-toggle="collapse" data-bs-target="#detalji-zav-{{ n.id }}"><i class="fa-solid fa-chevron-down me-1"></i> Detalji i Vrijeme</button>{% endif %}
                         </td>
@@ -550,15 +683,22 @@
 </div>
 
 <script>
+    function dodajDebljinuKreiranje(vrijednost) {
+        var inp = document.getElementById('kreiranje_debljina_input');
+        if (!inp) return;
+        inp.value = vrijednost;
+        inp.focus();
+    }
+
     function otvoriUrediNalogModal(btn) {
-        const id = btn.dataset.id;
+        var id = btn.getAttribute('data-id');
         document.getElementById('modalUrediNalogId').innerText = '#' + id;
         document.getElementById('formUrediNalog').action = '/uredi_nalog/' + id;
-        document.getElementById('uredi_naziv_naloga').value = btn.dataset.naziv || '';
-        document.getElementById('uredi_naziv_projekta').value = btn.dataset.projekt || '';
-        document.getElementById('uredi_debljina_ploce').value = btn.dataset.debljina || '';
-        document.getElementById('uredi_rutiranje').value = btn.dataset.rutiranje || 'Pogon';
-        document.getElementById('uredi_opis').value = btn.dataset.opis || '';
+        document.getElementById('uredi_naziv_naloga').value = btn.getAttribute('data-naziv') || '';
+        document.getElementById('uredi_naziv_projekta').value = btn.getAttribute('data-projekt') || '';
+        document.getElementById('uredi_debljina_ploce').value = btn.getAttribute('data-debljina') || '';
+        document.getElementById('uredi_rutiranje').value = btn.getAttribute('data-rutiranje') || 'Pogon';
+        document.getElementById('uredi_opis').value = btn.getAttribute('data-opis') || '';
         bootstrap.Modal.getOrCreateInstance(document.getElementById('urediNalogModal')).show();
     }
 </script>

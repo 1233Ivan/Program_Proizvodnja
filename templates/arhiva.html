@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
-<h3 class="mb-4 fw-bold text-white"><i class="fa-solid fa-box-archive text-secondary me-2"></i> ARHIVA ZAVRŠENIH NALOGA</h3>
+<div class="sector-hero-banner">
+    <div class="sector-hero-left">
+        <div class="sector-hero-icon monitor"><i class="fa-solid fa-box-archive"></i></div>
+        <div>
+            <h3 class="sector-hero-title">ARHIVA ZAVRŠENIH NALOGA</h3>
+            <p class="sector-hero-sub">Povijest proizvodnje &bull; Pretraga i upravljanje arhiviranim nalozima</p>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-dark border border-secondary text-white-50 px-3 py-2 fs-6">
+            Ukupno u arhivi: {{ nalozi|length }}
+        </span>
+    </div>
+</div>
 <div class="card" style="margin-bottom: 80px;">
     <div class="card-header-custom d-flex justify-content-between align-items-center flex-mob-col">
         <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check text-muted me-2"></i>Svi arhivirani poslovi</h5>
@@ -27,7 +40,7 @@
                     <tbody>
                         {% if not nalozi %}<tr><td colspan="7" class="text-center py-5 text-muted">Nema arhiviranih naloga.</td></tr>{% endif %}
                         {% for n in nalozi %}
-                        <tr class="row-state-completed arhiva-red" data-search="{{ n.id }} {{ n.naziv_naloga }} {{ n.naziv_projekta }} {{ n.kreirano_u_prikaz }} {{ n.zavrseno_u_prikaz }}" data-id="{{ n.id }}" style="opacity: 0.85;">
+                        <tr id="arhiva-red-{{ n.id }}" class="row-state-completed arhiva-red" data-search="{{ n.id }} {{ n.naziv_naloga }} {{ n.naziv_projekta }} {{ n.kreirano_u_prikaz }} {{ n.zavrseno_u_prikaz }}" data-id="{{ n.id }}" style="opacity: 0.85;">
                             <td class="ps-4 text-center">
                                 <input class="form-check-input border-secondary shadow-none nalog-checkbox" type="checkbox" name="nalog_ids" value="{{ n.id }}" onchange="updateBulkBar()">
                             </td>
@@ -233,28 +246,28 @@
 
 <script>
     function toggleAll(source) {
-        let checkboxes = document.querySelectorAll('.nalog-checkbox');
-        for(let i=0; i<checkboxes.length; i++) {
-            let row = checkboxes[i].closest('tr');
+        var checkboxes = document.querySelectorAll('.nalog-checkbox');
+        for(var i=0; i<checkboxes.length; i++) {
+            var row = checkboxes[i].closest('tr');
             if (row && row.style.display !== 'none') { checkboxes[i].checked = source.checked; }
         }
         updateBulkBar();
     }
     
     function updateBulkBar() {
-        let checkboxes = document.querySelectorAll('.nalog-checkbox:checked');
-        let count = checkboxes.length;
-        let bar = document.getElementById('bulkActionBar');
-        let countText = document.getElementById('bulkCount');
+        var checkboxes = document.querySelectorAll('.nalog-checkbox:checked');
+        var count = checkboxes.length;
+        var bar = document.getElementById('bulkActionBar');
+        var countText = document.getElementById('bulkCount');
         if(!bar || !countText) return;
         
         if(count > 0) {
             countText.innerText = count;
             bar.style.setProperty('display', 'flex', 'important');
-            setTimeout(() => bar.style.transform = 'translateY(0)', 10);
+            setTimeout(function() { bar.style.transform = 'translateY(0)'; }, 10);
         } else {
             bar.style.transform = 'translateY(100%)';
-            setTimeout(() => bar.style.setProperty('display', 'none', 'important'), 300);
+            setTimeout(function() { bar.style.setProperty('display', 'none', 'important'); }, 300);
         }
     }
 </script>

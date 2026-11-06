@@ -1,10 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
-<h3 class="mb-4 fw-bold text-white"><i class="fa-solid fa-hammer text-warning me-2"></i>STANICA 2: BRAVARIJA</h3>
+<div class="sector-hero-banner">
+    <div class="sector-hero-left">
+        <div class="sector-hero-icon bravarija"><i class="fa-solid fa-hammer"></i></div>
+        <div>
+            <h3 class="sector-hero-title">STANICA 2: BRAVARIJA</h3>
+            <p class="sector-hero-sub">Bravarska obrada i piganje &bull; Evidencija pozicija i vremena obrade</p>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-dark border border-warning border-opacity-50 text-warning px-3 py-2 fs-6">
+            Ukupno naloga: {{ nalozi|length }}
+        </span>
+    </div>
+</div>
 {% if not nalozi %}<div class="alert alert-dark text-center my-5 py-5 border-0" style="background: #12141c; color: #94a3b8;">Nema naloga na čekanju za bravariju.</div>{% endif %}
 
 {% for n in nalozi %}
-<div class="card p-4" style="border-top: 4px solid {% if n.status == 'Pauzirano - Bravarija' %}#ffc107{% else %}#facc15{% endif %} !important;">
+<div class="card p-4" id="nalog-card-{{ n.id }}" style="border-top: 4px solid {% if n.status == 'Pauzirano - Bravarija' %}#fbbf24{% elif n.bravarija_zapoceto_u %}#38bdf8{% else %}#facc15{% endif %} !important;">
     <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-mob-col">
         <div style="min-width: 0; flex: 1 1 auto;">
             <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -40,6 +53,23 @@
             {% endif %}
         </div>
     </div>
+    
+    {% if not n.bravarija_zapoceto_u and n.status == 'Pauzirano - Bravarija' %}
+    <div class="paused-summary-banner">
+        <div>
+            <span class="badge bg-warning text-dark fw-bold me-2"><i class="fa-solid fa-pause me-1"></i>PAUZIRANI NALOG</span>
+            <span class="text-white small">
+                {% if n.bravarija_radnik %}Bravar: <b class="text-warning">{{ n.bravarija_radnik }}</b> &bull; {% endif %}
+                Odrađeno do sada: <b class="text-success">{{ n.ukupno.bravarija_komada_ukupno }} kom</b> ({{ n.ukupno.bravarija_ukupno_tekst }})
+            </span>
+            {% if n.bravarija_napomena %}
+            <div class="mt-1 small">
+                <span class="text-warning"><i class="fa-solid fa-comment-dots me-1"></i>Prethodna napomena: <b class="text-white">{{ n.bravarija_napomena }}</b></span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
     
     {% if n.opis or n.laser_napomena %}
         {% set ukupno_slova = (n.opis|length if n.opis else 0) + (n.laser_napomena|length if n.laser_napomena else 0) %}
@@ -225,7 +255,7 @@
                 <label class="form-label text-white">Ime Bravara</label>
                 <input type="text" class="form-control text-white navigabilno" name="radnik" placeholder="Unesite ime..." value="{{ n.bravarija_radnik or (n.pozicije[0].bravarija_radnik if n.pozicije else '') }}" required oninput="this.value=this.value.replace(/[0-9]/g,'');">
 				<label class="form-label mt-3 text-white">Napomena Bravara (Opcionalno)</label>
-				<textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Obrađeno i stavljeno na paletu..." oninput="autoProsiri(this)">{{ n.bravarija_napomena }}</textarea>
+				<textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Obrađeno i stavljeno na paletu..." oninput="autoProsiri(this)">{{ n.bravarija_napomena or '' }}</textarea>
             </div>
             <div class="col-md-7 ms-auto text-end align-items-end d-flex gap-2 justify-content-end h-100 mob-col-btn" style="padding-top: 30px;">
                 <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-3">&check; Završi (Na Pregled)</button>

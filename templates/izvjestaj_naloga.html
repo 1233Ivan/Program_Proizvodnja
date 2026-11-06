@@ -138,15 +138,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 22px;
+            padding-bottom: 20px;
             margin-bottom: 24px;
             border-bottom: 2px solid var(--border-color);
-            gap: 20px;
+            gap: 16px;
         }
         .brand-box {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
+            min-width: 0;
         }
         .logo-wrap {
             background: #12141c;
@@ -155,66 +156,107 @@
             border-radius: 10px;
             display: inline-flex;
             align-items: center;
+            flex-shrink: 0;
         }
         .logo-img {
-            max-height: 46px;
+            max-height: 44px;
             width: auto;
             display: block;
         }
+        .brand-titles {
+            min-width: 0;
+        }
         .brand-titles h1 {
             margin: 0;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             font-weight: 800;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.3px;
             color: var(--text-main);
+            white-space: nowrap;
         }
         .brand-titles p {
-            margin: 3px 0 0 0;
-            font-size: 0.78rem;
+            margin: 4px 0 0 0;
+            font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.55px;
             color: var(--accent-cyan);
+            white-space: nowrap;
         }
         .order-meta-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
             text-align: right;
+            flex-shrink: 0;
+        }
+        .order-badges-row {
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: nowrap;
         }
         .order-id-pill {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 7px;
+            height: 32px;
             background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.4);
+            border: 1px solid rgba(239, 68, 68, 0.45);
             color: var(--accent-red);
-            font-size: 1.1rem;
+            font-size: 0.96rem;
             font-weight: 800;
-            padding: 5px 14px;
-            border-radius: 9px;
-            margin-bottom: 6px;
+            padding: 0 13px;
+            border-radius: 8px;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
         }
         .status-pill {
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            height: 32px;
             background: rgba(16, 185, 129, 0.14);
-            border: 1px solid rgba(16, 185, 129, 0.4);
+            border: 1px solid rgba(16, 185, 129, 0.45);
             color: #10b981;
-            font-size: 0.74rem;
+            font-size: 0.73rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
-            padding: 5px 11px;
+            letter-spacing: 0.5px;
+            padding: 0 12px;
             border-radius: 8px;
-            margin-left: 6px;
-            vertical-align: top;
+            white-space: nowrap;
         }
         .timestamps-row {
-            font-size: 0.78rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 0.75rem;
             color: var(--text-muted);
             font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+        .timestamp-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 3px 9px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+        .timestamp-pill i {
+            color: var(--accent-cyan);
+            font-size: 0.72rem;
         }
         .timestamps-row b {
-            color: var(--text-secondary);
+            color: var(--text-main);
+            font-weight: 700;
         }
 
         /* KPI SAŽETAK (4 KARTICE) */
@@ -540,21 +582,162 @@
             color: var(--text-muted);
         }
 
-        /* PRAVILA ZA A4 PDF ISPIS */
+        /* MOBILNI PRIKAZ NA EKRANU (ISKLJUČIVO EKRAN, NIKADA PRINT!) */
+        @media screen and (max-width: 767.98px) {
+            body:not(.force-a4-preview) {
+                padding: 10px 8px;
+            }
+            body:not(.force-a4-preview) .report-toolbar {
+                padding: 12px;
+                border-radius: 12px;
+                margin-bottom: 12px;
+            }
+            body:not(.force-a4-preview) .toolbar-actions {
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            body:not(.force-a4-preview) .toolbar-actions .t-btn {
+                justify-content: center;
+                padding: 9px 10px;
+                font-size: 0.78rem;
+                width: 100%;
+            }
+            body:not(.force-a4-preview) .report-sheet {
+                padding: 18px 14px;
+                border-radius: 14px;
+            }
+            body:not(.force-a4-preview) .report-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            body:not(.force-a4-preview) .brand-box {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            body:not(.force-a4-preview) .brand-titles h1,
+            body:not(.force-a4-preview) .brand-titles p {
+                white-space: normal;
+            }
+            body:not(.force-a4-preview) .order-meta-right {
+                align-items: flex-start;
+                text-align: left;
+                width: 100%;
+            }
+            body:not(.force-a4-preview) .order-badges-row,
+            body:not(.force-a4-preview) .timestamps-row {
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+            body:not(.force-a4-preview) .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            body:not(.force-a4-preview) .kpi-value {
+                font-size: 1.1rem;
+            }
+            body:not(.force-a4-preview) .meta-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            body:not(.force-a4-preview) .meta-box.span-2 {
+                grid-column: span 2;
+            }
+            body:not(.force-a4-preview) .signature-row {
+                grid-template-columns: 1fr;
+                gap: 18px;
+                margin-top: 24px;
+            }
+            body:not(.force-a4-preview) .report-footer {
+                flex-direction: column;
+                gap: 6px;
+                text-align: center;
+            }
+            /* KARTIČNI PRIKAZ TABLICE POZICIJA NA MOBITELU */
+            body:not(.force-a4-preview) .spec-table-wrap {
+                border: none;
+                background: transparent;
+            }
+            body:not(.force-a4-preview) table.spec-table thead {
+                display: none;
+            }
+            body:not(.force-a4-preview) table.spec-table,
+            body:not(.force-a4-preview) table.spec-table tbody,
+            body:not(.force-a4-preview) table.spec-table tfoot {
+                display: block;
+                width: 100%;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody tr {
+                display: block;
+                background: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 6px 0;
+                border: none;
+                border-bottom: 1px dashed var(--border-color);
+                text-align: right;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody td:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody td::before {
+                content: attr(data-label);
+                font-size: 0.72rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                text-align: left;
+                flex-shrink: 0;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody td .phase-metrics {
+                align-items: flex-end;
+            }
+            body:not(.force-a4-preview) table.spec-table tfoot tr {
+                display: block;
+                background: var(--bg-card-alt);
+                border: 2px solid var(--border-strong);
+                border-radius: 12px;
+                padding: 12px;
+                margin-top: 8px;
+            }
+            body:not(.force-a4-preview) table.spec-table tfoot td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 6px 0;
+                border: none;
+            }
+        }
+
+        /* STROGA PRAVILA ZA A4 PDF ISPIS (NA RAČUNALU I ANDROIDU) */
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 10mm;
+                margin: 8mm 10mm;
             }
             body {
                 background-color: #ffffff !important;
                 color: #0f172a !important;
                 padding: 0 !important;
+                margin: 0 !important;
                 --bg-page: #ffffff;
                 --bg-sheet: #ffffff;
                 --bg-card: #f8fafc;
                 --bg-card-alt: #f1f5f9;
                 --border-color: #cbd5e1;
+                --border-strong: #94a3b8;
                 --text-main: #0f172a;
                 --text-secondary: #1e293b;
                 --text-muted: #64748b;
@@ -564,28 +747,58 @@
             }
             .report-sheet {
                 max-width: 100% !important;
+                width: 100% !important;
                 border: none !important;
                 border-top: 4px solid #ef4444 !important;
                 border-radius: 0 !important;
-                padding: 10px 0 0 0 !important;
+                padding: 8px 0 0 0 !important;
                 box-shadow: none !important;
             }
+            .report-header {
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+            }
+            .brand-box {
+                flex-direction: row !important;
+                align-items: center !important;
+            }
+            .order-meta-right {
+                text-align: right !important;
+                width: auto !important;
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 10px !important;
+            }
+            .meta-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+                gap: 10px !important;
+            }
+            .meta-box.span-2 {
+                grid-column: span 2 !important;
+            }
+            .signature-row {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 20px !important;
+            }
+            table.spec-table {
+                display: table !important;
+                width: 100% !important;
+                font-size: 0.78rem !important;
+            }
+            table.spec-table thead { display: table-header-group !important; }
+            table.spec-table tbody { display: table-row-group !important; }
+            table.spec-table tfoot { display: table-footer-group !important; }
+            table.spec-table tr { display: table-row !important; }
+            table.spec-table th, table.spec-table td {
+                display: table-cell !important;
+                padding: 7px 8px !important;
+            }
+            table.spec-table td::before { display: none !important; content: none !important; }
             .m-pill-done { color: #047857 !important; background: #dcfce7 !important; border-color: #86efac !important; }
             .m-pill-skart { color: #b91c1c !important; background: #fee2e2 !important; border-color: #fca5a5 !important; }
             .report-chip-num { color: #0284c7 !important; }
-        }
-
-        @media (max-width: 768px) {
-            .kpi-grid, .meta-grid, .signature-row {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .report-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .order-meta-right {
-                text-align: left;
-            }
         }
     </style>
 </head>
@@ -598,14 +811,17 @@
         </div>
         <div class="toolbar-actions">
             <button type="button" class="t-btn t-btn-theme" onclick="document.body.classList.toggle('light-mode')">
-                <i class="fa-solid fa-circle-half-stroke"></i> Prebaci prikaz (Tamni UI / Svijetli A4)
+                <i class="fa-solid fa-circle-half-stroke"></i> Tamni / Svijetli prikaz
+            </button>
+            <button type="button" class="t-btn t-btn-theme" onclick="document.body.classList.toggle('force-a4-preview')">
+                <i class="fa-solid fa-expand"></i> A4 / Mobilni prikaz
             </button>
             {% if online_pregled %}
             <a href="/preuzmi_izvjestaj/{{ n.id }}" class="t-btn t-btn-zip">
-                <i class="fa-solid fa-file-zipper"></i> Preuzmi ZIP paket (Nacrti + Izvještaj)
+                <i class="fa-solid fa-file-zipper"></i> Preuzmi ZIP paket
             </a>
             {% endif %}
-            <button type="button" class="t-btn t-btn-pdf" onclick="window.print()">
+            <button type="button" class="t-btn t-btn-pdf" onclick="ispisiKaoA4Pdf()">
                 <i class="fa-solid fa-print"></i> Ispis / Spremi kao PDF
             </button>
         </div>
@@ -629,12 +845,13 @@
                 </div>
             </div>
             <div class="order-meta-right">
-                <div>
-                    <span class="order-id-pill"><i class="fa-solid fa-hashtag"></i> NALOG #{{ n.id }}</span>
+                <div class="order-badges-row">
+                    <span class="order-id-pill"><i class="fa-solid fa-file-invoice"></i> NALOG #{{ n.id }}</span>
                     <span class="status-pill"><i class="fa-solid fa-circle-check"></i> {{ 'ZAVRŠENO / ARHIVIRANO' if n.status == 'Arhivirano' else 'ZAVRŠENO (NA PREGLEDU)' if n.status == 'Na pregledu' else n.status }}</span>
                 </div>
                 <div class="timestamps-row">
-                    Kreirano: <b>{{ kreirano_prikaz }}</b> &nbsp;&bull;&nbsp; Završeno: <b>{{ zavrseno_prikaz }}</b>
+                    <span class="timestamp-pill"><i class="fa-regular fa-calendar-plus"></i> Kreirano: <b>{{ kreirano_prikaz or '-' }}</b></span>
+                    <span class="timestamp-pill"><i class="fa-regular fa-calendar-check"></i> Završeno: <b>{{ zavrseno_prikaz or 'U obradi' }}</b></span>
                 </div>
             </div>
         </div>
@@ -784,16 +1001,16 @@
                     {% set b_rs = p.bravarija_piganje_sati or 0 %}
                     {% set b_rm = p.bravarija_piganje_minute or 0 %}
                     <tr>
-                        <td><span class="row-num">{{ loop.index }}</span></td>
-                        <td><span class="pos-name">{{ p.naziv_pozicije }}</span></td>
-                        <td>
+                        <td data-label="#"><span class="row-num">{{ loop.index }}</span></td>
+                        <td data-label="Pozicija"><span class="pos-name">{{ p.naziv_pozicije }}</span></td>
+                        <td data-label="Potrebno">
                             {% if p_cilj > 0 %}
                                 <span class="m-pill m-pill-zero" style="font-weight:800;">{{ p_cilj }} kom</span>
                             {% else %}
                                 <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 600;">Po nacrtu</span>
                             {% endif %}
                         </td>
-                        <td class="col-phase">
+                        <td class="col-phase" data-label="Faza 1: Rezanje">
                             <div class="phase-metrics">
                                 <div class="metric-badges">
                                     <span class="m-pill {{ 'm-pill-done' if l_kom > 0 else 'm-pill-zero' }}">Odrađeno: {{ l_kom }} kom</span>
@@ -807,7 +1024,7 @@
                             </div>
                         </td>
                         {% if not samo_rezanje %}
-                        <td class="col-phase">
+                        <td class="col-phase" data-label="Faza 2: Bravarija">
                             <div class="phase-metrics">
                                 <div class="metric-badges">
                                     <span class="m-pill {{ 'm-pill-done' if b_kom > 0 else 'm-pill-zero' }}">Odrađeno: {{ b_kom }} kom</span>
@@ -901,11 +1118,46 @@
         </div>
     </div>
 
+    <script>
+        function ispisiKaoA4Pdf() {
+            document.body.classList.add('force-a4-preview');
+            setTimeout(function() {
+                try {
+                    window.print();
+                } catch(e) {
+                    console.error('Ispis error:', e);
+                }
+            }, 120);
+        }
+    </script>
     {% if auto_print %}
     <script>
-        window.addEventListener('load', function() {
-            setTimeout(function() { window.print(); }, 350);
-        });
+        (function() {
+            var printPokrenut = false;
+            function okiniIspis() {
+                if (printPokrenut) return;
+                printPokrenut = true;
+                ispisiKaoA4Pdf();
+            }
+
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(okiniIspis, 150);
+            } else {
+                if (document.addEventListener) {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        setTimeout(okiniIspis, 150);
+                    });
+                    window.addEventListener('load', function() {
+                        setTimeout(okiniIspis, 100);
+                    });
+                } else if (window.attachEvent) {
+                    window.attachEvent('onload', function() {
+                        setTimeout(okiniIspis, 150);
+                    });
+                }
+                setTimeout(okiniIspis, 450);
+            }
+        })();
     </script>
     {% endif %}
 </body>

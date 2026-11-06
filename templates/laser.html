@@ -1,10 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
-<h3 class="mb-4 fw-bold text-white"><i class="fa-solid fa-fire text-danger me-2"></i>STANICA 1: REZANJE (LASER)</h3>
+<div class="sector-hero-banner">
+    <div class="sector-hero-left">
+        <div class="sector-hero-icon laser"><i class="fa-solid fa-fire"></i></div>
+        <div>
+            <h3 class="sector-hero-title">STANICA 1: REZANJE (LASER)</h3>
+            <p class="sector-hero-sub">CNC Lasersko rezanje &bull; Evidencija uloženih ploča, materijala i pozicija</p>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-dark border border-danger border-opacity-50 text-danger px-3 py-2 fs-6">
+            Ukupno naloga: {{ nalozi|length }}
+        </span>
+    </div>
+</div>
 {% if not nalozi %}<div class="alert alert-dark text-center my-5 py-5 border-0" style="background: #12141c; color: #94a3b8;">Nema otvorenih naloga na čekanju za rezanje.</div>{% endif %}
 
 {% for n in nalozi %}
-<div class="card p-4" style="border-top: 4px solid {% if n.status == 'Pauzirano - Laser' %}#ffc107{% else %}#ff0000{% endif %} !important;">
+<div class="card p-4" id="nalog-card-{{ n.id }}" style="border-top: 4px solid {% if n.status == 'Pauzirano - Laser' %}#fbbf24{% elif n.laser_zapoceto_u %}#38bdf8{% else %}#ef4444{% endif %} !important;">
     <div class="d-flex justify-content-between align-items-start gap-3 mb-3 flex-mob-col">
         <div style="min-width: 0; flex: 1 1 auto;">
             <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
@@ -42,6 +55,24 @@
             {% endif %}
         </div>
     </div>
+    
+    {% if not n.laser_zapoceto_u and n.status == 'Pauzirano - Laser' %}
+    <div class="paused-summary-banner">
+        <div>
+            <span class="badge bg-warning text-dark fw-bold me-2"><i class="fa-solid fa-pause me-1"></i>PAUZIRANI NALOG</span>
+            <span class="text-white small">
+                {% if n.laser_radnik %}Operater: <b class="text-warning">{{ n.laser_radnik }}</b> &bull; {% endif %}
+                Odrađeno do sada: <b class="text-success">{{ n.ukupno.laser_komada_ukupno }} kom</b> ({{ n.ukupno.laser_ukupno_tekst }})
+            </span>
+            {% if n.dimenzije_ploce_laser or n.materijal_ploce_laser %}
+            <div class="mt-1 small">
+                {% if n.dimenzije_ploce_laser %}<span class="text-info me-2"><i class="fa-solid fa-ruler-combined me-1"></i>Ploče: <b class="text-white">{{ n.dimenzije_ploce_laser }}</b></span>{% endif %}
+                {% if n.materijal_ploce_laser %}<span class="text-info"><i class="fa-solid fa-layer-group me-1"></i>Materijal: <b class="text-white">{{ n.materijal_ploce_laser }}</b></span>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
     
     {% if n.opis %}
         {% set show_collapse = n.opis|length > 100 %}
@@ -124,63 +155,93 @@
         <input type="hidden" name="izvor" value="laser">
         <div class="p-3 mb-4 rounded-3 border border-info border-opacity-25" style="background-color: rgba(13, 202, 240, 0.03);">
             <div class="row align-items-stretch g-3">
-                <!-- LIJEVO: DIMENZIJE ULOŽENIH PLOČA -->
+                <!-- LIJEVO: DIMENZIJE ULOŽENIH PLOČA (OBAVEZNA 3D DIMENZIJA S DEBLJINOM) -->
                 <div class="col-md-6">
-                    <div class="smart-chip-card smart-chip-widget" data-morphdom-ignore="true" data-empty-text="Nema upisanih ploča — dodajte dimenziju ispod" data-chip-icon="fa-ruler-combined">
+                    <div class="smart-chip-card smart-chip-widget" id="chip-dim-{{ n.id }}" data-morphdom-ignore="true" data-empty-text="Nema upisanih ploča — odaberite dimenziju i debljinu ispod" data-chip-icon="fa-ruler-combined">
                         <div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <label class="form-label text-info fw-bold mb-0">
-                                    <i class="fa-solid fa-ruler-combined me-1"></i> Dimenzije uloženih ploča
+                                    <i class="fa-solid fa-ruler-combined me-1"></i> Dimenzije uloženih ploča <small class="text-white-50 fw-normal">(Dužina×Širina×Debljina)</small>
                                 </label>
-                                <span class="badge bg-info text-dark fw-bold rounded-pill smart-chip-count" style="font-size: 0.72rem; display: none;">0</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-info text-dark fw-bold rounded-pill smart-chip-count" style="font-size: 0.72rem; display: none;">0</span>
+                                    <button type="button" class="btn btn-link text-danger p-0 smart-chip-clear-btn d-none" style="font-size: 0.72rem; text-decoration: none; font-weight: 700;" title="Ukloni sve stavke">
+                                        <i class="fa-solid fa-trash-can me-1"></i>Očisti
+                                    </button>
+                                </div>
                             </div>
-                            <input type="hidden" name="dimenzije_ploce" class="smart-chip-hidden" value="{{ n.dimenzije_ploce_laser }}">
+                            <input type="hidden" name="dimenzije_ploce" class="smart-chip-hidden" value="{{ n.dimenzije_ploce_laser or '' }}">
                             <div class="smart-chip-list"></div>
                         </div>
                         <div>
                             <div class="smart-chip-input-row">
-                                <input type="text" class="form-control smart-chip-input navigabilno" placeholder="Upišite dimenziju (npr. 3000x1500x5) pa Enter ili +" autocomplete="off">
+                                <input type="text" class="form-control smart-chip-input navigabilno" placeholder="Format: Dužina x Širina x Debljina (npr. 3000x1500x5)" autocomplete="off">
                                 <button type="button" class="smart-chip-add-btn" title="Dodaj ploču u listu">
                                     <i class="fa-solid fa-plus"></i> Dodaj
                                 </button>
                             </div>
+                            <div class="chip-validation-hint"></div>
                             <div class="preset-chip-bar">
+                                <span class="text-muted small fw-bold me-1" style="font-size: 0.7rem; align-self: center;">1. Format:</span>
                                 <button type="button" class="preset-chip-btn" data-preset="3000x1500x">+ 3000×1500</button>
                                 <button type="button" class="preset-chip-btn" data-preset="2500x1250x">+ 2500×1250</button>
                                 <button type="button" class="preset-chip-btn" data-preset="2000x1000x">+ 2000×1000</button>
+                            </div>
+                            <div class="thickness-quick-bar">
+                                <span class="thickness-bar-label"><i class="fa-solid fa-arrows-up-down me-1"></i>2. Debljina (mm):</span>
+                                <button type="button" class="thickness-pill-btn" data-thick="1mm">1</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="1.5mm">1.5</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="2mm">2</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="3mm">3</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="4mm">4</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="5mm">5</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="6mm">6</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="8mm">8</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="10mm">10</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="12mm">12</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="15mm">15</button>
+                                <button type="button" class="thickness-pill-btn" data-thick="20mm">20</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- DESNO: MATERIJAL PLOČA -->
+                <!-- DESNO: MATERIJAL PLOČA (DVOREDNI DIZAJN USKLAĐEN S DIMENZIJAMA PLOČA - STRIKTNO IMENA MATERIJALA) -->
                 <div class="col-md-6">
-                    <div class="smart-chip-card smart-chip-widget" data-morphdom-ignore="true" data-empty-text="Nema upisanog materijala — odaberite ili upišite ispod" data-chip-icon="fa-cube">
+                    <div class="smart-chip-card smart-chip-widget" id="chip-mat-{{ n.id }}" data-morphdom-ignore="true" data-empty-text="Nema upisanog materijala — odaberite materijal ispod ili upišite naziv" data-chip-icon="fa-cube" data-chip-type="materijal">
                         <div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <label class="form-label text-info fw-bold mb-0">
                                     <i class="fa-solid fa-layer-group me-1"></i> Materijal ploča
                                 </label>
-                                <span class="badge bg-info text-dark fw-bold rounded-pill smart-chip-count" style="font-size: 0.72rem; display: none;">0</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-info text-dark fw-bold rounded-pill smart-chip-count" style="font-size: 0.72rem; display: none;">0</span>
+                                    <button type="button" class="btn btn-link text-danger p-0 smart-chip-clear-btn d-none" style="font-size: 0.72rem; text-decoration: none; font-weight: 700;" title="Ukloni sve stavke">
+                                        <i class="fa-solid fa-trash-can me-1"></i>Očisti
+                                    </button>
+                                </div>
                             </div>
-                            <input type="hidden" name="materijal_ploce" class="smart-chip-hidden" value="{{ n.materijal_ploce_laser }}">
+                            <input type="hidden" name="materijal_ploce" class="smart-chip-hidden" value="{{ n.materijal_ploce_laser or '' }}">
                             <div class="smart-chip-list"></div>
                         </div>
                         <div>
                             <div class="smart-chip-input-row">
-                                <input type="text" class="form-control smart-chip-input navigabilno" placeholder="Upišite materijal (npr. Hardox, Inox...) pa Enter ili +" autocomplete="off">
+                                <input type="text" class="form-control smart-chip-input navigabilno" placeholder="Odaberite materijal ispod ili upišite (npr. Čelik, INOX, Aluminij...)" autocomplete="off">
                                 <button type="button" class="smart-chip-add-btn" title="Dodaj materijal u listu">
                                     <i class="fa-solid fa-plus"></i> Dodaj
                                 </button>
                             </div>
-                            <div class="preset-chip-bar">
-                                <button type="button" class="preset-chip-btn" data-preset="Čelik">+ Čelik</button>
-                                <button type="button" class="preset-chip-btn" data-preset="Crno">+ Crno</button>
-                                <button type="button" class="preset-chip-btn" data-preset="INOX">+ INOX</button>
-                                <button type="button" class="preset-chip-btn" data-preset="Hardox">+ Hardox</button>
-                                <button type="button" class="preset-chip-btn" data-preset="Strenx">+ Strenx</button>
-                                <button type="button" class="preset-chip-btn" data-preset="Aluminij">+ Aluminij</button>
-                                <button type="button" class="preset-chip-btn" data-preset="Pocinčano">+ Pocinčano</button>
+                            <div class="chip-validation-hint"></div>
+                            <div class="thickness-quick-bar mt-2">
+                                <span class="thickness-bar-label"><i class="fa-solid fa-layer-group me-1"></i>Materijal:</span>
+                                <button type="button" class="thickness-pill-btn material-direct-btn" data-material="Čelik" title="Čelik">+ Čelik</button>
+                                <button type="button" class="thickness-pill-btn material-direct-btn" data-material="Crno" title="Crno">+ Crno</button>
+                                <button type="button" class="thickness-pill-btn material-direct-btn" data-material="INOX" title="INOX">+ INOX</button>
+                                <button type="button" class="thickness-pill-btn material-direct-btn" data-material="Aluminij" title="Aluminij">+ Aluminij</button>
+                                <button type="button" class="thickness-pill-btn material-direct-btn" data-material="Pocinčano" title="Pocinčani lim">+ Pocinčano</button>
+                                <button type="button" class="thickness-pill-btn material-direct-btn" data-material="Hardox" title="Hardox">+ Hardox</button>
+                                <button type="button" class="thickness-pill-btn material-direct-btn" data-material="Suza lim" title="Suza lim (rebrasti lim)">+ Suza lim</button>
+                                <button type="button" class="thickness-pill-btn material-direct-btn" data-material="Strenx" title="Strenx">+ Strenx</button>
                             </div>
                         </div>
                     </div>
@@ -287,7 +348,7 @@
                 <label class="form-label text-white">Ime Operatera Lasera</label>
 				<input type="text" class="form-control text-white navigabilno" name="radnik" placeholder="Unesite ime..." value="{{ n.laser_radnik or (n.pozicije[0].laser_radnik if n.pozicije else '') }}" required oninput="this.value=this.value.replace(/[0-9]/g,'');">
 				<label class="form-label mt-3 text-white">Napomena Radnika (Opcionalno)</label>
-				<textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Ostavio sam u kutu kod vrata..." oninput="autoProsiri(this)">{{ n.laser_napomena }}</textarea>
+				<textarea class="form-control text-white auto-expand navigabilno" name="radnik_napomena" placeholder="Npr. Ostavio sam u kutu kod vrata..." oninput="autoProsiri(this)">{{ n.laser_napomena or '' }}</textarea>
             </div>
             <div class="col-md-8 ms-auto text-end d-flex gap-2 justify-content-end align-items-end h-100 mob-col-btn" style="padding-top: 30px;">
                 <button type="submit" name="akcija" value="zavrsi_odmah" class="btn btn-success fw-bold px-3">&check; Završi (Na Pregled)</button>

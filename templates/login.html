@@ -2,14 +2,30 @@
 {% block login_content %}
 <div class="login-wrapper">
     <div class="login-box text-center position-relative">
-        <a href="/" class="btn btn-sm btn-outline-secondary position-absolute top-0 start-0 m-3 border-0 text-muted" title="Nazad na početak"><i class="fa-solid fa-arrow-left fs-5"></i></a>
-        <img src="/logo.png" class="mb-4 mt-2" style="max-height: 70px;">
-        <h4 class="fw-bold mb-4 text-info">Upravljačka Ploča</h4>
-        {% if poruka %}<div class="alert alert-danger py-2 small">{{ poruka }}</div>{% endif %}
+        <a href="/" class="btn btn-sm btn-outline-secondary position-absolute top-0 start-0 m-3 border-0 text-muted" title="Nazad na Monitor Pogona">
+            <i class="fa-solid fa-arrow-left fs-5"></i>
+        </a>
+        <img src="/logo.png" class="mb-3 mt-2" style="max-height: 64px;" alt="FirstCutLaser">
+        <div class="mb-4">
+            <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-1 mb-2">AUTORIZIRANI PRISTUP</span>
+            <h4 class="fw-bold text-white mb-1">Upravljačka Ploča</h4>
+            <p class="text-muted small mb-0">Prijava za voditelje proizvodnje i administratore</p>
+        </div>
+        {% if poruka %}
+            <div class="alert alert-danger py-2 small fw-bold"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ poruka }}</div>
+        {% endif %}
         <form method="POST">
-            <div class="mb-3 text-start"><label class="form-label">Korisničko ime</label><input type="text" class="form-control" name="username" placeholder="admin" required></div>
-            <div class="mb-4 text-start"><label class="form-label">Lozinka</label><input type="password" class="form-control" name="password" placeholder="•••••••••" required></div>
-            <button type="submit" class="btn btn-info text-white w-100 py-2 fw-bold mb-2">Prijavi se u Upravljanje</button>
+            <div class="mb-3 text-start">
+                <label class="form-label"><i class="fa-solid fa-user text-info me-1"></i> Korisničko ime</label>
+                <input type="text" class="form-control" name="username" placeholder="Unesite korisničko ime..." required autofocus>
+            </div>
+            <div class="mb-4 text-start">
+                <label class="form-label"><i class="fa-solid fa-key text-info me-1"></i> Lozinka</label>
+                <input type="password" class="form-control" name="password" placeholder="•••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-info text-dark w-100 py-2 fw-bold mb-2 shadow" style="border-radius: 10px;">
+                <i class="fa-solid fa-right-to-bracket me-2"></i>Prijavi se u Upravljanje
+            </button>
         </form>
     </div>
 </div>

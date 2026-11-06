@@ -1,90 +1,306 @@
 {% extends "base.html" %}
 {% block content %}
-<h3 class="mb-4 fw-bold text-danger"><i class="fa-solid fa-terminal me-2"></i> DEVELOPER TERMINAL</h3>
-<div class="row mb-4">
-    <div class="col-md-6 mb-3">
+<!-- SECTOR HERO BANNER -->
+<div class="sector-hero-banner" style="border-left: 4px solid #ef4444;">
+    <div class="sector-hero-left">
+        <div class="sector-hero-icon laser">
+            <i class="fa-solid fa-terminal"></i>
+        </div>
+        <div>
+            <h1 class="sector-hero-title">SUSTAVSKA DIJAGNOSTIKA I UPRAVLJANJE (DEV PANEL)</h1>
+            <p class="sector-hero-sub">Nadzorna konzola poslužitelja, sigurnosnih protokola, baze podataka i globalnih obavijesti</p>
+        </div>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge bg-dark border border-info border-opacity-50 text-info px-3 py-2 font-monospace">
+            <i class="fa-solid fa-code-commit me-1"></i>STATE: v{{ state_version|default(0) }}
+        </span>
+        {% if maint_status == '1' %}
+        <span class="status-chip status-chip-paused">
+            <i class="fa-solid fa-lock text-warning"></i><span>REŽIM ODRŽAVANJA AKTIVAN</span>
+        </span>
+        {% else %}
+        <span class="status-chip status-chip-active">
+            <i class="fa-solid fa-circle-check text-success"></i><span>PRODUKCIJA AKTIVNA</span>
+        </span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 4 TELEMETRIJSKE KPI KARTICE -->
+<div class="fcl-kpi-grid">
+    <div class="fcl-kpi-card kpi-cyan">
+        <div>
+            <div class="fcl-kpi-label">Motor Baze Podataka</div>
+            <div class="fcl-kpi-val">WAL Mode</div>
+            <div class="fcl-kpi-sub">Veličina baze: <b class="text-white">{{ db_velicina_mb }} MB</b></div>
+        </div>
+        <div class="fcl-kpi-icon text-info"><i class="fa-solid fa-database"></i></div>
+    </div>
+    <div class="fcl-kpi-card kpi-red">
+        <div>
+            <div class="fcl-kpi-label">Pohrana Nacrta (PDF/DXF)</div>
+            <div class="fcl-kpi-val">{{ broj_datoteka_nacrta|default(0) }} <span class="fs-6 text-muted fw-normal">dat.</span></div>
+            <div class="fcl-kpi-sub">Zauzeće diska: <b class="text-white">{{ nacrti_velicina_mb|default(0) }} MB</b></div>
+        </div>
+        <div class="fcl-kpi-icon text-danger"><i class="fa-solid fa-folder-tree"></i></div>
+    </div>
+    <div class="fcl-kpi-card kpi-green">
+        <div>
+            <div class="fcl-kpi-label">Evidencija Naloga</div>
+            <div class="fcl-kpi-val">{{ uk_naloga }} <span class="fs-6 text-muted fw-normal">ukupno</span></div>
+            <div class="fcl-kpi-sub">Aktivno: <b class="text-info">{{ aktivnih_naloga_broj|default(0) }}</b> &bull; Arhiva: <b class="text-white">{{ arhiviranih_naloga_broj|default(0) }}</b></div>
+        </div>
+        <div class="fcl-kpi-icon text-success"><i class="fa-solid fa-layer-group"></i></div>
+    </div>
+    <div class="fcl-kpi-card kpi-amber">
+        <div>
+            <div class="fcl-kpi-label">Sigurnost i Backup</div>
+            <div class="fcl-kpi-val">{{ backup_lista|length if backup_lista else 0 }} <span class="fs-6 text-muted fw-normal">kopija</span></div>
+            <div class="fcl-kpi-sub">Blokirani terminali: <b class="text-warning">{{ blokade|length }}</b></div>
+        </div>
+        <div class="fcl-kpi-icon text-warning"><i class="fa-solid fa-shield-halved"></i></div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4 align-items-stretch">
+    <!-- LIJEVI STUPAC: REŽIM ODRŽAVANJA & GLOBALNI BROADCAST TICKER -->
+    <div class="col-lg-6 d-flex flex-column gap-4">
         
-        <div class="card mb-3" style="border-top: 4px solid #8b5cf6;">
-            <div class="card-header-custom"><h6 class="mb-0 fw-bold" style="color: #c4b5fd;"><i class="fa-solid fa-power-off me-2"></i> Maintenance Mode (Održavanje)</h6></div>
-            <div class="card-body p-4 text-center">
+        <!-- MODUL 1: MAINTENANCE MODE -->
+        <div class="card mb-0" style="border-top: 4px solid #8b5cf6;">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold" style="color: #c4b5fd;">
+                    <i class="fa-solid fa-power-off me-2"></i>Upravljanje Režimom Rada Pogona (Maintenance Mode)
+                </h6>
+                <span class="badge bg-dark border border-secondary text-white-50">Pristup terminalima</span>
+            </div>
+            <div class="card-body p-4">
                 {% if maint_status == '1' %}
-                    <div class="alert alert-warning fw-bold mb-4" style="background: rgba(245, 158, 11, 0.1); color: #fcd34d; border: 1px solid #f59e0b;"><i class="fa-solid fa-triangle-exclamation me-2"></i> Pogon je trenutno ZAKLJUČAN za radnike!</div>
+                    <div class="p-3 rounded-3 mb-3 d-flex align-items-center gap-3" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4);">
+                        <i class="fa-solid fa-triangle-exclamation text-warning fs-2"></i>
+                        <div>
+                            <div class="fw-bold text-warning">POGON JE TRENUTNO ZAKLJUČAN (REŽIM ODRŽAVANJA)</div>
+                            <div class="small text-white-50">Svi terminali u pogonu (Laser 1, Laser 2, Bravarija, Monitor) preusmjereni su na ekran održavanja.</div>
+                        </div>
+                    </div>
                     <form method="POST">
                         <input type="hidden" name="maint_status" value="0">
-                        <button type="submit" name="akcija" value="toggle_maint" class="btn btn-success fw-bold px-4 py-2 shadow"><i class="fa-solid fa-play me-2"></i> Vrati pogon u normalan rad</button>
+                        <button type="submit" name="akcija" value="toggle_maint" class="btn btn-success w-100 fw-bold py-2 shadow">
+                            <i class="fa-solid fa-play me-2"></i>Otključaj Pogon i Vrati u Produkciju
+                        </button>
                     </form>
                 {% else %}
-                    <div class="alert alert-success fw-bold mb-4" style="background: rgba(22, 163, 74, 0.1); color: #86efac; border: 1px solid #16a34a;"><i class="fa-solid fa-check-circle me-2"></i> Pogon normalno radi. Svi ekrani su dostupni.</div>
-                    <button type="button" class="btn btn-danger fw-bold px-4 py-2 shadow" data-bs-toggle="modal" data-bs-target="#maintModal"><i class="fa-solid fa-lock me-2"></i> Zaključaj Pogon (Održavanje)</button>
+                    <div class="p-3 rounded-3 mb-3 d-flex align-items-center gap-3" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.35);">
+                        <i class="fa-solid fa-circle-check text-success fs-2"></i>
+                        <div>
+                            <div class="fw-bold text-success">POGON NORMALNO RADI (SVI TERMINALI DOSTUPNI)</div>
+                            <div class="small text-white-50">Radne stanice u pogonu i upravi nesmetano sinkroniziraju podatke u stvarnom vremenu.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-danger w-100 fw-bold py-2 shadow" data-bs-toggle="modal" data-bs-target="#maintModal">
+                        <i class="fa-solid fa-lock me-2"></i>Zaključaj Pogon (Prebaci u Režim Održavanja)
+                    </button>
                 {% endif %}
             </div>
         </div>
 
-        <div class="card" style="border-top: 4px solid #ef4444;">
-            <div class="card-header-custom"><h6 class="mb-0 fw-bold text-danger"><i class="fa-solid fa-bullhorn me-2"></i> Globalni Pogon Broadcast (Ticker)</h6></div>
+        <!-- MODUL 2: GLOBALNI POGON BROADCAST (TICKER) -->
+        <div class="card mb-0 flex-grow-1" style="border-top: 4px solid #ef4444;">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-danger">
+                    <i class="fa-solid fa-bullhorn me-2"></i>Globalni Pogon Broadcast (Ticker Obavijesti)
+                </h6>
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">Svi ekrani u pogonu</span>
+            </div>
             <div class="card-body p-4">
                 {% if aktivna_obavijest %}
-                    <div class="alert p-3 mb-4 rounded-3 border border-danger" style="background-color: rgba(220, 53, 69, 0.1);">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <b class="text-danger"><i class="fa-solid fa-broadcast-tower me-2"></i>Trenutno Aktivna Obavijest:</b>
-                            <span class="badge bg-danger fs-6" id="dev-ticker-timer" data-do="{{ aktivna_obavijest_do }}">--:--:--</span>
+                    <div class="p-3 mb-4 rounded-3 border border-danger" style="background: rgba(239, 68, 68, 0.1);">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                            <span class="text-danger fw-bold small text-uppercase"><i class="fa-solid fa-tower-broadcast pulse-live me-1"></i> Trenutno aktivna obavijest u pogonu:</span>
+                            <span class="badge bg-danger font-monospace px-3 py-1" id="dev-ticker-timer" data-do="{{ aktivna_obavijest_do }}">--:--:--</span>
                         </div>
-                        <span class="text-white fs-5 fw-bold mt-2 d-block">{{ aktivna_obavijest }}</span>
-                        <form method="POST" class="mt-3"><button type="submit" name="akcija" value="ugasi_ticker" class="btn btn-sm btn-danger fw-bold px-3"><i class="fa-solid fa-xmark me-1"></i> Ugasi Trenutno</button></form>
+                        <div class="text-white fs-5 fw-bold my-2 p-2 rounded" style="background: rgba(0,0,0,0.3);">{{ aktivna_obavijest }}</div>
+                        <form method="POST" class="mt-2">
+                            <button type="submit" name="akcija" value="ugasi_ticker" class="btn btn-sm btn-danger fw-bold px-3">
+                                <i class="fa-solid fa-xmark me-1"></i>Ugasi Aktivnu Obavijest Odmah
+                            </button>
+                        </form>
                     </div>
                 {% endif %}
+
                 <form method="POST">
-                    <label class="form-label text-white">Tekst obavijesti (Prikazuje se na svim ekranima)</label>
-                    <input type="text" class="form-control mb-4 border-danger text-white" name="ticker_tekst" placeholder="Npr. Hitno gašenje servera..." required>
+                    <label class="form-label text-white fw-bold mb-1">Tekst obavijesti za pogon</label>
+                    <input type="text" id="dev_ticker_input" class="form-control mb-2 border-danger text-white" name="ticker_tekst" placeholder="Upišite poruku ili kliknite na brzi predložak ispod..." required>
                     
-                    <label class="form-label text-white d-flex justify-content-between">
-                        <span>Trajanje obavijesti</span>
-                        <span class="badge bg-danger fs-6" id="sliderText" style="min-width: 80px;">1h 0m</span>
+                    <div class="mb-3">
+                        <span class="text-muted small d-block mb-1" style="font-size: 0.72rem;">Brzi predlošci poruka:</span>
+                        <div class="d-flex flex-wrap gap-1">
+                            <button type="button" class="dev-preset-pill" onclick="postaviTickerTekst('HITNO: Kratki sastanak svih operatera u pogonu za 10 minuta.')">⚡ Sastanak u pogonu</button>
+                            <button type="button" class="dev-preset-pill" onclick="postaviTickerTekst('OBAVIJEST: Kratkotrajno održavanje servera — molimo spremite trenutni rad.')">🔧 Održavanje servera</button>
+                            <button type="button" class="dev-preset-pill" onclick="postaviTickerTekst('PAŽNJA: Obavezno upisujte točnu debljinu i materijal svake uložene ploče!')">📏 Kontrola ploča</button>
+                        </div>
+                    </div>
+
+                    <label class="form-label text-white d-flex justify-content-between align-items-center mb-1">
+                        <span>Trajanje prikaza obavijesti</span>
+                        <span class="badge bg-danger fs-6 font-monospace" id="sliderText" style="min-width: 90px;">1h 0m</span>
                     </label>
-                    <div class="mb-4 mt-2 px-2">
+                    <div class="mb-2 px-1">
                         <input type="range" class="form-range" id="trajanjeSlider" name="trajanje_minuta" min="1" max="4320" value="60" oninput="updateSlider(this.value)">
-                        <div class="d-flex justify-content-between text-muted small mt-1"><span>1 min</span><span>72 h+</span></div>
+                        <div class="d-flex justify-content-between text-muted small"><span>1 min</span><span>72 sata</span></div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1 mb-4">
+                        <button type="button" class="dev-preset-pill" onclick="postaviTrajanjeTickera(15)">15 min</button>
+                        <button type="button" class="dev-preset-pill" onclick="postaviTrajanjeTickera(30)">30 min</button>
+                        <button type="button" class="dev-preset-pill active" onclick="postaviTrajanjeTickera(60)">1 sat</button>
+                        <button type="button" class="dev-preset-pill" onclick="postaviTrajanjeTickera(120)">2 sata</button>
+                        <button type="button" class="dev-preset-pill" onclick="postaviTrajanjeTickera(240)">4 sata</button>
+                        <button type="button" class="dev-preset-pill" onclick="postaviTrajanjeTickera(480)">8 sati (Smjena)</button>
+                        <button type="button" class="dev-preset-pill" onclick="postaviTrajanjeTickera(1440)">24 sata</button>
                     </div>
                     
-                    <button type="submit" name="akcija" value="lansiraj_ticker" class="btn btn-danger w-100 fw-bold"><i class="fa-solid fa-rocket me-2"></i> Lansiraj Obavijest</button>
+                    <button type="submit" name="akcija" value="lansiraj_ticker" class="btn btn-danger w-100 fw-bold py-2 shadow">
+                        <i class="fa-solid fa-rocket me-2"></i>Lansiraj Obavijest na Sve Ekrane
+                    </button>
                 </form>
             </div>
         </div>
     </div>
     
-    <div class="col-md-6 mb-3">
-        <div class="card mb-3" style="border-top: 4px solid #facc15;">
-            <div class="card-header-custom"><h6 class="mb-0 fw-bold text-warning"><i class="fa-solid fa-shield-halved me-2"></i> Blokirani Uređaji (Security)</h6></div>
+    <!-- DESNI STUPAC: SIGURNOST TERMINALA & ZDRAVLJE BAZE PODATAKA -->
+    <div class="col-lg-6 d-flex flex-column gap-4">
+        
+        <!-- MODUL 3: BLOKIRANI UREĐAJI (SECURITY SHIELD) -->
+        <div class="card mb-0" style="border-top: 4px solid #facc15;">
+            <div class="card-header-custom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0 fw-bold text-warning">
+                    <i class="fa-solid fa-shield-halved me-2"></i>Sigurnosni Štit i Blokirani Terminali (PIN Zaštita)
+                </h6>
+                {% if blokade %}
+                <form method="POST" class="m-0">
+                    <button type="submit" name="akcija" value="odblokiraj_sve" class="btn btn-sm btn-outline-warning fw-bold py-1 px-2">
+                        <i class="fa-solid fa-unlock me-1"></i>Odblokiraj sve ({{ blokade|length }})
+                    </button>
+                </form>
+                {% endif %}
+            </div>
             <div class="card-body p-3">
-                {% if not blokade %}<p class="text-muted mb-0">Trenutno nema uređaja koji su pogriješili PIN 5 puta.</p>
+                {% if not blokade %}
+                    <div class="p-3 rounded-3 d-flex align-items-center gap-3" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);">
+                        <i class="fa-solid fa-user-shield text-success fs-3"></i>
+                        <div>
+                            <div class="text-white fw-bold small">Nema blokiranih uređaja ni sumnjivih pokušaja prijave</div>
+                            <div class="text-muted small">Sustav automatski zaključava terminal na 24h nakon 5 pogrešnih unosa PIN-a.</div>
+                        </div>
+                    </div>
                 {% else %}
-                    <div class="table-responsive"><table class="table table-sm text-white table-hover mb-0">
-                        <thead><tr style="border-bottom: 2px solid #2d3446;"><th class="text-muted py-2">IP Otklj. Hash</th><th class="text-muted py-2">Istječe u</th><th class="text-muted py-2">Akcija</th></tr></thead>
-                        <tbody>
-                            {% for b in blokade %}
-                            <tr>
-                                <td class="small font-monospace text-white align-middle">{{ b.kratki_ip }}...</td>
-                                <td class="small text-info align-middle">{{ b.prikaz_vremena }}</td>
-                                <td class="align-middle"><form method="POST" class="m-0"><input type="hidden" name="ip_adresa" value="{{ b.ip_adresa }}"><button type="submit" name="akcija" value="odblokiraj" class="btn btn-sm btn-outline-warning py-1">Odblokiraj</button></form></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm text-white align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Otisak uređaja (Hash)</th>
+                                    <th>Pokušaji</th>
+                                    <th>Status / Istječe</th>
+                                    <th class="text-end">Akcija</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for b in blokade %}
+                                <tr>
+                                    <td class="small font-monospace text-info">{{ b.kratki_ip }}...</td>
+                                    <td><span class="badge {% if b.pokusaji >= 5 %}bg-danger{% else %}bg-warning text-dark{% endif %}">{{ b.pokusaji }} / 5</span></td>
+                                    <td class="small text-white-50">{{ b.prikaz_vremena }}</td>
+                                    <td class="text-end">
+                                        <form method="POST" class="m-0 d-inline">
+                                            <input type="hidden" name="ip_adresa" value="{{ b.ip_adresa }}">
+                                            <button type="submit" name="akcija" value="odblokiraj" class="btn btn-sm btn-outline-warning py-1 px-2 fw-bold">Resetiraj</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 {% endif %}
             </div>
         </div>
-        <div class="card" style="border-top: 4px solid #38bdf8;">
-            <div class="card-header-custom"><h6 class="mb-0 fw-bold text-info"><i class="fa-solid fa-database me-2"></i> Zdravlje Baze Podataka</h6></div>
-            <div class="card-body p-3">
-                <ul class="list-group list-group-flush" style="background: transparent;">
-                    <li class="list-group-item d-flex justify-content-between text-white" style="background: transparent; border-color: #222736;">Veličina Datoteke: <b class="text-info">{{ db_velicina_mb }} MB</b></li>
-                    <li class="list-group-item d-flex justify-content-between text-white" style="background: transparent; border-color: #222736;">Ukupno Naloga u bazi: <b class="text-info">{{ uk_naloga }}</b></li>
-                    <li class="list-group-item d-flex justify-content-between text-white" style="background: transparent; border-color: #222736;">Ukupno Pozicija u bazi: <b class="text-info">{{ uk_pozicija }}</b></li>
-                </ul>
-                <div class="mt-3 pt-3 border-top border-secondary border-opacity-25">
-                    <a href="/preuzmi_backup_baze" class="btn btn-outline-info w-100 fw-bold py-2"><i class="fa-solid fa-cloud-arrow-down me-2"></i>Preuzmi Sigurnosnu Kopiju Baze (.db)</a>
+
+        <!-- MODUL 4: ZDRAVLJE BAZE PODATAKA I SIGURNOSNE KOPIJE -->
+        <div class="card mb-0 flex-grow-1" style="border-top: 4px solid #38bdf8;">
+            <div class="card-header-custom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-info">
+                    <i class="fa-solid fa-database me-2"></i>Zdravlje Baze Podataka i Trezor Sigurnosnih Kopija
+                </h6>
+                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">SQLite WAL</span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-2 mb-3">
+                    <div class="col-sm-6">
+                        <div class="p-2 px-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
+                            <span class="text-muted small d-block">Glavna baza (`proizvodnja.db`)</span>
+                            <b class="text-info fs-5">{{ db_velicina_mb }} MB</b> <span class="text-muted small">/ 50 MB preporučeno</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-2 px-3 rounded-3" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);">
+                            <span class="text-muted small d-block">Ukupno stavki u bazi</span>
+                            <b class="text-white fs-5">{{ uk_naloga }}</b> <span class="text-muted small">naloga &bull;</span> <b class="text-info fs-5">{{ uk_pozicija }}</b> <span class="text-muted small">pozicija</span>
+                        </div>
+                    </div>
                 </div>
-                <small class="text-muted d-block mt-3">* Preporuka je arhivirati stare naloge ako baza prijeđe 50 MB kako bi pogon radio maksimalnom brzinom.</small>
+
+                <!-- AKCIJSKI GUMBI ZA BAZU -->
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <a href="/preuzmi_backup_baze" class="btn btn-info text-dark fw-bold flex-fill py-2 shadow-sm">
+                        <i class="fa-solid fa-cloud-arrow-down me-1"></i>Preuzmi Kopiju (.db)
+                    </a>
+                    <form method="POST" class="m-0 flex-fill">
+                        <button type="submit" name="akcija" value="kreiraj_backup" class="btn btn-outline-info w-100 fw-bold py-2">
+                            <i class="fa-solid fa-floppy-disk me-1"></i>Spremi Lokalni Backup
+                        </button>
+                    </form>
+                    <form method="POST" class="m-0 flex-fill">
+                        <button type="submit" name="akcija" value="optimiziraj_bazu" class="btn btn-outline-success w-100 fw-bold py-2" title="Izvršava WAL Checkpoint i VACUUM baze">
+                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Optimiziraj (VACUUM)
+                        </button>
+                    </form>
+                </div>
+
+                <!-- POPIS ZADNJIH SIGURNOSNIH KOPIJA -->
+                <h6 class="text-muted small fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;">
+                    <i class="fa-solid fa-clock-rotate-left text-info me-1"></i>Zadnje Sigurnosne Kopije na Serveru (`sigurnosne_kopije/`)
+                </h6>
+                {% if not backup_lista %}
+                    <p class="text-muted small mb-0">Trenutno nema spremljenih kopija u mapi.</p>
+                {% else %}
+                    <div class="table-responsive" style="max-height: 210px; overflow-y: auto;">
+                        <table class="table table-sm text-white align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Datoteka</th>
+                                    <th>Vrijeme</th>
+                                    <th>Veličina</th>
+                                    <th class="text-end">Preuzmi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bk in backup_lista %}
+                                <tr>
+                                    <td class="small font-monospace text-white-50 text-truncate" style="max-width: 190px;">{{ bk.filename }}</td>
+                                    <td class="small text-info">{{ bk.vrijeme }}</td>
+                                    <td class="small text-muted">{{ bk.velicina_kb }} KB</td>
+                                    <td class="text-end">
+                                        <a href="/preuzmi_backup_datoteku/{{ bk.filename }}" class="btn btn-sm btn-outline-info py-0 px-2" title="Preuzmi ovu kopiju">
+                                            <i class="fa-solid fa-download"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -99,13 +315,13 @@
       </div>
       <div class="modal-body text-center p-4 pt-0">
         <i class="fa-solid fa-triangle-exclamation text-danger mb-3" style="font-size: 3rem;"></i>
-        <h4 class="text-white fw-bold mb-3">Zaključavanje pogona</h4>
-        <p class="text-muted mb-4">Ova akcija će momentalno izbaciti <b>sve radnike</b> sa svih stanica na stranicu održavanja. Jesi li siguran da želiš pauzirati cijeli pogon?</p>
+        <h4 class="text-white fw-bold mb-3">Zaključavanje pogona u Režim Održavanja</h4>
+        <p class="text-muted mb-4">Ova akcija će momentalno prebaciti <b>sve radne stanice</b> na ekran održavanja. Svi uneseni podaci u bazi ostaju sigurno spremljeni.</p>
         <div class="d-flex justify-content-center gap-3">
             <button type="button" class="btn btn-outline-secondary px-4 fw-bold text-white" data-bs-dismiss="modal">Odustani</button>
             <form method="POST" class="m-0">
                 <input type="hidden" name="maint_status" value="1">
-                <button type="submit" name="akcija" value="toggle_maint" class="btn btn-danger fw-bold px-4 shadow">Da, prebaci u Maintenance</button>
+                <button type="submit" name="akcija" value="toggle_maint" class="btn btn-danger fw-bold px-4 shadow">Da, Zaključaj Pogon</button>
             </form>
         </div>
       </div>
@@ -115,13 +331,32 @@
 
 <script>
     function updateSlider(mins) {
-        var h = Math.floor(mins / 60);
-        var m = mins % 60;
+        var mNum = parseInt(mins, 10) || 1;
+        var h = Math.floor(mNum / 60);
+        var m = mNum % 60;
         var text = "";
         if (h > 0) text += h + "h ";
         text += m + "m";
-        document.getElementById('sliderText').innerText = text;
+        var el = document.getElementById('sliderText');
+        if (el) el.innerText = text;
     }
-    window.addEventListener('DOMContentLoaded', (event) => { updateSlider(document.getElementById('trajanjeSlider').value); });
+    function postaviTrajanjeTickera(mins) {
+        var slider = document.getElementById('trajanjeSlider');
+        if (slider) {
+            slider.value = mins;
+            updateSlider(mins);
+        }
+    }
+    function postaviTickerTekst(tekst) {
+        var inp = document.getElementById('dev_ticker_input');
+        if (inp) {
+            inp.value = tekst;
+            inp.focus();
+        }
+    }
+    window.addEventListener('DOMContentLoaded', function() {
+        var sl = document.getElementById('trajanjeSlider');
+        if (sl) updateSlider(sl.value);
+    });
 </script>
 {% endblock %}
