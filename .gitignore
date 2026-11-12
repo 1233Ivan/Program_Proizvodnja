@@ -5,8 +5,9 @@ proizvodnja.db-shm
 proizvodnja.db-journal
 
 # Produkcijski nacrti i automatske sigurnosne kopije
-pohrana_nacrta/
-sigurnosne_kopije/
+/pohrana_nacrta/
+/sigurnosne_kopije/
+/Slike/
 
 # Python cache
 __pycache__/
