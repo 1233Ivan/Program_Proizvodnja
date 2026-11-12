@@ -280,7 +280,7 @@
                         <th>Naziv Naloga / Projekt</th>
                         <th>Debljina</th>
                         <th>Pozicija</th>
-                        <th>Slijedeća faza</th>
+                        <th>Sljedeća faza</th>
                         <th class="text-end">Status</th>
                     </tr>
                 </thead>
@@ -294,7 +294,7 @@
                         </td>
                         <td><span class="badge bg-dark text-info border border-info border-opacity-25">{{ n.debljina_ploce or '-' }}</span></td>
                         <td><span class="text-white-50 small">{{ n.pozicije|length }} poz.</span></td>
-                        <td><span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-40"><i class="fa-solid fa-fire me-1"></i> Laser</span></td>
+                        <td><span class="badge bg-danger bg-opacity-10 border border-danger border-opacity-50 px-2 py-1 d-inline-flex align-items-center gap-1" style="color: #fca5a5; font-weight: 700;"><i class="fa-solid fa-fire" style="color: #f87171;"></i> Laser</span></td>
                         <td class="text-end"><span class="badge bg-dark border border-secondary text-white-50">Čeka rezanje</span></td>
                     </tr>
                     {% endfor %}
@@ -307,7 +307,7 @@
                         </td>
                         <td><span class="badge bg-dark text-info border border-info border-opacity-25">{{ n.debljina_ploce or '-' }}</span></td>
                         <td><span class="text-white-50 small">{{ n.pozicije|length }} poz.</span></td>
-                        <td><span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-40"><i class="fa-solid fa-hammer me-1"></i> Bravarija</span></td>
+                        <td><span class="badge bg-warning bg-opacity-10 border border-warning border-opacity-50 px-2 py-1 d-inline-flex align-items-center gap-1" style="color: #fde68a; font-weight: 700;"><i class="fa-solid fa-hammer" style="color: #fbbf24;"></i> Bravarija</span></td>
                         <td class="text-end"><span class="badge bg-dark border border-secondary text-white-50">Čeka doradu</span></td>
                     </tr>
                     {% endfor %}
