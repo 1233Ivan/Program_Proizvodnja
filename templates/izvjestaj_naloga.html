@@ -13,6 +13,7 @@
             --bg-card: #171b26;
             --bg-card-alt: #1a1f2e;
             --border-color: #262c3d;
+            --border-strong: #3b445b;
             --text-main: #f8fafc;
             --text-secondary: #cbd5e1;
             --text-muted: #94a3b8;
@@ -29,6 +30,7 @@
             --bg-card: #f8fafc;
             --bg-card-alt: #f1f5f9;
             --border-color: #cbd5e1;
+            --border-strong: #94a3b8;
             --text-main: #0f172a;
             --text-secondary: #1e293b;
             --text-muted: #64748b;
@@ -133,82 +135,97 @@
             box-shadow: 0 15px 45px rgba(0, 0, 0, 0.35);
         }
 
-        /* ZAGLAVLJE IZVJEŠTAJA */
+        /* ZAGLAVLJE IZVJEŠTAJA (Dvorazinski raspored bez mogućnosti preklapanja) */
         .report-header {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-bottom: 16px;
+            margin-bottom: 22px;
+            border-bottom: 2px solid var(--border-color);
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        .report-header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 20px;
-            margin-bottom: 24px;
-            border-bottom: 2px solid var(--border-color);
             gap: 16px;
+            flex-wrap: wrap;
         }
         .brand-box {
             display: flex;
             align-items: center;
             gap: 14px;
+            flex: 1 1 280px;
             min-width: 0;
         }
         .logo-wrap {
             background: #12141c;
             border: 1px solid #2d3446;
-            padding: 8px 14px;
+            padding: 7px 12px;
             border-radius: 10px;
             display: inline-flex;
             align-items: center;
             flex-shrink: 0;
         }
         .logo-img {
-            max-height: 44px;
+            max-height: 40px;
             width: auto;
             display: block;
         }
         .brand-titles {
             min-width: 0;
+            flex: 1 1 auto;
         }
         .brand-titles h1 {
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1.12rem;
             font-weight: 800;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.25px;
             color: var(--text-main);
-            white-space: nowrap;
+            line-height: 1.25;
+            white-space: normal;
+            overflow-wrap: break-word;
         }
         .brand-titles p {
-            margin: 4px 0 0 0;
-            font-size: 0.72rem;
+            margin: 3px 0 0 0;
+            font-size: 0.7rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.55px;
+            letter-spacing: 0.5px;
             color: var(--accent-cyan);
-            white-space: nowrap;
+            line-height: 1.3;
+            white-space: normal;
         }
         .order-meta-right {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 8px;
+            justify-content: center;
+            gap: 6px;
             text-align: right;
-            flex-shrink: 0;
+            flex: 0 1 auto;
+            max-width: 100%;
         }
         .order-badges-row {
             display: inline-flex;
             align-items: center;
             justify-content: flex-end;
             gap: 8px;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
         }
         .order-id-pill {
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            height: 32px;
+            height: 31px;
             background: rgba(239, 68, 68, 0.12);
             border: 1px solid rgba(239, 68, 68, 0.45);
             color: var(--accent-red);
-            font-size: 0.96rem;
+            font-size: 0.92rem;
             font-weight: 800;
-            padding: 0 13px;
+            padding: 0 12px;
             border-radius: 8px;
             white-space: nowrap;
             font-variant-numeric: tabular-nums;
@@ -217,28 +234,52 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            height: 32px;
+            height: 31px;
             background: rgba(16, 185, 129, 0.14);
             border: 1px solid rgba(16, 185, 129, 0.45);
             color: #10b981;
-            font-size: 0.73rem;
+            font-size: 0.72rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 0 12px;
+            letter-spacing: 0.45px;
+            padding: 0 11px;
             border-radius: 8px;
             white-space: nowrap;
         }
+        .status-pill.status-paused {
+            background: rgba(245, 158, 11, 0.14);
+            border-color: rgba(245, 158, 11, 0.45);
+            color: #d97706;
+        }
+        body:not(.light-mode) .status-pill.status-paused {
+            color: #fbbf24;
+        }
+        .status-pill.status-active {
+            background: rgba(13, 202, 240, 0.14);
+            border-color: rgba(13, 202, 240, 0.45);
+            color: #0284c7;
+        }
+        body:not(.light-mode) .status-pill.status-active {
+            color: #38bdf8;
+        }
         .timestamps-row {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: space-between;
             flex-wrap: wrap;
-            gap: 6px;
+            gap: 8px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--border-color);
             font-size: 0.75rem;
             color: var(--text-muted);
             font-weight: 600;
             font-variant-numeric: tabular-nums;
+        }
+        .timestamps-group {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .timestamp-pill {
             display: inline-flex;
@@ -246,7 +287,7 @@
             gap: 5px;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
-            padding: 3px 9px;
+            padding: 4px 10px;
             border-radius: 6px;
             white-space: nowrap;
         }
@@ -264,15 +305,18 @@
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 14px;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
         }
         .kpi-card {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 14px 16px;
+            padding: 13px 15px;
             position: relative;
             overflow: hidden;
+            min-width: 0;
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
         .kpi-card::before {
             content: '';
@@ -290,24 +334,35 @@
             font-size: 0.7rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.5px;
             color: var(--text-muted);
             margin-bottom: 5px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
+            gap: 6px;
+            line-height: 1.25;
+        }
+        .kpi-label i {
+            flex-shrink: 0;
+            margin-top: 1px;
         }
         .kpi-value {
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 800;
             color: var(--text-main);
             line-height: 1.2;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .kpi-sub {
             margin-top: 5px;
-            font-size: 0.76rem;
+            font-size: 0.75rem;
             font-weight: 600;
             color: var(--text-muted);
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .kpi-sub b {
             color: var(--text-secondary);
@@ -324,6 +379,8 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            break-after: avoid;
+            page-break-after: avoid;
         }
         .meta-grid {
             display: grid;
@@ -336,6 +393,9 @@
             border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 11px 14px;
+            min-width: 0;
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
         .meta-box.span-2 {
             grid-column: span 2;
@@ -349,9 +409,11 @@
             margin-bottom: 4px;
         }
         .meta-box-val {
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             font-weight: 700;
             color: var(--text-main);
+            line-height: 1.35;
+            overflow-wrap: anywhere;
             word-break: break-word;
         }
 
@@ -369,10 +431,19 @@
             background: rgba(13, 202, 240, 0.1);
             border: 1px solid rgba(13, 202, 240, 0.35);
             color: var(--text-main);
-            font-size: 0.78rem;
+            font-size: 0.77rem;
             font-weight: 700;
             padding: 3px 9px;
             border-radius: 6px;
+            max-width: 100%;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.3;
+        }
+        .report-chip i,
+        .report-chip-num {
+            flex-shrink: 0;
         }
         .report-chip-num {
             background: rgba(13, 202, 240, 0.22);
@@ -389,9 +460,9 @@
         /* UPUTE I NAPOMENE */
         .notes-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 12px;
-            margin: 18px 0 24px 0;
+            margin: 18px 0 22px 0;
         }
         .note-card {
             background: var(--bg-card);
@@ -399,7 +470,12 @@
             border-left: 4px solid var(--accent-cyan);
             border-radius: 10px;
             padding: 12px 15px;
+            min-width: 0;
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
+        .me-1 { margin-right: 5px; }
+
         .note-card.note-laser { border-left-color: var(--accent-red); }
         .note-card.note-bravarija { border-left-color: var(--accent-amber); }
         .note-title {
@@ -410,14 +486,22 @@
             color: var(--text-muted);
             margin-bottom: 5px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 6px;
+            line-height: 1.3;
+        }
+        .note-title i {
+            flex-shrink: 0;
+            margin-top: 2px;
         }
         .note-body {
-            font-size: 0.86rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-main);
             white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.45;
             margin: 0;
         }
 
@@ -426,7 +510,7 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             overflow: hidden;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
         }
         table.spec-table {
             width: 100%;
@@ -436,19 +520,21 @@
         table.spec-table thead th {
             background: var(--bg-card-alt);
             color: var(--text-secondary);
-            font-size: 0.72rem;
+            font-size: 0.71rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 11px 12px;
+            letter-spacing: 0.45px;
+            padding: 10px 10px;
             border-bottom: 2px solid var(--border-color);
             text-align: left;
+            line-height: 1.3;
         }
         table.spec-table thead th.col-phase {
             border-left: 1px solid var(--border-color);
-            text-align: center;
+            text-align: left;
         }
         table.spec-table tbody tr {
+            break-inside: avoid;
             page-break-inside: avoid;
             border-bottom: 1px solid var(--border-color);
         }
@@ -456,7 +542,7 @@
             background: rgba(148, 163, 184, 0.03);
         }
         table.spec-table tbody td {
-            padding: 10px 12px;
+            padding: 9px 10px;
             vertical-align: middle;
             color: var(--text-secondary);
         }
@@ -476,30 +562,34 @@
             font-weight: 800;
         }
         .pos-name {
+            display: block;
             font-weight: 800;
-            font-size: 0.9rem;
+            font-size: 0.86rem;
             color: var(--text-main);
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .phase-metrics {
             display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 4px;
         }
         .metric-badges {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
+            gap: 4px;
             align-items: center;
         }
         .m-pill {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 3px 8px;
+            padding: 2px 7px;
             border-radius: 6px;
-            font-size: 0.74rem;
+            font-size: 0.72rem;
             font-weight: 700;
             white-space: nowrap;
         }
@@ -521,19 +611,41 @@
             color: var(--text-muted);
         }
         .phase-time-meta {
-            font-size: 0.76rem;
+            font-size: 0.74rem;
             color: var(--text-muted);
-            text-align: right;
+            text-align: left;
             line-height: 1.35;
         }
         .phase-time-meta b {
             color: var(--text-main);
+            white-space: nowrap;
         }
-        table.spec-table tfoot td {
+        .phase-time-line {
+            display: flex;
+            flex-wrap: wrap;
+            column-gap: 10px;
+            row-gap: 2px;
+        }
+        .phase-time-seg {
+            white-space: nowrap;
+        }
+        .phase-time-total {
+            margin-top: 2px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+        table.spec-table tbody.spec-tfoot-body tr {
+            background: var(--bg-card-alt) !important;
+            border-bottom: none;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        table.spec-table tbody.spec-tfoot-body td {
             background: var(--bg-card-alt);
-            padding: 12px;
+            padding: 11px 10px;
             font-weight: 800;
-            border-top: 2px solid var(--border-color);
+            border-top: 2px solid var(--border-strong);
+            color: var(--text-main);
         }
 
         /* PRILOŽENE DATOTEKE I POTPIS */
@@ -542,19 +654,21 @@
             border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 12px 16px;
-            margin-bottom: 24px;
+            margin-bottom: 22px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
         .signature-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 28px;
-            margin-top: 32px;
-            padding-top: 16px;
+            margin-top: 28px;
+            padding-top: 14px;
+            break-inside: avoid;
             page-break-inside: avoid;
         }
         .sig-box {
@@ -564,6 +678,8 @@
             font-size: 0.75rem;
             color: var(--text-muted);
             font-weight: 600;
+            min-width: 0;
+            overflow-wrap: anywhere;
         }
         .sig-box b {
             display: block;
@@ -572,14 +688,17 @@
             margin-bottom: 2px;
         }
         .report-footer {
-            margin-top: 26px;
-            padding-top: 14px;
+            margin-top: 22px;
+            padding-top: 12px;
             border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 10px;
             font-size: 0.74rem;
             color: var(--text-muted);
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
 
         /* MOBILNI PRIKAZ NA EKRANU (ISKLJUČIVO EKRAN, NIKADA PRINT!) */
@@ -609,6 +728,9 @@
                 border-radius: 14px;
             }
             body:not(.force-a4-preview) .report-header {
+                gap: 10px;
+            }
+            body:not(.force-a4-preview) .report-header-top {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 12px;
@@ -617,6 +739,8 @@
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
+                flex: 0 0 auto;
+                width: 100%;
             }
             body:not(.force-a4-preview) .brand-titles h1,
             body:not(.force-a4-preview) .brand-titles p {
@@ -627,10 +751,15 @@
                 text-align: left;
                 width: 100%;
             }
-            body:not(.force-a4-preview) .order-badges-row,
-            body:not(.force-a4-preview) .timestamps-row {
+            body:not(.force-a4-preview) .order-badges-row {
                 justify-content: flex-start;
                 flex-wrap: wrap;
+            }
+            body:not(.force-a4-preview) .timestamps-row {
+                flex-direction: column;
+                align-items: flex-start;
+                justify-content: flex-start;
+                gap: 6px;
             }
             body:not(.force-a4-preview) .kpi-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -666,7 +795,7 @@
             }
             body:not(.force-a4-preview) table.spec-table,
             body:not(.force-a4-preview) table.spec-table tbody,
-            body:not(.force-a4-preview) table.spec-table tfoot {
+            body:not(.force-a4-preview) table.spec-table tbody.spec-tfoot-body {
                 display: block;
                 width: 100%;
             }
@@ -704,7 +833,7 @@
             body:not(.force-a4-preview) table.spec-table tbody td .phase-metrics {
                 align-items: flex-end;
             }
-            body:not(.force-a4-preview) table.spec-table tfoot tr {
+            body:not(.force-a4-preview) table.spec-table tbody.spec-tfoot-body tr {
                 display: block;
                 background: var(--bg-card-alt);
                 border: 2px solid var(--border-strong);
@@ -712,12 +841,30 @@
                 padding: 12px;
                 margin-top: 8px;
             }
-            body:not(.force-a4-preview) table.spec-table tfoot td {
+            body:not(.force-a4-preview) table.spec-table tbody.spec-tfoot-body td {
                 display: flex;
-                justify-content: space-between;
-                align-items: center;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
                 padding: 6px 0;
                 border: none;
+                border-bottom: 1px dashed var(--border-color);
+                text-align: left;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody.spec-tfoot-body td:last-child {
+                border-bottom: none;
+                padding-bottom: 0;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody.spec-tfoot-body td::before {
+                font-size: 0.7rem;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody.spec-tfoot-body td:not([data-label])::before {
+                display: none;
+                content: none;
+            }
+            body:not(.force-a4-preview) table.spec-table tbody.spec-tfoot-body td .phase-metrics {
+                align-items: flex-start;
+                width: 100%;
             }
         }
 
@@ -755,47 +902,174 @@
                 box-shadow: none !important;
             }
             .report-header {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                padding-bottom: 12px !important;
+                margin-bottom: 16px !important;
+            }
+            .report-header-top {
+                display: flex !important;
                 flex-direction: row !important;
                 justify-content: space-between !important;
                 align-items: center !important;
+                gap: 12px !important;
+                flex-wrap: nowrap !important;
             }
             .brand-box {
+                display: flex !important;
                 flex-direction: row !important;
                 align-items: center !important;
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                gap: 12px !important;
+                width: auto !important;
+            }
+            .logo-wrap {
+                padding: 6px 10px !important;
+            }
+            .logo-img {
+                max-height: 36px !important;
+            }
+            .brand-titles h1 {
+                font-size: 1.04rem !important;
+                white-space: normal !important;
+            }
+            .brand-titles p {
+                font-size: 0.67rem !important;
+                white-space: normal !important;
             }
             .order-meta-right {
+                align-items: flex-end !important;
                 text-align: right !important;
                 width: auto !important;
+                flex: 0 1 auto !important;
+                max-width: 48% !important;
+            }
+            .order-badges-row {
+                justify-content: flex-end !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+            .timestamps-row {
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding-top: 8px !important;
             }
             .kpi-grid {
                 grid-template-columns: repeat(4, 1fr) !important;
                 gap: 10px !important;
+                margin-bottom: 16px !important;
+            }
+            .kpi-card {
+                padding: 10px 12px !important;
+            }
+            .kpi-value {
+                font-size: 1.12rem !important;
             }
             .meta-grid {
                 grid-template-columns: repeat(4, 1fr) !important;
-                gap: 10px !important;
+                gap: 8px !important;
+                margin-bottom: 12px !important;
+            }
+            .meta-box {
+                padding: 9px 11px !important;
             }
             .meta-box.span-2 {
                 grid-column: span 2 !important;
             }
-            .signature-row {
-                grid-template-columns: repeat(3, 1fr) !important;
-                gap: 20px !important;
+            .notes-grid {
+                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+                gap: 10px !important;
+                margin: 12px 0 16px 0 !important;
+            }
+            .spec-table-wrap {
+                border: none !important;
+                border-radius: 0 !important;
+                overflow: visible !important;
+                margin-bottom: 16px !important;
+                background: transparent !important;
             }
             table.spec-table {
                 display: table !important;
                 width: 100% !important;
-                font-size: 0.78rem !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+                font-size: 0.76rem !important;
             }
             table.spec-table thead { display: table-header-group !important; }
-            table.spec-table tbody { display: table-row-group !important; }
-            table.spec-table tfoot { display: table-footer-group !important; }
-            table.spec-table tr { display: table-row !important; }
-            table.spec-table th, table.spec-table td {
+            table.spec-table tbody,
+            table.spec-table tbody.spec-tfoot-body { display: table-row-group !important; width: auto !important; }
+            table.spec-table tr,
+            table.spec-table tbody tr,
+            table.spec-table tbody.spec-tfoot-body tr {
+                display: table-row !important;
+                background: transparent;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                border: none;
+            }
+            table.spec-table tbody tr:nth-child(even) {
+                background: #f8fafc !important;
+            }
+            table.spec-table th,
+            table.spec-table td,
+            table.spec-table tbody td,
+            table.spec-table tbody.spec-tfoot-body td {
                 display: table-cell !important;
-                padding: 7px 8px !important;
+                padding: 6px 8px !important;
+                vertical-align: middle !important;
+                text-align: left !important;
+                border-radius: 0 !important;
+            }
+            table.spec-table thead th {
+                border-top: 1px solid #cbd5e1 !important;
+                border-bottom: 2px solid #94a3b8 !important;
+                font-size: 0.68rem !important;
+                padding: 8px 8px !important;
+            }
+            table.spec-table thead th.col-phase,
+            table.spec-table tbody td.col-phase,
+            table.spec-table tbody.spec-tfoot-body td.col-phase {
+                border-left: 1px solid #cbd5e1 !important;
+            }
+            table.spec-table th:first-child,
+            table.spec-table td:first-child {
+                border-left: 1px solid #cbd5e1 !important;
+            }
+            table.spec-table th:last-child,
+            table.spec-table td:last-child {
+                border-right: 1px solid #cbd5e1 !important;
+            }
+            table.spec-table tbody td {
+                border-bottom: 1px solid #cbd5e1 !important;
+            }
+            table.spec-table tbody.spec-tfoot-body tr {
+                background: #f1f5f9 !important;
+            }
+            table.spec-table tbody.spec-tfoot-body td {
+                background: #f1f5f9 !important;
+                border-top: 2px solid #94a3b8 !important;
+                border-bottom: 1px solid #cbd5e1 !important;
+                padding: 8px !important;
             }
             table.spec-table td::before { display: none !important; content: none !important; }
+            .pos-name { font-size: 0.8rem !important; }
+            .phase-metrics { align-items: flex-start !important; gap: 3px !important; }
+            .m-pill { font-size: 0.69rem !important; padding: 2px 6px !important; }
+            .phase-time-meta { font-size: 0.7rem !important; }
+            .signature-row {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 20px !important;
+                margin-top: 20px !important;
+            }
+            .report-footer {
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                text-align: left !important;
+            }
             .m-pill-done { color: #047857 !important; background: #dcfce7 !important; border-color: #86efac !important; }
             .m-pill-skart { color: #b91c1c !important; background: #fee2e2 !important; border-color: #fca5a5 !important; }
             .report-chip-num { color: #0284c7 !important; }
@@ -827,29 +1101,40 @@
     <!-- GLAVNI DOKUMENT -->
     <div class="report-sheet">
         <!-- ZAGLAVLJE -->
+        {% set status_upper = (n.status or '')|upper %}
+        {% set status_finished = n.status in ['Arhivirano', 'Na pregledu'] %}
+        {% set status_paused = 'PAUZ' in status_upper %}
         <div class="report-header">
-            <div class="brand-box">
-                <div class="logo-wrap">
-                    {% if logo_base64 %}
-                        <img src="data:image/{{ logo_ext }};base64,{{ logo_base64 }}" class="logo-img" alt="FirstCutLaser">
-                    {% else %}
-                        <span style="color:#ef4444; font-weight:800; font-size:1.1rem;">FIRST CUT LASER</span>
-                    {% endif %}
+            <div class="report-header-top">
+                <div class="brand-box">
+                    <div class="logo-wrap">
+                        {% if logo_base64 %}
+                            <img src="data:image/{{ logo_ext }};base64,{{ logo_base64 }}" class="logo-img" alt="FirstCutLaser">
+                        {% else %}
+                            <span style="color:#ef4444; font-weight:800; font-size:1.1rem;">FIRST CUT LASER</span>
+                        {% endif %}
+                    </div>
+                    <div class="brand-titles">
+                        <h1>PROIZVODNI IZVJEŠTAJ NALOGA</h1>
+                        <p><i class="fa-solid fa-industry me-1"></i> Sustav upravljanja proizvodnim pogonom</p>
+                    </div>
                 </div>
-                <div class="brand-titles">
-                    <h1>PROIZVODNI IZVJEŠTAJ NALOGA</h1>
-                    <p><i class="fa-solid fa-industry me-1"></i> Sustav upravljanja proizvodnim pogonom</p>
+                <div class="order-meta-right">
+                    <div class="order-badges-row">
+                        <span class="order-id-pill"><i class="fa-solid fa-file-invoice"></i> NALOG #{{ n.id }}</span>
+                        <span class="status-pill {{ '' if status_finished else 'status-paused' if status_paused else 'status-active' }}">
+                            <i class="fa-solid {{ 'fa-circle-check' if status_finished else 'fa-circle-pause' if status_paused else 'fa-clock' }}"></i>
+                            {{ 'ZAVRŠENO / ARHIVIRANO' if n.status == 'Arhivirano' else 'ZAVRŠENO (NA PREGLEDU)' if n.status == 'Na pregledu' else (n.status or '-') }}
+                        </span>
+                    </div>
                 </div>
             </div>
-            <div class="order-meta-right">
-                <div class="order-badges-row">
-                    <span class="order-id-pill"><i class="fa-solid fa-file-invoice"></i> NALOG #{{ n.id }}</span>
-                    <span class="status-pill"><i class="fa-solid fa-circle-check"></i> {{ 'ZAVRŠENO / ARHIVIRANO' if n.status == 'Arhivirano' else 'ZAVRŠENO (NA PREGLEDU)' if n.status == 'Na pregledu' else n.status }}</span>
-                </div>
-                <div class="timestamps-row">
+            <div class="timestamps-row">
+                <div class="timestamps-group">
                     <span class="timestamp-pill"><i class="fa-regular fa-calendar-plus"></i> Kreirano: <b>{{ kreirano_prikaz or '-' }}</b></span>
                     <span class="timestamp-pill"><i class="fa-regular fa-calendar-check"></i> Završeno: <b>{{ zavrseno_prikaz or 'U obradi' }}</b></span>
                 </div>
+                <span class="timestamp-pill"><i class="fa-solid fa-user-tie"></i> Kreirao: <b>{{ n.kreirao or 'Uprava' }}</b></span>
             </div>
         </div>
 
@@ -968,12 +1253,12 @@
             <table class="spec-table">
                 <thead>
                     <tr>
-                        <th style="width: 42px;">#</th>
+                        <th style="width: {{ '44px' if samo_rezanje else '42px' }};">#</th>
                         <th>Naziv Pozicije s Nacrta</th>
-                        <th style="width: 110px;">Potrebno</th>
-                        <th class="col-phase" style="width: 34%;"><i class="fa-solid fa-fire text-danger me-1"></i> Faza 1: Rezanje (Laser)</th>
+                        <th style="width: {{ '92px' if samo_rezanje else '80px' }};">Potrebno</th>
+                        <th class="col-phase" style="width: {{ '38%' if samo_rezanje else '29%' }};"><i class="fa-solid fa-fire text-danger me-1"></i> Faza 1: Rezanje (Laser)</th>
                         {% if not samo_rezanje %}
-                        <th class="col-phase" style="width: 34%;"><i class="fa-solid fa-hammer text-warning me-1"></i> Faza 2: Bravarska Obrada</th>
+                        <th class="col-phase" style="width: 29%;"><i class="fa-solid fa-hammer text-warning me-1"></i> Faza 2: Bravarska Obrada</th>
                         {% endif %}
                     </tr>
                 </thead>
@@ -1038,11 +1323,11 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                <tfoot>
+                <tbody class="spec-tfoot-body">
                     <tr>
-                        <td colspan="2">UKUPNO ZA NALOG:</td>
-                        <td>{{ (uk.cilj_ukupno ~ ' kom') if uk.cilj_ukupno > 0 else 'Po nacrtu' }}</td>
-                        <td class="col-phase">
+                        <td colspan="2" style="font-weight: 800;">UKUPNO ZA NALOG:</td>
+                        <td data-label="Potrebno ukupno">{{ (uk.cilj_ukupno ~ ' kom') if uk.cilj_ukupno > 0 else 'Po nacrtu' }}</td>
+                        <td class="col-phase" data-label="Faza 1: Ukupno">
                             <div class="phase-metrics">
                                 <div class="metric-badges">
                                     <span class="m-pill m-pill-done">Ukupno: {{ uk.laser_komada_ukupno }} kom</span>
@@ -1051,12 +1336,16 @@
                                     {% endif %}
                                 </div>
                                 <div class="phase-time-meta">
-                                    Priprema: <b>{{ uk.laser_priprema_tekst }}</b> &bull; Rezanje: <b>{{ uk.laser_rezanje_tekst }}</b> &bull; Ukupno: <b>{{ uk.laser_ukupno_tekst }}</b>
+                                    <div class="phase-time-line">
+                                        <span class="phase-time-seg">Priprema: <b>{{ uk.laser_priprema_tekst }}</b></span>
+                                        <span class="phase-time-seg">Rezanje: <b>{{ uk.laser_rezanje_tekst }}</b></span>
+                                    </div>
+                                    <div class="phase-time-total phase-time-seg">Ukupno: <b>{{ uk.laser_ukupno_tekst }}</b></div>
                                 </div>
                             </div>
                         </td>
                         {% if not samo_rezanje %}
-                        <td class="col-phase">
+                        <td class="col-phase" data-label="Faza 2: Ukupno">
                             <div class="phase-metrics">
                                 <div class="metric-badges">
                                     <span class="m-pill m-pill-done">Ukupno: {{ uk.bravarija_komada_ukupno }} kom</span>
@@ -1065,21 +1354,29 @@
                                     {% endif %}
                                 </div>
                                 <div class="phase-time-meta">
-                                    Priprema: <b>{{ uk.bravarija_priprema_tekst }}</b> &bull; Piganje: <b>{{ uk.bravarija_piganje_tekst }}</b> &bull; Ukupno: <b>{{ uk.bravarija_ukupno_tekst }}</b>
+                                    <div class="phase-time-line">
+                                        <span class="phase-time-seg">Priprema: <b>{{ uk.bravarija_priprema_tekst }}</b></span>
+                                        <span class="phase-time-seg">Piganje: <b>{{ uk.bravarija_piganje_tekst }}</b></span>
+                                    </div>
+                                    <div class="phase-time-total phase-time-seg">Ukupno: <b>{{ uk.bravarija_ukupno_tekst }}</b></div>
                                 </div>
                             </div>
                         </td>
                         {% endif %}
                     </tr>
-                </tfoot>
+                </tbody>
             </table>
         </div>
 
         <!-- POPIS PRILOŽENIH DATOTEKA (PDF / DXF) -->
         {% if pdf_datoteke or lxdf_datoteke %}
+        {% set br_dat = (pdf_datoteke|length) + (lxdf_datoteke|length) %}
+        {% set br_dat_mod10 = br_dat % 10 %}
+        {% set br_dat_mod100 = br_dat % 100 %}
+        {% set dat_suffix = 'datoteka' if (br_dat_mod10 == 1 and br_dat_mod100 != 11) else ('datoteke' if (br_dat_mod10 in [2, 3, 4] and br_dat_mod100 not in [12, 13, 14]) else 'datoteka') %}
         <div class="files-strip">
             <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted);">
-                <i class="fa-solid fa-folder-tree text-info me-1"></i> PRILOŽENA TEHNIČKA DOKUMENTACIJA ({{ (pdf_datoteke|length) + (lxdf_datoteke|length) }} datoteka):
+                <i class="fa-solid fa-folder-tree text-info me-1"></i> PRILOŽENA TEHNIČKA DOKUMENTACIJA ({{ br_dat }} {{ dat_suffix }}):
             </div>
             <div class="chip-container">
                 {% for pdf in pdf_datoteke %}
@@ -1116,6 +1413,27 @@
     </div>
 
     <script>
+        (function() {
+            function ukloniA4Preview() {
+                document.body.classList.remove('force-a4-preview');
+            }
+            if (window.addEventListener) {
+                window.addEventListener('afterprint', ukloniA4Preview, false);
+            }
+            if (window.matchMedia) {
+                try {
+                    var mql = window.matchMedia('print');
+                    if (mql && mql.addListener) {
+                        mql.addListener(function(mq) {
+                            if (!mq.matches) {
+                                ukloniA4Preview();
+                            }
+                        });
+                    }
+                } catch(e) {}
+            }
+        })();
+
         function ispisiKaoA4Pdf() {
             document.body.classList.add('force-a4-preview');
             setTimeout(function() {
@@ -1123,6 +1441,7 @@
                     window.print();
                 } catch(e) {
                     console.error('Ispis error:', e);
+                    document.body.classList.remove('force-a4-preview');
                 }
             }, 120);
         }
